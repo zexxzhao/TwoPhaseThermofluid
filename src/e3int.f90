@@ -5,7 +5,7 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
                        shlu, shgradlu, shgradgu, shhessgu, dxidx, &
                        Ginv, di, ui, aci, umi, acmi, pri, fi, ddidxi, &
                        duidxi, duidxixj, dpridxi, phi, &
-                       dphidxi, dphidxixj, dphidtl, dphidti, xi, rLi, phi_bgi, phi_bgl)
+                       dphidxi, dphidxixj, dphidtl, dphidti, xi, rLi)
   use aAdjKeep
   use commonvars
   implicit none
@@ -22,7 +22,7 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
   real(8) :: di(NSD), ui(NSD), aci(NSD), umi(NSD), acmi(NSD), pri, &
              fi(NSD), ddidxi(NSD, NSD), &
              duidxi(NSD, NSD), duidxixj(NSD, NSD, NSD), &
-             dpridxi(NSD), phi, dphidxi(NSD), rLi(NSD), xi(NSD), phi_bgi, phi_bgl(NSHL)
+             dpridxi(NSD), phi, dphidxi(NSD), rLi(NSD), xi(NSD)
   real(8) :: uadv(NSD), He0, rho0, h, dphidxi0(NSD), dphidxixj(NSD, NSD), &
              dphidtl(NSHL), dphidti
 
@@ -36,7 +36,6 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
   fi = 0.0d0
   phi = 0.0d0
   dphidti = 0.0d0
-  phi_bgi = 0.0d0
 
   ddidxi = 0.0d0
   duidxi = 0.0d0
@@ -58,7 +57,6 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
     pri = pri + pl(i)*shlu(i)
     fi(:) = fi(:) + fl(i, :)*shlu(i)
     phi = phi + phil(i)*shlu(i)
-    phi_bgi = phi_bgi + phi_bgl(i)*shlu(i)
     dpridxi(:) = dpridxi(:) + pl(i)*shgradgu(i, :)
     dphidxi(:) = dphidxi(:) + phil(i)*shgradgu(i, :)
     dphidti = dphidti + dphidtl(i)*shlu(i)

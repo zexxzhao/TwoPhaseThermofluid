@@ -28,7 +28,8 @@ subroutine allocMatVec(SH, NM)
 
   allocate (pg(NNODE), pgold(NNODE))
 
-  allocate (rTg(NNODE), Tg(NNODE))
+  allocate (rTg(NNODE), rTgold(NNODE))
+  allocate (Tg(NNODE), Tgold(NNODE))
 
   allocate (FPKS(NELEM, NSD, NSD))
 
@@ -124,7 +125,9 @@ subroutine deallocMatVec
 
   ! deallocate mesh and flags
   deallocate (xg, wg, IEN)
+  deallocate (ELM_ID)
   deallocate (IPER, IBC)
+  deallocate (IS_SOLID_NODE)
 
   deallocate (EL_TYP, P_Flag, D_Flag)
 
@@ -153,7 +156,8 @@ subroutine deallocMatVec
   deallocate (acg, acgold, acgm, acgmold)
   deallocate (phig, phigold, rphig, rphigold)
   deallocate (pg, pgold)
-  deallocate (rTg, Tg)
+  deallocate (rTg, rTgold)
+  deallocate (Tg, Tgold)
   deallocate (uavg, pavg)
   deallocate (FPKS)
 

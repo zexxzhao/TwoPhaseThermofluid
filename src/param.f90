@@ -229,6 +229,10 @@ subroutine getparam
   call rread("DENS_WATER", rhow)
   call rread("VISC_AIR", mua)
   call rread("VISC_WATER", muw)
+  call rread("CP_AIR", cpa)
+  call rread("CP_WATER", cpw)
+  call rread("HC_AIR", kappaa)
+  call rread("HC_WATER", kappaw)
 
   call rread("Re", Re)
   call rread("Pe", Pe)

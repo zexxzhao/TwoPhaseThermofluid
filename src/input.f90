@@ -49,15 +49,16 @@ subroutine input(id)
 
   ! read elements
   allocate (ELMNSHL(NELEM), IEN(NELEM, NSHL))
+  allocate (ELM_ID(NELEM))
   do i = 1, NELEM
     if (fem_flag == 1) then
-      read (mfid, *) ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i)), itmp1
+      read (mfid, *) ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i)), ELM_ID(i)
     else
       read (mfid, *) ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i))
     end if
-    if ((id == 120) .and. (i == NELEM)) then
-      write (*, *), ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i))
-    end if
+    ! if ((id == 120) .and. (i == NELEM)) then
+    !   write (*, *), ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i))
+    ! end if
   end do
   maxNSHL = maxval(ELMNSHL)
   ! read faces
@@ -133,6 +134,8 @@ subroutine input(id)
 
   allocate (IBC(NNODE, 2*NSD + 2))
   IBC = 0
+  allocate (IS_SOLID_NODE(NNODE))
+  IS_SOLID_NODE_ASSIGNED = .false.
 
   allocate (EL_TYP(NELEM))
   EL_TYP = 0

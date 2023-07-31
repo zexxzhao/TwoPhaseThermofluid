@@ -212,6 +212,7 @@ module aAdjKeep
   real(8), allocatable :: xg(:, :), wg(:)
 
   integer, allocatable :: IEN(:, :), EPID(:), EIJK(:, :), NodeID(:)
+  integer, allocatable :: ELM_ID(:)
 
   type(bnd_class), allocatable :: bound(:)
   type(NURBSpatch), allocatable :: patch(:)
@@ -219,6 +220,8 @@ module aAdjKeep
   ! Contraint flags
   integer, allocatable :: IPER(:)
   integer, allocatable :: IBC(:, :)
+  logical :: IS_SOLID_NODE_ASSIGNED
+  integer, allocatable :: IS_SOLID_NODE(:)
 
   ! Type flags
   integer, allocatable :: EL_TYP(:), D_FLAG(:), P_FLAG(:)
@@ -252,7 +255,8 @@ module aAdjKeep
                           pg(:), pgold(:), &
                           phig(:), phigold(:), &
                           rphig(:), rphigold(:), &
-                          rTg(:), Tg(:)
+                          rTg(:), rTgold(:), &
+                          Tg(:), Tgold(:)
 
   real(8), allocatable :: uavg(:, :), pavg(:)
 
@@ -313,6 +317,7 @@ module commonvars
 
   ! Navier-Stokes solver
   real(8) :: mua, rhoa, muw, rhow
+  real(8) :: cpa, cpw, kappaa, kappaw
   real(8) :: NS_kdc_w, NS_kdc_a, fine_tau
 
   real(8) :: NS_GMRES_tol, NS_NL_Utol, NS_NL_Ptol
@@ -394,6 +399,7 @@ module commonpars
   integer, parameter :: ASSEMBLE_FIELD_NONE = 0
   integer, parameter :: ASSEMBLE_FIELD_NS = 1
   integer, parameter :: ASSEMBLE_FIELD_LS = 2
+  integer, parameter :: ASSEMBLE_FIELD_VOF = ASSEMBLE_FIELD_LS
   integer, parameter :: ASSEMBLE_FIELD_TEM = 4
 
   ! Assemble tensor

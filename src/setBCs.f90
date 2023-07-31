@@ -154,6 +154,136 @@ subroutine setBCs_CFD()
 !    enddo
 
 end subroutine setBCs_CFD
+!======================================================================
+!
+!======================================================================
+subroutine get_solid_nodes_private()
+  use commonvars
+  use aAdjkeep
+  use mpi
+
+  implicit none
+
+  integer :: i, j, k, b, iel
+  real(8) :: cache(NNODE)
+
+  cache(:) = 1.0
+  do iel = 1, NELEM
+    if (ELM_ID(iel) == 101) then
+      do j = 1, ELMNSHL(iel)
+        cache(j) = 0.0d0
+      end do
+    end if
+  end do
+  do b = 1, NBOUND
+    if (bound(b)%FACE_ID == 1) then
+      do j = 1, bound(b)%NNODE
+        k = bound(b)%BNODES(j)
+        cache(k) = 1.0d0
+      end do
+    end if
+  end do
+  if (numnodes > 1) then
+    call commu(cache, 1, "in ")
+    call commu(cache, 1, "out")
+  end if
+  do i = 1, NNODE
+    if (cache(i) < 0.1) then
+      is_solid_node(i) = 1
+    else
+      is_solid_node(i) = 0
+    end if
+  end do
+end subroutine get_solid_nodes_private
+
+!======================================================================
+subroutine setBCs_NSVOF()
+  use commonvars
+  use aAdjkeep
+  use mpi
+
+  implicit none
+
+  integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
+
+  real(8) :: u(NSD), phi
+
+  !-----------------
+  ! IBC(:, 1:3) - velocity
+  ! IBC(:, 4) - pressure
+  ! IBC(:, 5) - VOF
+  ! IBC(:, 6) - Tem
+  IBC = 0
+  ogam = 1.0d0/gami
+  mgam = gami - 1.0d0
+
+  if (.not. is_solid_node_assigned) then
+    call get_solid_nodes_private()
+  end if
+  IBC(:, 1) = IS_SOLID_NODE(:)
+  IBC(:, 2) = IS_SOLID_NODE(:)
+  IBC(:, 3) = IS_SOLID_NODE(:)
+  IBC(:, 4) = IS_SOLID_NODE(:)
+  IBC(:, 6:8) = 1
+
+  do b = 1, NBOUND
+
+    do d = 1, NSD
+      if (BCugType(bound(b)%FACE_ID, d) == 1) then
+        do j = 1, bound(b)%NNODE
+          k = bound(b)%BNODES(j)
+          IBC(k, d) = 1
+          ug(k, d) = BCugValu(b, d)
+          acg(k, d) = ((ug(k, d) - ugold(k, d))*Dtgl &
+                       + (gami - 1.0d0)*acgold(k, d))/gami
+
+        end do
+
+      else if (BCugType(bound(b)%FACE_ID, d) == 3) then
+        do j = 1, bound(b)%NNODE
+          k = bound(b)%BNODES(j)
+          IBC(k, d) = 1
+          ug(k, d) = ugm(k, d)
+          acg(k, d) = ((ug(k, d) - ugold(k, d))*Dtgl &
+                       + (gami - 1.0d0)*acgold(k, d))/gami
+        end do
+      end if
+    end do
+
+  end do  ! end loop: all faces
+
+end subroutine setBCs_NSVOF
+!======================================================================
+!
+!======================================================================
+subroutine setBCs_Tem()
+  use commonvars
+  use aAdjkeep
+  use mpi
+
+  implicit none
+
+  integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
+
+  real(8) :: u(NSD), phi
+
+  !-----------------
+  ! IBC(:, 1:3) - velocity
+  ! IBC(:, 4) - pressure
+  ! IBC(:, 5) - VOF
+  ! IBC(:, 6) - Tem
+  IBC(:, :) = 1
+  IBC(:, 6) = 0
+  do b = 1, NBOUND
+    if (bound(b)%FACE_ID == 1) then
+      do j = 1, bound(b)%NNODE
+        k = bound(b)%BNODES(j)
+        IBC(k, 6) = 1
+      end do
+    end if
+  end do  ! end loop: all faces
+
+end subroutine setBCs_Tem
 
 !======================================================================
 ! Get the rotation matrices
