@@ -1,8 +1,0 @@
-DEST    =/scratch/02502/jinhui/Ning_test/bin
-FCOMP   = mpif90
-FLAGS   =  -O3 -fbounds-check
-#DFLAGS  = -cpp -DUSEMPI  -r8 -i4 -zero -implicitnone -CB -pg -g  -fp-model strict -fpe0
-LIBS    =  
-METIS   = /opt/local/bin/
-MDFILES =
-FREE    =

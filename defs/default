@@ -1,5 +1,0 @@
-WORK    = ./
-MDFILES =   
-FLAGS   = -r8 -i4 -zero -implicitnone -fast  -CB  
-LIBS    =
-MPIF77  = mpif90
