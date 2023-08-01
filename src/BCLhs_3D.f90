@@ -273,6 +273,36 @@ end subroutine BCLhs_ls
 !======================================================================
 !
 !======================================================================
+subroutine BCLhs_tem(nshl, iel, xTebe, Rhs)
+
+  use aAdjKeep
+  use commonvars
+  implicit none
+
+  integer :: iel, aa, bb, cc
+  integer, intent(in) :: nshl
+  real(8) :: xTebe(NSHL, NSHL), Rhs(NSHL)
+
+  ! loop through local nodes
+  do aa = 1, NSHL
+
+    cc = IEN(iel, aa)  ! global node number of local node aa
+
+    if (IBC(cc, 6) == 1) then
+
+      xTebe(aa, :) = 0.0d0
+      xTebe(:, aa) = 0.0d0
+
+      xTebe(aa, aa) = 1.0d0
+      Rhs(aa) = 0.0d0    ! rhs
+
+    end if
+  end do
+
+end subroutine BCLhs_tem
+!======================================================================
+!
+!======================================================================
 subroutine BCLhs_NS_conv(nshl, iel, xKebe11, xGebe, xDebe1, &
                          xDebe2, xMebe, xMebels, xLSUebe, xPLSebe, &
                          xULSebe, Rhsu, Rhsp, Rhsls)

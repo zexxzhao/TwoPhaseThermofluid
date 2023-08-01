@@ -185,6 +185,36 @@ end subroutine FillSparseMat_ls
 !======================================================================
 !
 !======================================================================
+subroutine FillSparseMat_tem(nshl, iel, xTebe)
+
+  use aAdjKeep
+  use commonvars
+  implicit none
+
+  integer, intent(in) :: nshl
+
+  integer, intent(in) :: iel
+  real(8), intent(in) :: xTebe(NSHL, NSHL)
+
+  integer :: a, b, c, d, ee, n, k, locn, i
+
+  do a = 1, NSHL
+    i = IEN(iel, a)
+    c = col(i)
+    n = col(i + 1) - c
+    do b = 1, NSHL
+
+      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+
+      k = locn + c - 1
+      LHStem(k) = LHSls(k) + xTebe(a, b)
+    end do
+  end do
+
+end subroutine FillSparseMat_tem
+!======================================================================
+!
+!======================================================================
 subroutine FillSparseMat_fm(nshl, iel, xMebe)
 
   use aAdjKeep

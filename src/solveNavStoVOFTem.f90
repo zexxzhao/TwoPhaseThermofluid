@@ -3,10 +3,11 @@ subroutine calculate_residual(residual)
   use mpi
   use aAdjKeep
   implicit none
+  integer, parameter :: NRES = 4
 
   real(8), intent(out) :: residual(4)
 
-  real(8) :: rl(4)
+  real(8) :: rl(NRES)
   integer :: i
 
   rl(1) = sum(RHSGu(:, :)*RHSGu(:, :))
@@ -14,13 +15,13 @@ subroutine calculate_residual(residual)
   rl(3) = sum(RHSGls(:)*RHSGls(:))
   rl(4) = sum(RHSGtem(:)*RHSGtem(:))
   if (numnodes > 1) then
-    call MPI_ALLREDUCE(rl, residual, 4, MPI_DOUBLE_PRECISION, &
+    call MPI_ALLREDUCE(rl, residual, NRES, MPI_DOUBLE_PRECISION, &
                        MPI_SUM, MPI_COMM_WORLD, mpi_err)
   else
     residual(:) = rl(:)
   end if
 
-  do i = 1, 4
+  do i = 1, NRES
     residual(i) = sqrt(residual(i))
   end do
 
@@ -33,12 +34,14 @@ subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converg
   use commonpars
   implicit none
 
-  real(8), intent(in) :: r0(4), r(4)
+  integer, parameter :: NRES = 4
+
+  real(8), intent(in) :: r0(NRES), r(NRES)
   integer, intent(in) :: inewt
   integer, intent(in) :: verbose
   integer, intent(in) :: assemble_field_flag
 
-  integer, intent(out) :: converged(4)
+  integer, intent(out) :: converged(NRES)
   character(len=80) :: fomt
 
   converged(:) = 0
@@ -65,6 +68,9 @@ subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converg
 
 end subroutine check_convergence
 
+!======================================================================
+!
+!======================================================================
 subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
   use aAdjKeep
   use mpi
@@ -128,15 +134,15 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
     LHSLSU = 0.0d0
     LHSPLS = 0.0d0
 
-    LHSTem = 0.dd0
-  end if
+    LHSTem = 0.0d0
+  endif
 
   if (myid .eq. 0) then
     call CPU_TIME(t1)
-  end if
+  endif
 
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF) > 0) then
-    call IntElmAss_NSVOFTem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+    call IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                             acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
                             TgAlpha, rTgAlpha, &
                             assemble_tensor_flag)
@@ -146,9 +152,9 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
                               acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
                               FFLAG)
   end if
-  if (iand(assemble_field_flagm ASSEMBLE_FIELD_TEM) > 0) then
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
     call IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
-                       acgmAlpha, pgAlpha, phigAlpha, dphidtgAlpha, &
+                       acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
                        TgAlpha, rTgAlpha, &
                        assemble_tensor_flag)
 

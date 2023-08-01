@@ -1,80 +1,50 @@
-###NAME := nrel_rot
-###NAME := 5mw_fsi
-###NAME := 5mw_old
-NAME:=ns
+##################################
+# Configuration
+##################################
+include make.config
 
 ##################################
-# System definitions
+# Targets
 ##################################
-include ../defs/select
-include ../defs/$(defs)
 
-##################################
-#  Files
-##################################
-include file.list
-#F77FILES = $(MDFILES) $(FILES)
-#OFILES   = $(F77FILES:.f=.o) 
-#OBJ      = $(F77FILES:%.f=obj/%.o)
-#DOBJ     = $(F77FILES:%.f=obj/%.dbg.o)
+default: ${DEST}/${NAME}.exe 
 
-OFILES = $(MODFILES:.f90=.o)\
-         $(F90FILES:.f90=.o)\
-         $(F77FILES:.f=.o)
+info:
+	@echo "FC    :" ${FC}  
+	@echo "FFLAGS:" ${FFLAGS}  
+	@echo "CC    :" ${CC}  
+	@echo "CFLAGS:" ${CFLAGS}  
+	@echo "NAME  :" ${NAME}
+	@echo "DEST  :" ${DEST} 
+	@echo "LIBS  :" ${LIBS}	
+	@echo "OBJ   :" ${OBJ} 
 
-OBJ = $(MODFILES:%.f90=obj/%.o)\
-      $(F90FILES:%.f90=obj/%.o)\
-      $(F77FILES:%.f=obj/%.o)
+${DEST}/${NAME}.exe:${OBJFILES} | ${DEST}
+	rm -rf ${DEST}/${NAME}.exe
+	${FC}   ${OBJFILES} ${LIBS} -o  ${DEST}/${NAME}.exe
+	@ls -lh ${DEST}/${NAME}.exe
 
-DOBJ = $(MODFILES:%.f90=obj/%.dbg.o)\
-       $(F90FILES:%.f90=obj/%.dbg.o)\
-       $(F77FILES:%.f=obj/%.dbg.o)
+${OBJ}:
+	mkdir   ${OBJ}
 
+${DEST}:	
+	mkdir   ${DEST}
+	
+clean:
+	rm -rf obj *.mod ${DEST}/${NAME}.exe
+	
 ##################################
 # Rules
 ##################################
-default: $(DEST)/$(NAME).exe 
-debug: $(DEST)/$(NAME).dbg.exe 
 
-info:
-	@echo "Host  :" $(host) 
-	@echo "Defs  :" $(defs) 
-	@echo "NAME  :" $(NAME)
-	@echo "DEST  :" $(DEST) 
-	@echo "FCOMP :" $(FCOMP)  
-	@echo "FLAGS :" $(FLAGS) 
-	@echo "DFLAGS:" $(DFLAGS) 
-	@echo "LIBS  :" $(LIBS) 	
-	@echo "MDF   :" $(MDFILES) 
 
-$(DEST)/$(NAME).exe:$(OBJ) | $(DEST)
-	rm -rf $(DEST)/$(NAME).exe
-	$(FCOMP)   $(OBJ) $(LIBS) -o  $(DEST)/$(NAME).exe
-	@ls -lh $(DEST)/$(NAME).exe
+${OBJ}/%.o: %.f90 | ${OBJ}
+	$(FC) $(FFLAGS) -c $< -o $@
 
-$(DEST)/$(NAME).dbg.exe:  $(DOBJ) | $(DEST)
-	rm -rf $(DEST)/$(NAME).dbg.exe
-	$(FCOMP)   $(DOBJ) $(LIBS) $(DFLAGS) -o  $(DEST)/$(NAME).dbg.exe
-	@ls -lh $(DEST)/$(NAME).dbg.exe
+${OBJ}/%.o: %.f | ${OBJ}
+	$(FC) $(FFLAGS) -c $< -o $@
 
-obj:
-	mkdir   obj 
 
-$(DEST):	
-	mkdir   $(DEST)
-	
-clean:
-	rm -rf obj *.mod $(DEST)/$(NAME).exe $(DEST)/$(NAME).dbg.exe
-	
-obj/%.o: %.f90 | obj
-	$(FCOMP) $(FLAGS) -c $*.f90 -o obj/$*.o
 
-obj/%.o: %.f | obj
-	$(FCOMP) $(FLAGS) -c $*.f -o obj/$*.o
+.PHONY.: clean
 
-# debug mode
-obj/%.dbg.o: %.f90 | obj
-	$(FCOMP) $(DFLAGS) -c $*.f90 -o obj/$*.dbg.o
-
-obj/%.dbg.o: %.f | obj 
-	$(FCOMP) $(DFLAGS) -c $*.f  -o obj/$*.dbg.o

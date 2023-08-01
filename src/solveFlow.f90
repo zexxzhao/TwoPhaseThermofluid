@@ -29,8 +29,9 @@ subroutine solmultiphasethermofluid_stag(istep)
   residual(:) = 0d0
   residual0(:) = 0d0
   converged(:) = 0
-
-  call assembleNavStoVOF(ASSEMBLE_TENSOR_VEC, &
+  call setBCs_NSVOF()
+  call setBCs_Tem()
+  call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
 
   call calculate_residual(residual0)
@@ -44,7 +45,7 @@ subroutine solmultiphasethermofluid_stag(istep)
     !---------------------------
     ! Solve NavStoVOF
     !---------------------------
-    call setBC_NSVOF()
+    call setBCs_NSVOF()
     call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                               ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
     if (myid .eq. 0) then
@@ -75,7 +76,7 @@ subroutine solmultiphasethermofluid_stag(istep)
     ! Solve Temperature
     !-----------------------------
     if (istep > 20) then
-      call setBC_Tem()
+      call setBCs_Tem()
       call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                                 ASSEMBLE_FIELD_TEM)
       if (myid .eq. 0) then
@@ -92,7 +93,7 @@ subroutine solmultiphasethermofluid_stag(istep)
       Tg = Tg + gami*Delt*sol(:, 6)
 
     end if
-    call assembleNavStoVOF(ASSEMBLE_TENSOR_VEC, &
+    call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
 
     call calculate_residual(residual)

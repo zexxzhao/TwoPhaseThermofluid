@@ -368,6 +368,7 @@ module commonvars
   real(8) :: mp_eps, mu, rho, dmudphi, drhodphi, kappa, beta_t, phi_inf, &
              phi_t, C_t, Re, Pe, Gr, Fr, Ra, Sr, Pr, dphi_bg(3), cross_flag
 
+  real(8) :: cp, hk
   ! Setup
   real(8) :: Froude, Uin
   integer :: BCtype(99)

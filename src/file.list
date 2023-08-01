@@ -25,6 +25,7 @@ F90FILES =\
   interface.f90\
   iosol.f90\
   IntElmAss_NS.f90\
+  IntElmAss_NSVOFTem.f90\
   LocaltoGlobal.f90\
   moveRBMesh.f90\
   param.f90\
