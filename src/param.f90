@@ -208,21 +208,21 @@ subroutine getparam
   ! Time stepping
   call iread("Nstep", Nstep)
   call iread("ifq", ifq)
-  call iread("ifq_sh", ifq_sh)
-  call iread("ifq_tq", ifq_tq)
+  ! call iread("ifq_sh", ifq_sh)
+  ! call iread("ifq_tq", ifq_tq)
   call rread("Delt", Delt)
   call rread("rhoinf", rhoinf)
-  call rread("conv_time", conv_time)
-  call rread("mono_time", mono_time)
-  call rread("move_time", move_time)
-  call rread("shel_time", shel_time)
+  ! call rread("conv_time", conv_time)
+  ! call rread("mono_time", mono_time)
+  ! call rread("move_time", move_time)
+  ! call rread("shel_time", shel_time)
 
-  if (mono_time >= 0.0d0) then
-    call iread("mono_iter", mono_iter)
-    call iread("LSC_pred_step", LSC_pred_step)
-  else
-    mono_time = 99.0d9
-  end if
+  !if (mono_time >= 0.0d0) then
+  !  call iread("mono_iter", mono_iter)
+  !  call iread("LSC_pred_step", LSC_pred_step)
+  !else
+  !  mono_time = 99.0d9
+  !end if
 
   ! Physics
   call rread("DENS_AIR", rhoa)
@@ -231,26 +231,26 @@ subroutine getparam
   call rread("VISC_WATER", muw)
   call rread("CP_AIR", cpa)
   call rread("CP_WATER", cpw)
-  call rread("HC_AIR", kappaa)
-  call rread("HC_WATER", kappaw)
+  call rread("HK_AIR", kappaa)
+  call rread("HK_WATER", kappaw)
 
-  call rread("Re", Re)
-  call rread("Pe", Pe)
-  call rread("Gr", Gr)
-  call rread("Fr", Fr)
-  call rread("Ra", Ra)
-  call rread("Pr", Pr)
-  call rread("Sr", Sr)
-  call rread("cross_flag", cross_flag)
-  call rread("top_flag", top_flag)
+  !call rread("Re", Re)
+  !call rread("Pe", Pe)
+  !call rread("Gr", Gr)
+  !call rread("Fr", Fr)
+  !call rread("Ra", Ra)
+  !call rread("Pr", Pr)
+  !call rread("Sr", Sr)
+  !call rread("cross_flag", cross_flag)
+  !call rread("top_flag", top_flag)
 
-  mua = 1.0d0/Re
-  muw = 1.0d0/Re
-  rho = 1.0d0
-  mu = muw
+  !mua = 1.0d0/Re
+  !muw = 1.0d0/Re
+  !rho = 1.0d0
+  !mu = muw
 
   mp_eps = 3.0d0
-  gravity = -1.0d0 ! -1.0d0/(Fr**2.0d0)
+  gravity = -0.0d0 ! -1.0d0/(Fr**2.0d0)
 
   gravvec(1) = 0.0d0
   gravvec(2) = 0.0d0
@@ -260,11 +260,11 @@ subroutine getparam
 !  beta_t = 9.0d-4!3.4d-3
 !  phi_inf = 20.0d0
 
-  call rread("hull_length", hull_length)
-  call rread("water_level", water_level)
-  call rread("position_init", position_init)
-  water_depth = water_level - domain_bottom
-  air_height = domain_top - water_level
+  ! call rread("hull_length", hull_length)
+  ! call rread("water_level", water_level)
+  ! call rread("position_init", position_init)
+  ! water_depth = water_level - domain_bottom
+  ! air_height = domain_top - water_level
 
   ! Problem setup
 !!!  call rread("U_in",   Uin)
@@ -289,15 +289,16 @@ subroutine getparam
 
 !  call iread("BCtype7", BCtype(7))
 !  BCtype(8:20) = BCtype(7)
-
+  call iread("NBOUND", NBOUND)
+  call iread("NSD", NSD)
   ! BC for "setBCs_CFD"
-  allocate (BCugType(maxval(bound(:)%FACE_ID), NSD), &
-            BCugValu(maxval(bound(:)%FACE_ID), NSD), &
-            phi_bg(NNODE))
+  allocate (BCugType(NBOUND, NSD), &
+            BCugValu(NBOUND, NSD))
 
   BCugType = 0
   do bb = 1, NBOUND
-    i = bound(bb)%FACE_ID
+    ! i = bound(bb)%FACE_ID
+    i = bb
     write (fnum(1), '(I4)') i
     fname(1) = 'BCugType'//trim(adjustl(fnum(1)))
     call iread3(fname(1), BCugType(i, 1:3))
@@ -305,7 +306,8 @@ subroutine getparam
 
   BCugValu = 0.0d0
   do bb = 1, NBOUND
-    i = bound(bb)%FACE_ID
+    ! i = bound(bb)%FACE_ID
+    i = bb
     do j = 1, NSD
       if (BCugType(i, j) == 1) then
         write (fnum(1), '(I4)') i
@@ -317,30 +319,30 @@ subroutine getparam
     end do
   end do
 
-  call rread("usettle", usettle)
+  ! call rread("usettle", usettle)
   ! Wave generating wall
-  call rread("wave_amp", wave_amp)
-  if (wave_amp > 0.0d0) then
-    call rread("wave_length", wave_length)
-    call rread("wave_angle", wave_angle)
+  ! call rread("wave_amp", wave_amp)
+  ! if (wave_amp > 0.0d0) then
+    ! call rread("wave_length", wave_length)
+    ! call rread("wave_angle", wave_angle)
 
-    wave_angle = pi*wave_angle/180.0d0
-    wave_length = 2.0d0*pi/wave_length
-    wave_periode = sqrt(gravity*wave_length* &
-                        dtanh(wave_length/water_level))
+    ! wave_angle = pi*wave_angle/180.0d0
+    ! wave_length = 2.0d0*pi/wave_length
+    ! wave_periode = sqrt(gravity*wave_length* &
+    !                     dtanh(wave_length/water_level))
 
-    if (ismaster) write (*, "(a20,x,' = ',x,ES12.4)") "wave_periode", &
-      wave_periode
+    ! if (ismaster) write (*, "(a20,x,' = ',x,ES12.4)") "wave_periode", &
+    !  wave_periode
 
-    call rread("domain_top", domain_top)
-    call rread("domain_bottom", domain_bottom)
-    call rread("domain_left", domain_left)
-    call rread("domain_right", domain_right)
-    call rread("domain_front", domain_front)
-    call rread("domain_back", domain_back)
+    ! call rread("domain_top", domain_top)
+    ! call rread("domain_bottom", domain_bottom)
+    ! call rread("domain_left", domain_left)
+    ! call rread("domain_right", domain_right)
+    ! call rread("domain_front", domain_front)
+    ! call rread("domain_back", domain_back)
 
-    water_depth = water_level - domain_bottom
-  else
+    ! water_depth = water_level - domain_bottom
+  !else
     wave_amp = 0.0d0
     wave_length = 1.0d0
     wave_angle = 0.0d0
@@ -353,38 +355,38 @@ subroutine getparam
     domain_front = 0.0d0
     domain_back = 0.0d0
     water_depth = 1.0d0
-  end if
+  !end if
 
   ! Rigid body
-  if (move_time >= 0.0d0) then
-    call rread("hull_mass", massb)
+  ! if (move_time >= 0.0d0) then
+  !   call rread("hull_mass", massb)
 
-    Ibhat = 0.0d0
-    call rread("I11", Ibhat(1, 1))
-    call rread("I22", Ibhat(2, 2))
-    call rread("I33", Ibhat(3, 3))
+  !   Ibhat = 0.0d0
+  !   call rread("I11", Ibhat(1, 1))
+  !   call rread("I22", Ibhat(2, 2))
+  !   call rread("I33", Ibhat(3, 3))
 
-    call rread("I12", Ibhat(1, 2))
-    call rread("I13", Ibhat(1, 3))
-    call rread("I23", Ibhat(2, 3))
+  !   call rread("I12", Ibhat(1, 2))
+  !   call rread("I13", Ibhat(1, 3))
+  !   call rread("I23", Ibhat(2, 3))
 
-    Ibhat(2, 1) = Ibhat(1, 2)
-    Ibhat(3, 1) = Ibhat(1, 3)
-    Ibhat(3, 2) = Ibhat(2, 3)
+  !   Ibhat(2, 1) = Ibhat(1, 2)
+  !   Ibhat(3, 1) = Ibhat(1, 3)
+  !   Ibhat(3, 2) = Ibhat(2, 3)
 
-    Ibhat = massb*hull_length*hull_length*Ibhat
+  !   Ibhat = massb*hull_length*hull_length*Ibhat
 
-    call rread("xcg", xcg(1))
-    call rread("ycg", xcg(2))
-    call rread("zcg", xcg(3))
-  else
+  !   call rread("xcg", xcg(1))
+  !   call rread("ycg", xcg(2))
+  !   call rread("zcg", xcg(3))
+  ! else
     move_time = 99.0d9
-  end if
+  ! end if
 
   ! Navier-stokes solver
   call rread("NS_kdc_w", NS_kdc_w)
   call rread("NS_kdc_a", NS_kdc_a)
-  call rread("fine_tau", fine_tau)
+  ! call rread("fine_tau", fine_tau)
 
   call rread("NS_GMRES_tol", NS_GMRES_tol)
   call iread("NS_GMRES_itermax", NS_GMRES_itermax)
@@ -394,20 +396,20 @@ subroutine getparam
   call rread("NS_NL_Ptol", NS_NL_Ptol)
   call iread("NS_NL_itermax", NS_NL_itermax)
 
-  call iread("NS_hessian", NS_hess_flag)
+  ! call iread("NS_hessian", NS_hess_flag)
 
   ! Rigid body solver
   RB_NL_Ftol = 1.0d-3
   RB_NL_Mtol = 1.0d-3
 
   ! Mesh solver
-  call rread("Mesh_NL_tol", Mesh_NL_tol)
-  call rread("Mesh_GMRES_tol", Mesh_GMRES_tol)
-  call iread("Mesh_GMRES_itermin", Mesh_GMRES_itermin)
-  call iread("Mesh_GMRES_itermax", Mesh_GMRES_itermax)
-  call iread("fem_flag", fem_flag)
+  ! call rread("Mesh_NL_tol", Mesh_NL_tol)
+  ! call rread("Mesh_GMRES_tol", Mesh_GMRES_tol)
+  ! call iread("Mesh_GMRES_itermin", Mesh_GMRES_itermin)
+  ! call iread("Mesh_GMRES_itermax", Mesh_GMRES_itermax)
+  ! call iread("fem_flag", fem_flag)
   ! Level Set Convection solver
-  call rread("LSC_kdc", LSC_kdc)
+  ! call rread("LSC_kdc", LSC_kdc)
 
   call rread("LSC_GMRES_tol", LSC_GMRES_tol)
   call iread("LSC_GMRES_itermax", LSC_GMRES_itermax)
@@ -417,23 +419,23 @@ subroutine getparam
   call iread("LSC_NL_itermax", LSC_NL_itermax)
 
   ! Level Set redistance solver
-  call rread("LSRD_kdc", LSRD_kdc)
-  call rread("LSRD_penalty_fac", LSRD_penalty_fac)
-  call rread("LSRD_pseudoDTGL_fac", LSRD_pseudoDTGL_fac)
+  ! call rread("LSRD_kdc", LSRD_kdc)
+  ! call rread("LSRD_penalty_fac", LSRD_penalty_fac)
+  ! call rread("LSRD_pseudoDTGL_fac", LSRD_pseudoDTGL_fac)
 
-  call rread("LSRD_GMRES_tol", LSRD_GMRES_tol)
-  call iread("LSRD_GMRES_itermax", LSRD_GMRES_itermax)
+  ! call rread("LSRD_GMRES_tol", LSRD_GMRES_tol)
+  ! call iread("LSRD_GMRES_itermax", LSRD_GMRES_itermax)
 
-  call rread("LSRD_NL_tol", LSRD_NL_tol)
-  call iread("LSRD_NL_itermax", LSRD_NL_itermax)
+  ! call rread("LSRD_NL_tol", LSRD_NL_tol)
+  ! call iread("LSRD_NL_itermax", LSRD_NL_itermax)
   LSRD_GMRES_itermin = 20
 
   ! Level Set massfix solver
-  call rread("Mass_NL_tol", Mass_NL_tol)
-  call iread("Mass_NL_itermax", Mass_NL_itermax)
+  ! call rread("Mass_NL_tol", Mass_NL_tol)
+  ! call iread("Mass_NL_itermax", Mass_NL_itermax)
 
   ! Wind turbine rotation
-  call rread("Rotational_Vel", maxthetd)
+  ! call rread("Rotational_Vel", maxthetd)
 
   ! Build time integration parameters
   if ((rhoinf < 0.0d0) .or. (rhoinf > 1.0d0)) then ! backward Euler
@@ -545,7 +547,7 @@ subroutine cread(vname, val)
   close (paramf)
 
   if (found == 0) then
-    write (*, *) "Could not find ", vname, " in param.dat"
+    write (*, *) "Could not find ", vname, " in param.dat."
     call MPI_ABORT(MPI_COMM_WORLD, 911, mpi_err)
 !!!    val=''
   end if

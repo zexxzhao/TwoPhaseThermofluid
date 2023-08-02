@@ -32,6 +32,7 @@ F90FILES =\
   redistance.f90\
   setBCs.f90\
   SparseGMRES_NS.f90\
+  SparseGMRES_tem.f90\
   SparseGMRES_DG.f90\
   SparseProd.f90\
   solveFlow.f90\

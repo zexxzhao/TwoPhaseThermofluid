@@ -83,7 +83,9 @@ subroutine solmultiphasethermofluid_stag(istep)
         call CPU_TIME(t1)
       end if
 
-      ! call SparseGMRES_tem()
+      call SparseGMRES_tem(LHStem, NS_GMRES_tol, col, row, &
+                           rhsgtem, sol(:, 6), NS_GMRES_itermax, NS_GMRES_itermin, &
+                           NNODE, maxNSHL, icnt, NSD)
       if (myid .eq. 0) then
         call CPU_TIME(t2)
         write (*, *) "Total time solve TEM GMRES:", t2 - t1, "seconds"

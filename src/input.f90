@@ -30,7 +30,7 @@ subroutine input(id)
   !    counter = counter + 1
 !endif
 
-  write (*, *) myid
+  write (*, *) fname !myid
   ! read nodes
   allocate (xg(NNODE, NSD), NodeID(NNODE))
   do i = 1, NNODE
@@ -71,7 +71,7 @@ subroutine input(id)
     allocate (bound(i)%F2E(bound(i)%NFACE))
     allocate (bound(i)%FACE_OR(bound(i)%NFACE))
     allocate (bound(i)%NSHLB(bound(i)%NFACE))
-
+    if(myid + 1  == 4) write(*,*) "BOUND", i, bound(i)%NFACE, bound(i)%NNODE, fem_flag
     do j = 1, bound(i)%NFACE
       bound(i)%NSHLB(j) = NSHLBmax
       if (fem_flag == 1) then

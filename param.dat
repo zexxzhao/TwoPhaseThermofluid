@@ -1,0 +1,106 @@
+!--------------------------------------
+! FLAGS
+!--------------------------------------
+fem_flag = 1
+
+!--------------------------------------
+! Time steppings
+!--------------------------------------
+Nstep  = 25000
+ifq    = 20 
+Delt   = 0.001d0
+rhoinf = 0.5d0
+!--------------------------------------
+! Fluid property
+!--------------------------------------
+DENS_AIR    = 1.2d0
+DENS_WATER  = 1.2d0
+VISC_AIR    = 2.0d-5
+VISC_WATER  = 2.0d-5
+CP_AIR      = 1.0d3
+CP_WATER    = 1.0d3
+HK_AIR      = 6.6d-3
+HK_WATER    = 6.6d-3
+
+!--------------------------------------
+! Quadrature rule
+!--------------------------------------
+NGAUSSTET= 4
+NGAUSSPRI= 6
+NGAUSSB  = 3
+!--------------------------------------
+! Navier-stokes 
+!--------------------------------------
+NS_kdc_w    = 0.25d0
+NS_kdc_a    = 0.25d0
+!--------------------------------------
+! Linear solver
+!--------------------------------------
+NS_GMRES_tol     = 1d-3
+NS_GMRES_itermin = 60
+NS_GMRES_itermax = 120
+
+LSC_GMRES_tol     = 1d-3
+LSC_GMRES_itermin = 60
+LSC_GMRES_itermax = 120
+
+!--------------------------------------
+! Nonlinear solver
+!--------------------------------------
+NS_NL_itermax  =  6
+NS_NL_Utol     = 1d-3
+NS_NL_Ptol     = 2d-3
+
+LSC_NL_itermax = 6
+LSC_NL_tol     = 1d-3
+
+!-------------------------------------
+! NS Boundary conditions 
+! 1 = Strong            1 = Uin (def)
+! 2 = Weak              2 = um
+! 3 = Do nothing        3 = ug   !wave
+! 4 = Switch            4 = 0
+!-------------------------------------
+NBOUND = 5
+NSD = 3
+
+! Inlet
+BCugType1   = 1 1 1
+
+! Outlet 
+BCugType2    = 0 0 0
+
+! Lateral
+BCugType3    = 0 1 0
+
+! TopBot
+BCugType4    = 0 0 1
+
+! Sphere
+BCugType5    = 2 2 2
+
+! inflow
+BCugValu(1,1) =  1d0
+BCugValu(1,2) =  0d0
+BCugValu(1,3) =  0d0
+
+! Outlet
+BCugValu(2,1) =  1d0
+BCugValu(2,2) =  0d0
+BCugValu(2,3) =  0d0
+
+! y direction
+BCugValu(3,1) =  0d0
+BCugValu(3,2) =  0d0
+BCugValu(3,3) =  0d0
+
+! z direction
+BCugValu(4,1) = 0d0
+BCugValu(4,2) = 0d0
+BCugValu(4,3) = 0d0
+
+! Sphere 
+BCugValu(5,1) = 0d0
+BCugValu(5,2) = 0d0
+BCugValu(5,3) = 0d0
+

@@ -41,11 +41,12 @@ program NURBScode
 
   ! flag for non-matching computation
   nonmatch = .false.
-
+  if (ismaster) write (*, *) "Get run parameters"
+  call getparam()
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
   call input(myid + 1)
-  if (numnodes > 1) call ctypes
+  if (numnodes > 1) call ctypes()
 
   !------------------------------------------------------------
   ! Only the first three processors are used to solve the blade
@@ -83,8 +84,7 @@ program NURBScode
     call input_shell_nmb(NSD, NM)
   end if
   ! Get run parameters
-  if (ismaster) write (*, *) "Get run parameters"
-  call getparam()
+
 
   ! Get element gauss points (this needs to be after "getparam")
 !  allocate(ELMNGAUSS(NELEM))
