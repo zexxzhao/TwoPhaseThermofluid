@@ -1,12 +1,11 @@
 
 include ../../make.config
-include ../make.rules
 
-OBJ=${DIRECTORY}/src/obj
+#OBJDIR=${DIRECTORY}/src/obj
 
 
 FILENAME:=utility.c
-OBJFILES:=${FILENAME:%.c=${OBJ}/%.o}
+OBJFILES:=${FILENAME:%.c=${OBJDIR}/%.o}
 
 all: ${OBJFILES}
 

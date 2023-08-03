@@ -3,26 +3,40 @@ include ../make.config
 
 NAME:=ns
 TARGET:=${DEST}/${NAME}.exe 
+OBJDIR:=${DIRECTORY}/src/obj
 
 SUBDIR:=legacy util
 
 all: ${TARGET}
 
-${TARGET}: ${SUBDIR}
-	${CC} ${CFLAGS} obj/*.o ${LIBS} ${MPI_COMPILE_FLAGS} ${MPI_LINK_FLAGS} -lgfortran -lm -ldl -o $@ 
+info:
+	@echo "FC    :" ${FC}  
+	@echo "FFLAGS:" ${FFLAGS}  
+	@echo "CC    :" ${CC}  
+	@echo "CFLAGS:" ${CFLAGS}  
+	@echo "NAME  :" ${NAME}
+	@echo "DEST  :" ${DEST} 
+	@echo "LIBS  :" ${LIBS}	
+	@echo "OBJDIR  :" ${OBJDIR}
 
-${SUBDIR}:
+
+${TARGET}: ${SUBDIR} | ${DEST}
+	${CC} ${CFLAGS} ${OBJDIR}/*.o ${LIBS} ${MPI_COMPILE_FLAGS} ${MPI_LINK_FLAGS} -lgfortran -lm -ldl -o $@ 
+
+${SUBDIR}: ${OBJDIR}
 	for DIR in $@; do\
-		cd $${DIR} && ${MAKE} && cd ..; \
+		${MAKE} -C $${DIR} OBJDIR=${OBJDIR}; \
 	done
 
-
+${OBJDIR}:
+	mkdir -p ${OBJDIR}
 
 clean:
 	for DIR in ${SUBDIR}; do\
 		cd $${DIR} && ${MAKE} clean && cd ..; \
 	done
 	rm -f ${TARGET}
+	rm -rf ${OBJDIR}
 
-.PHONY: all ${SUBDIR} clean
+.PHONY: all ${SUBDIR} info clean
 

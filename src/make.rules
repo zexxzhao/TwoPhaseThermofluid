@@ -2,11 +2,16 @@
 # Rules
 ##################################
 
-${OBJ}/%.o: %.f90 | ${OBJ}
+${OBJDIR}/%.o: %.f90 | ${OBJDIR}
 	${FC} ${FFLAGS}  -c $< -o $@
 
-${OBJ}/%.o: %.f | ${OBJ}
+${OBJDIR}/%.o: %.f | ${OBJDIR}
 	${FC} ${FFLAGS} -c $< -o $@
 
-${OBJ}/%.o: %.c | ${OBJ}
+${OBJDIR}/%.o: %.c | ${OBJDIR}
 	${CC} ${CFLAGS} -c -MD $< -o $@
+
+#${OBJDIR}:
+#	mkdir -p ${OBJDIR}
+
+
