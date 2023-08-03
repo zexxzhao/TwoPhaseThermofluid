@@ -407,7 +407,7 @@ subroutine getparam
   ! call rread("Mesh_GMRES_tol", Mesh_GMRES_tol)
   ! call iread("Mesh_GMRES_itermin", Mesh_GMRES_itermin)
   ! call iread("Mesh_GMRES_itermax", Mesh_GMRES_itermax)
-  ! call iread("fem_flag", fem_flag)
+  call iread("fem_flag", fem_flag)
   ! Level Set Convection solver
   ! call rread("LSC_kdc", LSC_kdc)
 

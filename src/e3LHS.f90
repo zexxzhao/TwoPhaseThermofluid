@@ -8,7 +8,7 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
                               shhessgu, xKebe11, &
                               xGebe, xDebe1, xMebe, &
                               xLSebe, xLSUebe, &
-                              xULSebe, xPLSebe, Rhsphi)
+                              xULSebe, xPLSebe)
   use aAdjKeep
   use commonvars
   implicit none
@@ -29,8 +29,7 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
                             xLSebe(NSHL, NSHL), &
                             xLSUebe(NSD, NSHL, NSHL), &
                             xULSebe(NSD, NSHL, NSHL), &
-                            xPLSebe(NSHL, NSHL), &
-                            Rhsphi(NSHL)
+                            xPLSebe(NSHL, NSHL)
 
   integer :: aa, bb, i, j
 
@@ -40,10 +39,14 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
              res_phic, res_phid, res_phi, nu, tmp3(NSD), tmp5(NSHL), tmp6(NSD), shconvggu(NSHL), shconvggls(NSHL)
 
   real(8) :: advu_ls(3)
+  real(8) :: shconv(NSHL), divu
   ! loop over local shape functions in each direction
   fact1 = almi
   fact2 = alfi*gami*Delt
   fact3 = alfi*beti*Delt*Delt
+
+  drhodphi = rhow - rhoa
+  dmudphi = muw - mua
 
   nu = mu/rho
 
@@ -60,7 +63,10 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
   advu2(:) = -tauM*rLi(:)
   advu_ls(:) = advu1(:) + gravvec(:)*usettle
 !  advu_ls (3) = advu_ls(3) - usettle
-
+  do aa = 1, NSHL
+    shconv(aa) = sum(shgradgu(aa, :)*advu1)
+  enddo
+  divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
   tmp1(:) = rho*(advu1(1)*shgradgu(:, 1) + &! Na,_j (u_j-um_j)
                  advu1(2)*shgradgu(:, 2) + &
                  advu1(3)*shgradgu(:, 3))
@@ -81,8 +87,8 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
             gravvec(3)*duidxi(:, 3)
 
   do aa = 1, NSHL
-    shconvggu(aa) = sum(shgradgu(aa, :)*advu1)
-    shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
+    !shconvggu(aa) = sum(shgradgu(aa, :)*advu1)
+    !shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
   end do
 
   res_phic = dphidti + sum(advu_ls(:)*dphidxi(:)) !Convective part of the residual
@@ -168,19 +174,19 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
   ! Physics-LS
   ! Divergence Matrix
 
-  do bb = 1, NSHL
-    do aa = 1, NSHL
-      xULSebe(1, aa, bb) = xULSebe(1, aa, bb) + &
-                           fact2*(-shgu(aa)*shgu(bb)*gravvec(1) - &
-                                  tauM*tmp1(aa)*gravvec(1)*shgu(bb))*DetJ*gwt
-      xULSebe(2, aa, bb) = xULSebe(2, aa, bb) + &
-                           fact2*(-shgu(aa)*shgu(bb)*gravvec(2) - &
-                                  tauM*tmp1(aa)*gravvec(2)*shgu(bb))*DetJ*gwt
-      xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
-                           fact2*(-shgu(aa)*shgu(bb)*gravvec(3) - &
-                                  tauM*tmp1(aa)*gravvec(3)*shgu(bb))*DetJ*gwt
-    end do
-  end do
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xULSebe(1, aa, bb) = xULSebe(1, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(1) - &
+  !                                 tauM*tmp1(aa)*gravvec(1)*shgu(bb))*DetJ*gwt
+  !     xULSebe(2, aa, bb) = xULSebe(2, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(2) - &
+  !                                 tauM*tmp1(aa)*gravvec(2)*shgu(bb))*DetJ*gwt
+  !     xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(3) - &
+  !                                 tauM*tmp1(aa)*gravvec(3)*shgu(bb))*DetJ*gwt
+  !   end do
+  ! end do
 
 !  do bb = 1, NSHL
 !    do aa = 1, NSHL
@@ -206,29 +212,29 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
 
   ! Physics-LS
   ! Divergence Matrix, added by Jinhui
-  do bb = 1, NSHL
-    do aa = 1, NSHL
-      xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
-                           tauBar1*(fact1*shconvggu(aa)*shgu(bb) + fact2*shconvggu(aa)*shconvggls(bb))*DetJ*gwt
-    end do
-  end do
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+  !                          tauBar1*(fact1*shconvggu(aa)*shgu(bb) + fact2*shconvggu(aa)*shconvggls(bb))*DetJ*gwt
+  !   end do
+  ! end do
 
   ! LS-Physics
   ! Divergence Matrix
 
-  do bb = 1, NSHL
-    do aa = 1, NSHL
-      xLSUebe(1, aa, bb) = xLSUebe(1, aa, bb) + &
-                           fact2*(shgu(aa)*shgu(bb)*dphidxi(1))*DetJ*gwt!+&
-!               shgradgu(aa,1)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
-      xLSUebe(2, aa, bb) = xLSUebe(2, aa, bb) + &
-                           fact2*(shgu(aa)*shgu(bb)*dphidxi(2))*DetJ*gwt!+&
-!               shgradgu(aa,2)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
-      xLSUebe(3, aa, bb) = xLSUebe(3, aa, bb) + &
-                           fact2*(shgu(aa)*shgu(bb)*dphidxi(3))*DetJ*gwt!+ &
-!               shgradgu(aa,3)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
-    end do
-  end do
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xLSUebe(1, aa, bb) = xLSUebe(1, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(1))*DetJ*gwt!+&
+! !               shgradgu(aa,1)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !     xLSUebe(2, aa, bb) = xLSUebe(2, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(2))*DetJ*gwt!+&
+! !               shgradgu(aa,2)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !     xLSUebe(3, aa, bb) = xLSUebe(3, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(3))*DetJ*gwt!+ &
+! !               shgradgu(aa,3)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !   end do
+  ! end do
 
   ! Physics-Physics
   ! Divergence Matrix
@@ -259,44 +265,50 @@ subroutine e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, &
                                   shgradgu(aa, 2)*shgradgu(bb, 2) + &
                                   shgradgu(aa, 3)*shgradgu(bb, 3))*DetJ*gwt
 
-      xLSebe(aa, bb) = xLSebe(aa, bb) + &
-                       (fact1*shgu(aa)*shgu(bb) + &
-                        fact2*(shgu(aa)*shconvggls(bb)) + &
-                        fact2*(shgradgu(aa, 1)*kappadc*shgradgu(bb, 1) + &
-                               shgradgu(aa, 2)*kappadc*shgradgu(bb, 2) + &
-                               shgradgu(aa, 3)*kappadc*shgradgu(bb, 3)) + &
-                        fact1*(shconvggls(aa)*tauLS*shgu(bb)) + &
-                        fact2*(shconvggls(aa)*tauLS*shconvggls(bb)) - &
-                        fact2*(shconvggls(aa)*tauLS*tmp5(bb)))*DetJ*gwt   ! This is the derivative of ls with respect to ls
-
-      xPLSebe(aa, bb) = xPLSebe(aa, bb) - &
-                        fact2*tauP*(shgradgu(aa, 1)*gravvec(1)*shgu(bb) + &
-                                    shgradgu(aa, 2)*gravvec(2)*shgu(bb) + &
-                                    shgradgu(aa, 3)*gravvec(3)*shgu(bb))*DetJ*gwt
     end do
   end do
 
-! Additional term added by Jinhui, coming from the new VMS formulation
   do bb = 1, NSHL
     do aa = 1, NSHL
-
       xLSebe(aa, bb) = xLSebe(aa, bb) + &
-                       ((fact1*shgradgu(aa, 3)*shgu(bb) + &
-                         fact2*(shgradgu(aa, 3)*shconvggls(bb)))*tauBar1/rho)*DetJ*gwt   ! This is the derivative of ls with respect to ls
+              (shgu(aa) + tauls * shconv(aa)) * (fact1 * shgu(bb) + fact2 * shconv(bb)) * DetJ * gwt
 
     end do
   end do
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * shgu(aa) * drhodphi * shgu(bb) * rLi(:) / rho * DetJ * gwt
+      xULSebe(1, aa, bb) = xULSebe(1, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 1) + duidxi(1, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      xULSebe(2, aa, bb) = xULSebe(2, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 2) + duidxi(2, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 3) + duidxi(3, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * drhodphi * tauM * shconv(aa) * shgu(bb) * rLi(:) * DetJ * gwt
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * rho * tauM * shconv(aa) * shgu(bb) * drhodphi * rLi(:) / rho * DetJ * gwt
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * drhodphi * shgu(bb) * tauC * divu * shgradgu(aa, :) * DetJ * gwt
+    enddo
+  enddo
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xLSUebe(:, aa, bb) = xLSUebe(:, aa, bb) + &
+        fact2 * tauls * res_phic * shgu(bb) * shgradgu(aa, :) * DetJ * gwt
+      xLSUebe(:, aa, bb) = xLSUebe(:, aa, bb) + &
+        fact2 * (shgu(aa) + tauls * shconv(aa)) * shgu(bb) * dphidxi(:) * DetJ * gwt
+    enddo
+  enddo
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xPLSebe(aa, bb) = xPLSebe(aa, bb) + &
+        fact2 * tauM * drhodphi / rho * shgu(bb) * sum(rLi(:) * shgradgu(aa, :)) * DetJ * gwt
+    enddo
+  enddo
 
-  do aa = 1, NSHL
-    Rhsphi(aa) = Rhsphi(aa) - &
-                 (res_phic*shgu(aa) + sum(shgradgu(aa, :)*kappadc*dphidxi(:)) + &
-                  tauLS*shconvggls(aa)*res_phi)*DetJ*gwt
-  end do
-!  write(*,*) kappadc, Rhsphi(1:4)
-  do aa = 1, NSHL
-    Rhsphi(aa) = Rhsphi(aa) - &
-                 (shgradgu(aa, 3)*tauBar1*res_phi/rho)*DetJ*gwt
-  end do
 
 end subroutine e3LHS_3D_fluid_Old
 
@@ -683,8 +695,7 @@ end subroutine e3LHS_3D_mesh
 ! LHS for weak BC
 !======================================================================
 subroutine e3bLHS_weak(nshl, ui, umi, duidxi, tauB, tauBLS, tauNor, gwt, &
-                       shlu, shgradgu, xKebe, xGebe, xDebe, nor, &
-                       xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi, phi, dphidxi, gphi)
+                       shlu, shgradgu, xKebe, xGebe, xDebe, nor)
 
   use aAdjKeep
   use commonvars
@@ -694,14 +705,10 @@ subroutine e3bLHS_weak(nshl, ui, umi, duidxi, tauB, tauBLS, tauNor, gwt, &
 
   real(8), intent(in) :: ui(NSD), umi(NSD), duidxi(NSD, NSD), &
                          tauB, tauBLS, tauNor, gwt, nor(NSD), &
-                         shlu(NSHL), shgradgu(NSHL, NSD), phi, dphidxi(NSD), gphi
+                         shlu(NSHL), shgradgu(NSHL, NSD)
   real(8), intent(inout) :: xKebe(NSD*NSD, NSHL, NSHL), &
                             xGebe(NSD, NSHL, NSHL), &
-                            xDebe(NSD, NSHL, NSHL), &
-                            xLSebe(NSHL, NSHL), &
-                            xLSUebe(NSD, NSHL, NSHL), &
-                            xULSebe(NSD, NSHL, NSHL), &
-                            xPLSebe(NSHL, NSHL), Rhsphi(NSHL)
+                            xDebe(NSD, NSHL, NSHL)
 
   integer :: aa, bb
   real(8) :: fact1, fact2, tmp1(NSHL), tmp2(NSHL, NSHL), &
@@ -813,36 +820,36 @@ subroutine e3bLHS_weak(nshl, ui, umi, duidxi, tauB, tauBLS, tauNor, gwt, &
     end do
   end do
 
-  do bb = 1, NSHL
-    do aa = 1, NSHL
-      xLSebe(aa, bb) = xLSebe(aa, bb) + &
-                       fact2*(-shlu(aa)*kappa*tmp1(bb) + &
-                              shlu(aa)*shlu(bb)*tauBLS - &
-                              tmp1(aa)*kappa*shlu(bb) - &
-                              shlu(aa)*uneg*shlu(bb))*DetJb*gwt
-    end do
-  end do
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xLSebe(aa, bb) = xLSebe(aa, bb) + &
+  !                      fact2*(-shlu(aa)*kappa*tmp1(bb) + &
+  !                             shlu(aa)*shlu(bb)*tauBLS - &
+  !                             tmp1(aa)*kappa*shlu(bb) - &
+  !                             shlu(aa)*uneg*shlu(bb))*DetJb*gwt
+  !   end do
+  ! end do
 
-  if (unor < 0.0d0) then
-  do bb = 1, NSHL
-    do aa = 1, NSHL
-      xLSUebe(1, aa, bb) = xLSUebe(1, aa, bb) - &
-                           fact2*(shlu(aa)*shlu(bb)*nor(1)*(phi - gphi))*DetJb*gwt
-      xLSUebe(2, aa, bb) = xLSUebe(2, aa, bb) - &
-                           fact2*(shlu(aa)*shlu(bb)*nor(2)*(phi - gphi))*DetJb*gwt
-      xLSUebe(3, aa, bb) = xLSUebe(3, aa, bb) - &
-                           fact2*(shlu(aa)*shlu(bb)*nor(3)*(phi - gphi))*DetJb*gwt
-    end do
-  end do
-  end if
+  ! if (unor < 0.0d0) then
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xLSUebe(1, aa, bb) = xLSUebe(1, aa, bb) - &
+  !                          fact2*(shlu(aa)*shlu(bb)*nor(1)*(phi - gphi))*DetJb*gwt
+  !     xLSUebe(2, aa, bb) = xLSUebe(2, aa, bb) - &
+  !                          fact2*(shlu(aa)*shlu(bb)*nor(2)*(phi - gphi))*DetJb*gwt
+  !     xLSUebe(3, aa, bb) = xLSUebe(3, aa, bb) - &
+  !                          fact2*(shlu(aa)*shlu(bb)*nor(3)*(phi - gphi))*DetJb*gwt
+  !   end do
+  ! end do
+  ! end if
 
-  do aa = 1, NSHL
-    Rhsphi(aa) = Rhsphi(aa) - &
-                 (shlu(aa)*kappa*sum(dphidxi(:)*nor(:)) + &
-                  shlu(aa)*tauB*(phi - gphi) + &
-                  tmp1(aa)*kappa*(phi - gphi) - &
-                  shlu(aa)*uneg*(phi - gphi))*DetJb*gwt
-  end do
+  ! do aa = 1, NSHL
+  !   Rhsphi(aa) = Rhsphi(aa) - &
+  !                (shlu(aa)*kappa*sum(dphidxi(:)*nor(:)) + &
+  !                 shlu(aa)*tauB*(phi - gphi) + &
+  !                 tmp1(aa)*kappa*(phi - gphi) - &
+  !                 shlu(aa)*uneg*(phi - gphi))*DetJb*gwt
+  ! end do
 
 end subroutine e3bLHS_weak
 

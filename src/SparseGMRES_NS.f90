@@ -112,6 +112,11 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
                   - lhsKBdiagu(i, 1)*lhsKBdiagu(i, 8))*tmp
     Binv(3, 3) = (lhsKBdiagu(i, 1)*lhsKBdiagu(i, 5) &
                   - lhsKBdiagu(i, 2)*lhsKBdiagu(i, 4))*tmp
+    ! if(myid == 1 .and. i == 1794) then
+    !   write(*,*)  "LHSKDdiagu", lhsKBdiagu(i, :)
+    !   write(*,*) "Binv", Binv
+    !   write(*,*) "WTF", tmp, tmp2
+    ! endif
 
     lhsKBdiagu(i, 1) = Binv(1, 1)
     lhsKBdiagu(i, 2) = Binv(1, 2)
@@ -137,6 +142,7 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
       lhsLSdiag(i) = 1.0d0/(lhsLSdiag(i))
     end if
   end do
+  ! write(*,*) "Preconditioned residual1", sum(rhstmpu**2), sum(rhstmpp**2), sum(rhstmpls**2)
 
   ! Precondition residual
   do i = 1, NNODZu
@@ -149,7 +155,14 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
     uBrgu(i, 3, 1) = lhsKBdiagu(i, 7)*rhstmpu(i, 1) + &
                      lhsKBdiagu(i, 8)*rhstmpu(i, 2) + &
                      lhsKBdiagu(i, 9)*rhstmpu(i, 3)
-
+    ! if(isnan(sum(uBrgu(i, :, 1)**2))) then
+    !   write(*,*) "MYID", myid, i
+    !   write(*,*) "uBrgu", uBrgu(i, :, 1)
+    !   write(*,*) "PCu", lhsKBdiagu(i, :)
+    !   write(*,*) "rhsu", rhstmpu(i, :)
+    !   write(*,*) "lhsK", LHSK11(:, i)
+    !   stop
+    ! endif
     uBrgp(i, 1) = rhstmpp(i)*lhsMdiag(i)
     uBrgls(i, 1) = rhstmpls(i)*lhsLSdiag(i)
   end do
@@ -157,6 +170,7 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
   rhstmpu(:, :) = uBrgu(:, :, 1)
   rhstmpp(:) = uBrgp(:, 1)
   rhstmpls(:) = uBrgls(:, 1)
+  ! write(*,*) "Preconditioned residual2", sum(rhstmpu**2), sum(rhstmpp**2), sum(rhstmpls**2)
 
   !----------------------------------------------
   ! calculate norm of rhs
@@ -360,7 +374,7 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
 
     if ((ercheck <= epsnrm) .and. (iKs >= Kspaceu_mn)) exit
 
-    if (mod(iKs, 100) == 0) then
+    if (mod(iKs, 10) == 0) then
       if (ismaster) then
         write (*, 8000) iKs, ercheck, epsnrm, ercheck*unorm_ref
       end if
@@ -398,8 +412,8 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
   if (ismaster) write (*, 8500) iKs, ercheck*unorm_ref
 
 8000 format(3x, i4, ') Residual, Goal, Reduction= (%):', &
-            1x, e10.4, 1x, e10.4, 1x, F12.6)
+            1x, e10.4, 1x, e10.4, 1x, F12.6, '%')
 8500 format(10x, ' Iterations:', 2x, i4, '  Reduction:', &
-            2x, f10.6, "(%)",/)
+            2x, f10.6, "(%)")
 
 end subroutine SparseGMRES_up

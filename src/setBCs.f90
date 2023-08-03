@@ -171,12 +171,13 @@ subroutine get_solid_nodes_private()
   do iel = 1, NELEM
     if (ELM_ID(iel) == 101) then
       do j = 1, ELMNSHL(iel)
-        cache(j) = 0.0d0
+        k = IEN(iel, j)
+        cache(k) = 0.0d0
       end do
     end if
   end do
   do b = 1, NBOUND
-    if (bound(b)%FACE_ID == 1) then
+    if (bound(b)%FACE_ID == 5) then
       do j = 1, bound(b)%NNODE
         k = bound(b)%BNODES(j)
         cache(k) = 1.0d0
@@ -188,7 +189,7 @@ subroutine get_solid_nodes_private()
     call commu(cache, 1, "out")
   end if
   do i = 1, NNODE
-    if (cache(i) < 0.1) then
+    if (cache(i) < 0.1d0) then
       is_solid_node(i) = 1
     else
       is_solid_node(i) = 0
@@ -218,13 +219,16 @@ subroutine setBCs_NSVOF()
   mgam = gami - 1.0d0
 
   if (.not. is_solid_node_assigned) then
+    if(ismaster) write(*,*) "Generating BCs"
     call get_solid_nodes_private()
+    is_solid_node_assigned = .true.
   end if
   IBC(:, 1) = IS_SOLID_NODE(:)
   IBC(:, 2) = IS_SOLID_NODE(:)
   IBC(:, 3) = IS_SOLID_NODE(:)
   IBC(:, 4) = IS_SOLID_NODE(:)
-  IBC(:, 6:8) = 1
+  IBC(:, 5) = IS_SOLID_NODE(:)
+  ! IBC(:, 6:8) = 1
 
   do b = 1, NBOUND
 
@@ -250,6 +254,12 @@ subroutine setBCs_NSVOF()
       end if
     end do
 
+    if (bound(b)%FACE_ID == 1) then
+      do j = 1, bound(b)%NNODE
+        k = bound(b)%BNODES(j)
+        IBC(k, 5) = 1
+      end do
+    end if
   end do  ! end loop: all faces
 
 end subroutine setBCs_NSVOF
@@ -272,7 +282,7 @@ subroutine setBCs_Tem()
   ! IBC(:, 4) - pressure
   ! IBC(:, 5) - VOF
   ! IBC(:, 6) - Tem
-  IBC(:, :) = 1
+  ! IBC(:, :) = 1
   IBC(:, 6) = 0
   do b = 1, NBOUND
     if (bound(b)%FACE_ID == 1) then

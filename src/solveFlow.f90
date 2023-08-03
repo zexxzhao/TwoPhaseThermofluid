@@ -10,9 +10,9 @@ subroutine solmultiphasethermofluid_stag(istep)
 
   implicit none
 
-  integer :: istep
+  integer, intent(in) :: istep
 
-  integer :: inewt
+  integer :: inewt, i
   ! real(8) :: momres0, conres0, convres0, meshres0, lsres0
   real(8) :: residual0(4), residual(4)
   integer :: converged(4)
@@ -32,7 +32,7 @@ subroutine solmultiphasethermofluid_stag(istep)
   call setBCs_NSVOF()
   call setBCs_Tem()
   call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
-                         ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
   call calculate_residual(residual0)
   residual(:) = residual0(:)
@@ -46,11 +46,17 @@ subroutine solmultiphasethermofluid_stag(istep)
     ! Solve NavStoVOF
     !---------------------------
     call setBCs_NSVOF()
+    IBC(:, 6:8) = 1
     call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                               ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+    call calculate_residual(residual)
+    call check_convergence(residual0, residual, 1, inewt, &
+                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
+                           converged)
     if (myid .eq. 0) then
       call CPU_TIME(t1)
     end if
+    sol(:, 1:5) = 0d0
     call SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
                         rhsGu, rhsGp, sol(:, 1:3), sol(:, 4), &
                         lhsK11, lhsG, lhsD1, lhsM, icnt, &
@@ -64,7 +70,6 @@ subroutine solmultiphasethermofluid_stag(istep)
       call CPU_TIME(t2)
       write (*, *) "Total time solve NSVOF GMRES:", t2 - t1, "seconds"
     end if
-
     acg = acg + sol(:, 1:3)
     ug = ug + gami*Delt*sol(:, 1:3)
     pg = pg + alfi*gami*Delt*sol(:, 4)
@@ -75,14 +80,22 @@ subroutine solmultiphasethermofluid_stag(istep)
     !-----------------------------
     ! Solve Temperature
     !-----------------------------
-    if (istep > 20) then
+    if (istep > 10) then
       call setBCs_Tem()
+      IBC(:, 1:5) = 1
+      IBC(:, 7:8) = 1
       call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                                 ASSEMBLE_FIELD_TEM)
+      call calculate_residual(residual)
+      call check_convergence(residual0, residual, 1, inewt, &
+                            ASSEMBLE_FIELD_TEM, &
+                            converged)
+      !write(*,*) "Residual T = ", residual0(4), residual(4)
       if (myid .eq. 0) then
         call CPU_TIME(t1)
       end if
 
+      sol(:, 6) = 0d0
       call SparseGMRES_tem(LHStem, NS_GMRES_tol, col, row, &
                            rhsgtem, sol(:, 6), NS_GMRES_itermax, NS_GMRES_itermin, &
                            NNODE, maxNSHL, icnt, NSD)
@@ -90,19 +103,19 @@ subroutine solmultiphasethermofluid_stag(istep)
         call CPU_TIME(t2)
         write (*, *) "Total time solve TEM GMRES:", t2 - t1, "seconds"
       end if
-
+      !write(*,*) "solT =", sum(sol(:, 6)**2) 
       rTg = rTg + sol(:, 6)
       Tg = Tg + gami*Delt*sol(:, 6)
 
     end if
     call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
-                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
     call calculate_residual(residual)
     call check_convergence(residual0, residual, 1, inewt, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                            converged)
-    write (*, *) "Convergence:", converged
+    if(ismaster ) write (*, *) "Convergence:", converged
     if (size(converged) == sum(converged)) exit
 
     if (numnodes > 1) call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)

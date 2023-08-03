@@ -1,3 +1,6 @@
+!======================================================================
+!
+!======================================================================
 
 subroutine calculate_residual(residual)
   use mpi
@@ -27,6 +30,10 @@ subroutine calculate_residual(residual)
 
 end subroutine calculate_residual
 
+!======================================================================
+!
+!======================================================================
+
 subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converged)
   use mpi
   use aAdjKeep
@@ -46,24 +53,28 @@ subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converg
 
   converged(:) = 0
 
-  if (r0(1)*NS_NL_UTOL > r(1)) converged(1) = 1
-  if (r0(2)*NS_NL_PTOL > r(2)) converged(2) = 1
-  if (r0(3)*LSC_NL_TOL > r(3)) converged(3) = 1
-  if (r0(4)*LSC_NL_TOL > r(4)) converged(4) = 1
+  if (r0(1)*NS_NL_UTOL >= r(1)) converged(1) = 1
+  if (r0(2)*NS_NL_PTOL >= r(2)) converged(2) = 1
+  if (r0(3)*LSC_NL_TOL >= r(3)) converged(3) = 1
+  if (r0(4)*LSC_NL_TOL >= r(4)) converged(4) = 1
   if (ismaster .and. verbose > 0) then
-    fomt = "(I3,a,x,ES13.6,x,F12.6)"
-    if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-      write (*, fomt) inewt, ") Total Mom. Res. Norm = ", &
-        r(1), 1.0d2*r(1)/r0(1)
-      write (*, fomt) inewt, ") Continuity Res. Norm = ", &
-        r(2), 1.0d2*r(2)/r0(2)
-    end if
+  fomt = "(I3,a,x,ES13.6,x,F12.6)"
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
+    write (*, fomt) inewt, ") Total Mom. Res. Norm = ", &
+      r(1), 1.0d2*r(1)/max(r0(1), 1d-15)
+    write (*, fomt) inewt, ") Continuity Res. Norm = ", &
+      r(2), 1.0d2*r(2)/max(r0(2), 1d-15)
+  end if
 
-    if (iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
-      write (*, fomt) inewt, ") LS Res. Norm = ", &
-        r(3), 1.0d2*r(3)/r0(3)
-    end if
-    write (*, *)
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
+    write (*, fomt) inewt, ") LS Res. Norm = ", &
+      r(3), 1.0d2*r(3)/max(r0(3), 1d-15)
+  end if
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
+    write (*, fomt) inewt, ") TEM Res. Norm = ", &
+      r(4), 1.0d2*r(4)/max(r0(4), 1d-15)
+  end if
+  write (*, *)
   end if
 
 end subroutine check_convergence
@@ -89,15 +100,9 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
              rTgAlpha(NNODE), TgAlpha(NNODE)
 
   real(8) :: t1, t2
-  integer :: FFlag
 
   !---------------------------------
-  ! set Dirichlet BCs
-  !---------------------------------
-  call setBCs_NSVOF()
-
-  !---------------------------------
-  ! prediction stage
+  ! Alpha stage
   !---------------------------------
   acgAlpha = acgold + almi*(acg - acgold)
   acgmAlpha = acgmold + almi*(acgm - acgmold)
@@ -140,17 +145,18 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
   if (myid .eq. 0) then
     call CPU_TIME(t1)
   endif
-
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF) > 0) then
+    ! write(*,*) myid, "ug-alpha", sum(ugAlpha(:, :) ** 2), assemble_tensor_flag 
     call IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
-                            acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
-                            TgAlpha, rTgAlpha, &
-                            assemble_tensor_flag)
-
-    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) FFLAG = 0
+                         acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                         assemble_tensor_flag)
+    ! write(*,*) myid, "RHSgu1", sum(RHSGu(:, :) ** 2), &
+    !       sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
     call FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                               acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
-                              FFLAG)
+                              assemble_tensor_flag)
+    ! write(*,*) myid, "RHSgu2", sum(RHSGu(:, :) ** 2), &
+    !      sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
   end if
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
     call IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &

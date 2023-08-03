@@ -5,7 +5,8 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
                           rLi, fi, duidxi, ddidxi, tauM, tauP, tauLS, &
                           tauC, tauBar, tauBar1, kap_dc, kap_dc_phi, gwt, shgu, &
                           shgradgu, uprime, Rhsu, Rhsp, phi, &
-                          dpridxi, dphidxi, dphidxidxj, dphidti)
+                          dpridxi, dphidxi, dphidxidxj, dphidti, &
+                          RHSphi)
   use aAdjKeep
   use commonvars
   implicit none
@@ -19,28 +20,29 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
 
   real(8), intent(in) :: dpridxi(NSD), dphidxi(NSD), dphidxidxj(NSD, NSD), dphidti
 
-  real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsp(NSHL)
+  real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsp(NSHL), RHSphi(NSHL)
 
   integer :: aa, bb, i, j, k
   real(8) :: fact1, fact2, mupkdc, kappadc, divu, ptot, advu(NSD), &
-             tmp1(NSD), tmp2(NSD, NSD), tmp4(NSD), phi, uprime1(NSD)
+             tmp1(NSD), tmp2(NSD, NSD), tmp4(NSD), phi, uprime1(NSD), &
+             shconv(NSHL)
 
   real(8) :: res_phi, res_phic, phi1
   real(8) :: uadvi_ls(NSD)
 
-  uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
-  res_phic = dphidti + sum(uadvi_ls(:)*dphidxi(:)) !Convective part of the residual
+  ! uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
+  res_phic = dphidti + sum(uadvi(:)*dphidxi(:)) !Convective part of the residual
 
-  res_phi = res_phic - (kappa*dphidxidxj(1, 1) + &
-                        kappa*dphidxidxj(2, 2) + &
-                        kappa*dphidxidxj(3, 3))
+  ! res_phi = res_phic - (kappa*dphidxidxj(1, 1) + &
+  !                       kappa*dphidxidxj(2, 2) + &
+  !                       kappa*dphidxidxj(3, 3))
 
   phi1 = phi - tauLS*res_phi
 
   tmp1 = 0.0d0; tmp2 = 0.0d0; tmp4 = 0.0d0; divu = 0.0d0
 
   uprime1(:) = uprime(:)
-  uprime1(3) = uprime(3) - res_phi*tauBar1*fine_tau
+  ! uprime1(3) = uprime(3) - res_phi*tauBar1*fine_tau
 
   mupkdc = mu + kap_dc
   kappadc = kappa + kap_dc_phi
@@ -48,7 +50,9 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
   divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
 
   advu(:) = uadvi(:) + uprime1(:)
-
+  do aa = 1,NSHL
+    shconv(aa) = sum(uadvi(:)*shgradgu(aa, :))
+  enddo
   ptot = pri - tauC*divu
 
   tmp1(:) = rho*(aci(:) + advu(1)*duidxi(:, 1) &
@@ -98,18 +102,22 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
   ! Physics Residual
   do aa = 1, NSHL
     do i = 1, NSD
+      ! Rhsu(i, aa) = Rhsu(i, aa) - &
+      !               (shgu(aa)*tmp1(i) + &
+      !                sum(shgradgu(aa, :)*tmp2(i, :)) - &
+      !                shgu(aa)*gravvec(i)*phi)*DetJ*gwt
       Rhsu(i, aa) = Rhsu(i, aa) - &
                     (shgu(aa)*tmp1(i) + &
-                     sum(shgradgu(aa, :)*tmp2(i, :)) - &
-                     shgu(aa)*gravvec(i)*phi)*DetJ*gwt
+                     sum(shgradgu(aa, :)*tmp2(i, :)))*DetJ*gwt
+
     end do
   end do
 
   ! Physics Residual
-  do aa = 1, NSHL
-    Rhsu(3, aa) = Rhsu(3, aa) - &
-                  (sum(shgradgu(aa, :)*uadvi(:))*tauBar1*res_phi)*DetJ*gwt
-  end do
+  ! do aa = 1, NSHL
+  !   Rhsu(3, aa) = Rhsu(3, aa) - &
+  !                 (sum(shgradgu(aa, :)*uadvi(:))*tauBar1*res_phi)*DetJ*gwt
+  ! end do
 
   do aa = 1, NSHL
     Rhsp(aa) = Rhsp(aa) - &
@@ -117,6 +125,18 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
                 sum(shgradgu(aa, :)*uprime1(:)))*DetJ*gwt
 
   end do
+
+  do aa = 1, NSHL
+    ! Rhsphi(aa) = Rhsphi(aa) - &
+    !              (res_phic*shgu(aa) + sum(shgradgu(aa, :)*kappadc*dphidxi(:)) + &
+    !               tauLS*shconv(aa)*res_phi)*DetJ*gwt
+    RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phi * DetJ * gwt
+  end do
+!  write(*,*) kappadc, Rhsphi(1:4)
+  ! do aa = 1, NSHL
+  !   Rhsphi(aa) = Rhsphi(aa) - &
+  !                (shgradgu(aa, 3)*tauBar1*res_phi/rho)*DetJ*gwt
+  ! end do
 
 !!!  do aa = 1, NSHL
 !!!    Rhsp(aa) = Rhsp(aa) - &

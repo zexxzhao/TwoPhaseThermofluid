@@ -18,7 +18,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                          acgmAlpha(NNODE, NSD), pgAlpha(NNODE), &
                          phigAlpha(NNODE), dphidtgAlpha(NNODE)
                          ! Local variables
-  integer :: iel, igauss, aa, i, j, hess_flag, idx, nshl, NGAUSS
+  integer :: iel, igauss, aa, bb, i, j, hess_flag, idx, nshl, NGAUSS
 
   real(8) :: volm, vol_ex, uprime(NSD)
   real(8) :: tauM, tauC, tauBar, tauBar1, pri, k_dc, k_dc_phi, tauP, tauLS
@@ -35,6 +35,8 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                           xl(:, :), dumb(:, :), phil(:), ulold(:, :), dphidtl(:)
 
   real(8), allocatable :: gp(:, :), gw(:)
+
+  integer, allocatable :: ibc_loc(:, :)
 
   real(8) :: di(NSD), ui(NSD), aci(NSD), umi(NSD), acmi(NSD), dphidti, &
              fi(NSD), uadvi(NSD), uadvi_ls(NSD), xi(NSD), ddidxi(NSD, NSD), phi, &
@@ -69,6 +71,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                     xl, dumb, phil, ulold, dphidtl, &
                     xKebe11, xGebe, xDebe1, xMebe, Rhsu, Rhsm, Rhsp, Rhsq, Rhsl, &
                     xLSebe, xLSUebe, xULSebe, xPLsebe, Rhsphi)
+        deallocate (ibc_loc)
       end if
 
       NSHL = ELMNSHL(iel)
@@ -85,13 +88,12 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                 pl(NSHL), dlold(NSHL, NSD), xl(NSHL, NSD), &
                 dumb(NSHL, NSD), phil(NSHL), ulold(NSHL, NSD), dphidtl(NSHL), &
                 gp(NGAUSS, NSD), gw(NGAUSS))
-
+      allocate (ibc_loc(NSHL, NSD))
       ! get Gaussian points and weights
       call genGPandGW(gp, gw, NGAUSS)
     end if
 
     is_fluid = ELM_ID(iel) == 102
-    if (.not. is_fluid) cycle
 
     fl = 0.0d0
 !    do i = 1, NSHL
@@ -131,7 +133,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
     end if
     ! initialize local load vector
-    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       Rhsu = 0.0d0
       Rhsm = 0.0d0
       Rhsp = 0.0d0
@@ -157,7 +159,9 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                        di, ui, aci, umi, acmi, pri, fi, &
                        ddidxi, duidxi, duidxixj, dpridxi, &
                        phi, dphidxi, dphidxidxj, dphidtl, dphidti, xi, rLi)
-
+      if(NSHL == 6 .and. abs(ui(1) - 1.0) > 1d-3) then
+        !write(*,*) "PRISM", ui(1), duidxi(1, :)
+      endif
       ! ALE Advective Velocity
       uadvi(:) = ui(:) - umi(:)
       uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
@@ -186,35 +190,40 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       k_dc_phi = 1d0*abs(res_phic_tmp1)/(sqrt(res_phic_tmp2) + 0.0000000000001d0)
       k_dc_phi = 0d0
 
-      if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+      if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0 .and. is_fluid) then
 
         call e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, dpridxi, &
                                 dphidxi, dphidxidxj, dphidti, &
                                 rLi, tauM, tauP, tauLS, tauC, tauBar, tauBar1, &
                                 k_dc, k_dc_phi, gw(igauss), shlu, shgradgu, &
                                 shhessgu, xKebe11, xGebe, xDebe1, xMebe, &
-                                xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
+                                xLSebe, xLSUebe, xULSebe, xPLSebe)
 
-!!!      call e3LHS_3D_fluid(ui, umi, aci, pri, duidxi, &
-!!!                          dpridxi, rLi, tauM,  tauC, k_dc, &
-!!!                          gw(igauss), shlu, shgradgu,  &
-!!!                          shgradgu, shhessgu, &
-!!!                          xKebe11, &
-!!!                          xGebe, xDebe1, xMebe)
       end if
 
-      if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
+      if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0 .and. is_fluid) then
         call e3RHS_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, &
                             pri, rLi, fi, duidxi, ddidxi, &
                             tauM, tauP, tauLS, tauC, tauBar, tauBar1, k_dc, k_dc_phi, &
                             gw(igauss), shlu, shgradgu, uprime, &
                             Rhsu, Rhsp, phi, &
-                            dpridxi, dphidxi, dphidxidxj, dphidti)
+                            dpridxi, dphidxi, dphidxidxj, dphidti, &
+                            RHSphi)
+
       end if
+      ! if(ismaster) write(*,*) "flag = ", assemble_tensor_flag
 
     end do
+    do aa = 1, NSHL
+      do bb = 1,NSD
+        ibc_loc(aa, bb) = ibc(ien(iel, aa), bb)
+      enddo
+    enddo
 
     ! Apply Dirichlet BCs
+    ! if(myid == 1 .and. iel == 1794 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+    !   write(*,*) "xKebe11", xKebe11
+    ! endif
     call BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, &
                   xMebe, Rhsu, Rhsp, &
                   xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
@@ -222,7 +231,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
                             xLSebe, xLSUebe, xULSebe, xPLSebe)
     end if
-    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
       do aa = 1, NSHL
         RHSGLS(IEN(iel, aa)) = RHSGLS(IEN(iel, aa)) + Rhsphi(aa)
@@ -236,7 +245,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
               xl, dumb, phil, ulold, dphidtl, &
               Rhsu, Rhsm, Rhsp, Rhsq, Rhsl, xDebe1, xMebe, gp, gw, &
               xLSebe, xLSUebe, xULSebe, Rhsphi)
-
+  deallocate (ibc_loc)
   if (.true.) then
     ! Find largest CFL-number and output to screen
     if (numnodes > 1) then
@@ -377,11 +386,11 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
     ! initialize local stiffness matrix
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
-
+      xTebe(:, :) = 0.0d0
     end if
     ! initialize local load vector
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-      RHStem = 0.0d0
+      RHStem(:) = 0.0d0
     end if
     ! Loop over integration points (NGAUSS in each direction)
     do igauss = 1, NGAUSS
@@ -425,12 +434,14 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         shconv(aa) = sum(uadvi(:)*shgradgu(aa, :))
       enddo
       tau_tem = 0.0
-      do aa = 1, NSHL
-        tau_tem = tau_tem + dot_product(uadvi(:), Gij(:, aa))
+      do aa = 1, NSD
+        do bb = 1, NSD
+          tau_tem = tau_tem + uadvi(bb) *  Gij(bb, aa) * uadvi(aa)
+        enddo
       enddo
       tau_tem = tau_tem + 4.0d0 / Delt ** 2
-      tau_tem = tau_tem + (hk / rho / cp) ** 2 * sum(Gij ** 2)
-      tau_tem = 1/rho/cp/sqrt(tau_tem)
+      tau_tem = tau_tem + 3.0d0 * (hk / rho / cp) ** 2 * sum(Gij ** 2)
+      tau_tem = 1d0/rho/cp/sqrt(tau_tem)
 
       res_tem1 = rho*cp*(rTi + sum(uadvi(:)*dTdxi(:)))
       ! resume here
@@ -442,6 +453,7 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         end do
       end do
 
+      ! hk = hk + 1.0d0 * abs(res_tem1) / sqrt(res_tem2 + 1d-10)
       !k_dc_phi = 1d0*abs(res_phic_tmp1)/(sqrt(res_phic_tmp2) + 0.0000000000001d0)
 !        write(*,*) "kc:", k_dc, k_dc_phi
 !        k_dc = 0d0
@@ -450,7 +462,7 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       tmp(:)  = shlu(:) + tau_tem * rho * cp * shconv(:)
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
         ! e3LHS_3D_tem()
-        xTebe(:, :) = 0.0d0
+        ! xTebe(:, :) = 0.0d0
         do aa = 1, NSHL
           do bb = 1,NSHL
             xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact1 * rho * cp * shlu(bb) * gw(igauss) * DetJ
@@ -468,9 +480,14 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         RHSTem(:) = RHSTem(:) - hk * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
       end if
     end do
-
+    !if(sum(dTdxi(:) ** 2) > 0d0) then
+    !  write(*,*) myid, iel, "dTdxi:", dTdxi(:), "R1=", RHSTem(:)
+    !endif
     ! Apply Dirichlet BCs
     call BCLHS_tem(nshl, iel, xTebe, RHSTem)
+    !if(sum(dTdxi(:) ** 2) > 0d0) then
+    !  write(*,*) myid, iel, "dTdxi:", dTdxi(:), "R2=", RHSTem(:)
+    !endif
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
 
       ! Assemble global LHS Matrix
@@ -479,12 +496,10 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       !                      xLSebe, xLSUebe, xULSebe, xPLSebe)
       call FillSparseMat_tem(nshl, iel, xTebe)
     end if
-    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+    if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       ! Assemble load RHS vector
       do aa = 1, NSHL
         RHSGTEM(IEN(iel, aa)) = RHSGTEM(IEN(iel, aa)) + Rhstem(aa)
-        ! rhsgq(IEN(iel, aa)) = rhsgq(IEN(iel, aa)) + Rhsq(aa)
-        ! lhsgq(IEN(iel, aa)) = lhsgq(IEN(iel, aa)) + Rhsl(aa)
       end do
     end if
 

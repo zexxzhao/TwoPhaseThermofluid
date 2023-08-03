@@ -207,7 +207,7 @@ subroutine FillSparseMat_tem(nshl, iel, xTebe)
       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
 
       k = locn + c - 1
-      LHStem(k) = LHSls(k) + xTebe(a, b)
+      LHStem(k) = LHStem(k) + xTebe(a, b)
     end do
   end do
 

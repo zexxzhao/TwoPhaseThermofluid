@@ -1,7 +1,24 @@
 ##################################
 # Configuration
 ##################################
-include make.config
+include ../make.config
+
+###NAME := nrel_rot
+###NAME := 5mw_fsi
+###NAME := 5mw_old
+
+NAME:=ns
+##################################
+#  Files
+##################################
+include file.list
+OFILES = $(MODFILES:.f90=.o)\
+         $(F90FILES:.f90=.o)\
+         $(F77FILES:.f=.o)
+
+OBJFILES = $(MODFILES:%.f90=${OBJ}/%.o)\
+           $(F90FILES:%.f90=${OBJ}/%.o)\
+           $(F77FILES:%.f=${OBJ}/%.o)
 
 ##################################
 # Targets

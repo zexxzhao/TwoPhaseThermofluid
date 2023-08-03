@@ -114,7 +114,7 @@ subroutine BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
     end if
 
     ! Pressure Constraint
-    if (IBC(cc, 7) == 1) then
+    if (IBC(cc, 4) == 1) then
 
       ! update K-matrix to account for constraint
       ! project away row (X-dir)
@@ -131,7 +131,7 @@ subroutine BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
     end if
 
     ! LS Constraint
-    if (IBC(cc, 8) == 1) then
+    if (IBC(cc, 5) == 1) then
 
       ! update LS-matrix to account for constraint
       do bb = 1, NSHL
@@ -279,9 +279,10 @@ subroutine BCLhs_tem(nshl, iel, xTebe, Rhs)
   use commonvars
   implicit none
 
-  integer :: iel, aa, bb, cc
-  integer, intent(in) :: nshl
-  real(8) :: xTebe(NSHL, NSHL), Rhs(NSHL)
+  integer, intent(in) :: nshl, iel
+  real(8), intent(inout) :: xTebe(NSHL, NSHL), Rhs(NSHL)
+
+  integer :: aa, bb, cc
 
   ! loop through local nodes
   do aa = 1, NSHL

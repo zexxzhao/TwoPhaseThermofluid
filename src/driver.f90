@@ -171,11 +171,15 @@ program NURBScode
     phig = phigold
     rphig = (gami - 1.0d0)/gami*rphigold
 
-    vbn1 = vbn0
-    dbn1 = dbn0 + Delt*vbn0
-    wbn1 = wbn0
+    Tg = Tgold
+    rTg = (gami - 1.0d0)/gami*rTgold
+
+!    vbn1 = vbn0
+!    dbn1 = dbn0 + Delt*vbn0
+!    wbn1 = wbn0
 
     ! solve flow
+    ! write(*,*) "DEBUG", sum(ug(:,:)**2)
     call solmultiphasethermofluid_stag(istep)
     ! Flags
     ! move = .false.!(time >= move_time)
@@ -189,43 +193,48 @@ program NURBScode
     ! else
     !   call solflow_stag(istep, SH, NM)
     ! end if
+    !--------------------------------------------
+    ! Update Old Quantities
+    !--------------------------------------------
+    dgold = dg
+    ugold = ug
+    acgold = acg
+    ugmold = ugm
+    acgmold = acgm
+    pgold = pg
+    rphigold = rphig
+    phigold = phig
+    rTgold = rTg
+    Tgold = Tg
 
-    !--------------------------------------------
-    ! Output traction: rotate back to reference
-    !--------------------------------------------
 
     if (mod(istep, ifq) == 0) then
       call writeSol(istep)
 !!!      call writeRB (istep)
     end if
     !call writeVelocity(istep)
-    !--------------------------------------------
-    ! Update Old Quantities
-    !--------------------------------------------
-    ! call update_sol(SH, NM)
-
 !    !--------------------------------------------
 !    ! Get the averaged (in time) solutions
 !    !--------------------------------------------
 !    ! averaged relative velocity and pressure
-    do i = 1, NNODE
+!    do i = 1, NNODE
 !      utmp = 0.0d0; umtmp = 0.0d0
 !      call rot_vec_z(NSD, theta,  ug(i,:),  utmp)
 !      call rot_vec_z(NSD, theta, ugm(i,:), umtmp)
-      uavg(i, :) = uavg(i, :) + ug(i, :)
-    end do
-    pavg = pavg + phig
+!      uavg(i, :) = uavg(i, :) + ug(i, :)
+!    end do
+!    pavg = pavg + phig
 !    ! use the same ifq as solution outputs so that when restarted
 !    ! you won't average the same solution again
-    if (mod(istep, ifq) == 0) then
-!    call writeAvgSol(avgstepold+avgstep)
-    end if
+!    if (mod(istep, ifq) == 0) then
+!     call writeAvgSol(avgstepold+avgstep)
+!    end if
 
   end do
 
   ! Deallocate Matrices and Vectors
   if (ismaster) write (*, *) "Deallocating matrices and vectors"
-  call deallocMatVec
+  call deallocMatVec()
 
   ! Finalize MPI
   call MPI_FINALIZE(mpi_err)
@@ -273,11 +282,13 @@ subroutine update_sol(SH, NM)
   pgold = pg
   rphigold = rphig
   phigold = phig
+  rTgold = rTg
+  Tgold = Tg
 
-  vbn0 = vbn1
-  dbn0 = dbn1
-  wbn0 = wbn1
-  Rn0 = Rn1
+  !vbn0 = vbn1
+  !dbn0 = dbn1
+  !wbn0 = wbn1
+  !Rn0 = Rn1
 
   thetaOld = theta
   thetdOld = thetd

@@ -168,6 +168,12 @@ subroutine readSol(Rstep)
   do i = 1, NNODE
     read (solf, *) pgold(i)
   end do
+  do i = 1, NNODE
+    read (solf, *) Tgold(i)
+  end do
+  do i = 1, NNODE
+    read (solf, *) rTgold(i)
+  end do
 
 !  read(solf,*) (vbn0(j),  j=1,3)
 !  read(solf,*) (dbn0(j),  j=1,3)
@@ -201,7 +207,7 @@ subroutine generateIC(SH)
 
   type(shell_bld), intent(inout) :: SH
 
-  integer :: i, j, n
+  integer :: i, j, k, n, iel
   real(8) :: xi(3), xi1, xi3, rr
   real(8) :: utmp(3), ptmp, rhotmp
   real(8) :: elem_h, rtmp
@@ -244,14 +250,14 @@ subroutine generateIC(SH)
 !  call getinflow(0)
 !  call setBCs_CFD_init(0)
 
-  do i = 1, NBOUND
-    if (bound(i)%FACE_ID >= 21 .and. bound(i)%FACE_ID <= 23) then
-      do j = 1, bound(i)%NNODE
-        n = bound(i)%BNODES(j)
-        ugold(n, 1) = 0.0d0
-      end do
-    end if
-  end do
+  ! do i = 1, NBOUND
+  !   if (bound(i)%FACE_ID >= 21 .and. bound(i)%FACE_ID <= 23) then
+  !     do j = 1, bound(i)%NNODE
+  !       n = bound(i)%BNODES(j)
+  !       ugold(n, 1) = 0.0d0
+  !     end do
+  !   end if
+  ! end do
 
   acgold = 0.0d0
   pgold = 0.0d0
@@ -261,23 +267,35 @@ subroutine generateIC(SH)
     phigold(i) = 0d0!-1.0d0/(gravity*Fr**2.0d0)*xg(i,3) + 1.0d0!+ 1.0d0/(2.0d0*gravity*Fr**2.0d0)
     pgold(i) = 0.0d0!(phigold(i)-phi_bg(i))*gravvec(3)*xg(i,3)
     !  phigold(i)  =  rhotmp
-    if (xg(i, 1) <= position_init) then
-      phigold(i) = 1d0
+    ! if (xg(i, 1) <= position_init) then
+    !   phigold(i) = 1d0
+    ! end if
+    ! if (xg(i, 1) > position_init + elem_h) then
+    !   phigold(i) = 0d0
+    ! end if
+    ! if ((xg(i, 1) <= position_init + elem_h) .and. (xg(i, 1) >= position_init)) then
+    !   rtmp = xg(i, 1) - position_init
+    !   phigold(i) = -rtmp/(elem_h) + 1d0
+    !   ugold(i, 1) = (ug_rand(i, 1) - 0.5)/10000d0
+    !   ugold(i, 2) = (ug_rand(i, 2) - 0.5)/10000d0
+    !   ugold(i, 3) = (ug_rand(i, 3) - 0.5)/10000d0
+    ! end if
+    ugold(i, :) = 0d0
+    ugold(i, 1) = 1.0d0
+    if(sqrt(sum(xg(i, :)**2)) < 0.5001d0) then
+      ugold(i, 1) = 0.0d0
     end if
-    if (xg(i, 1) > position_init + elem_h) then
-      phigold(i) = 0d0
+    Tgold(i) = 0.0d0
+    if(sqrt(sum(xg(i, :)**2)) < 0.5d0 + 1d-6) then
+      Tgold(i) = 1.0d0
     end if
-    if ((xg(i, 1) <= position_init + elem_h) .and. (xg(i, 1) >= position_init)) then
-      rtmp = xg(i, 1) - position_init
-      phigold(i) = -rtmp/(elem_h) + 1d0
-      ugold(i, 1) = (ug_rand(i, 1) - 0.5)/10000d0
-      ugold(i, 2) = (ug_rand(i, 2) - 0.5)/10000d0
-      ugold(i, 3) = (ug_rand(i, 3) - 0.5)/10000d0
-    end if
+
   end do
+  ! call commu(ugold, 3, "out")
 
   !call getinflow(0,0)
   !call setBCs_CFD_init1(0)
+  rTgold(:) = 0d0
 
   dgold = 0.0d0
   ugmold = 0.0d0
@@ -410,30 +428,24 @@ subroutine writeSol(istep)
   do i = 1, NNODE
     write (solf, *) pg(i)
   end do
-
   do i = 1, NNODE
-    write (solf, *) rhsgq(i)/lhsgq(i)
+    write (solf, *) Tgold(i)
+  end do
+  do i = 1, NNODE
+    write (solf, *) rTgold(i)
   end do
 
-  do i = 1, NNODE
-    write (solf, *) pg(i)
-  end do
+  ! write (solf, *) (vbn1(j), j=1, 3)
+  ! write (solf, *) (dbn1(j), j=1, 3)
+  ! write (solf, *) (wbn1(j), j=1, 3)
+  ! write (solf, *) (Rn1(1, j), j=1, 3)
+  ! write (solf, *) (Rn1(2, j), j=1, 3)
+  ! write (solf, *) (Rn1(3, j), j=1, 3)
+  ! write (solf, *) Mass_init
 
-  do i = 1, NNODE
-    write (solf, *) pg(i)
-  end do
+  ! write (solf, *) theta, thetd, thedd
 
-  write (solf, *) (vbn1(j), j=1, 3)
-  write (solf, *) (dbn1(j), j=1, 3)
-  write (solf, *) (wbn1(j), j=1, 3)
-  write (solf, *) (Rn1(1, j), j=1, 3)
-  write (solf, *) (Rn1(2, j), j=1, 3)
-  write (solf, *) (Rn1(3, j), j=1, 3)
-  write (solf, *) Mass_init
-
-  write (solf, *) theta, thetd, thedd
-
-  write (solf, *) istep, Delt
+  ! write (solf, *) istep, Delt
 
   close (solf)
 
