@@ -2,82 +2,82 @@
 !
 !======================================================================
 
-subroutine calculate_residual(residual)
-  use mpi
-  use aAdjKeep
-  implicit none
-  integer, parameter :: NRES = 4
-
-  real(8), intent(out) :: residual(4)
-
-  real(8) :: rl(NRES)
-  integer :: i
-
-  rl(1) = sum(RHSGu(:, :)*RHSGu(:, :))
-  rl(2) = sum(RHSGp(:)*RHSGp(:))
-  rl(3) = sum(RHSGls(:)*RHSGls(:))
-  rl(4) = sum(RHSGtem(:)*RHSGtem(:))
-  if (numnodes > 1) then
-    call MPI_ALLREDUCE(rl, residual, NRES, MPI_DOUBLE_PRECISION, &
-                       MPI_SUM, MPI_COMM_WORLD, mpi_err)
-  else
-    residual(:) = rl(:)
-  end if
-
-  do i = 1, NRES
-    residual(i) = sqrt(residual(i))
-  end do
-
-end subroutine calculate_residual
+! subroutine calculate_residual(residual)
+!   use mpi
+!   use aAdjKeep
+!   implicit none
+!   integer, parameter :: NRES = 4
+! 
+!   real(8), intent(out) :: residual(4)
+! 
+!   real(8) :: rl(NRES)
+!   integer :: i
+! 
+!   rl(1) = sum(RHSGu(:, :)*RHSGu(:, :))
+!   rl(2) = sum(RHSGp(:)*RHSGp(:))
+!   rl(3) = sum(RHSGls(:)*RHSGls(:))
+!   rl(4) = sum(RHSGtem(:)*RHSGtem(:))
+!   if (numnodes > 1) then
+!     call MPI_ALLREDUCE(rl, residual, NRES, MPI_DOUBLE_PRECISION, &
+!                        MPI_SUM, MPI_COMM_WORLD, mpi_err)
+!   else
+!     residual(:) = rl(:)
+!   end if
+! 
+!   do i = 1, NRES
+!     residual(i) = sqrt(residual(i))
+!   end do
+! 
+! end subroutine calculate_residual
 
 !======================================================================
 !
 !======================================================================
 
-subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converged)
-  use mpi
-  use aAdjKeep
-  use commonvars
-  use commonpars
-  implicit none
-
-  integer, parameter :: NRES = 4
-
-  real(8), intent(in) :: r0(NRES), r(NRES)
-  integer, intent(in) :: inewt
-  integer, intent(in) :: verbose
-  integer, intent(in) :: assemble_field_flag
-
-  integer, intent(out) :: converged(NRES)
-  character(len=80) :: fomt
-
-  converged(:) = 0
-
-  if (r0(1)*NS_NL_UTOL >= r(1)) converged(1) = 1
-  if (r0(2)*NS_NL_PTOL >= r(2)) converged(2) = 1
-  if (r0(3)*LSC_NL_TOL >= r(3)) converged(3) = 1
-  if (r0(4)*LSC_NL_TOL >= r(4)) converged(4) = 1
-  if (ismaster .and. verbose > 0) then
-  fomt = "(I3,a,x,ES13.6,x,F12.6)"
-  if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-    write (*, fomt) inewt, ") Total Mom. Res. Norm = ", &
-      r(1), 1.0d2*r(1)/max(r0(1), 1d-15)
-    write (*, fomt) inewt, ") Continuity Res. Norm = ", &
-      r(2), 1.0d2*r(2)/max(r0(2), 1d-15)
-  end if
-
-  if (iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
-    write (*, fomt) inewt, ") LS Res. Norm = ", &
-      r(3), 1.0d2*r(3)/max(r0(3), 1d-15)
-  end if
-  if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
-    write (*, fomt) inewt, ") TEM Res. Norm = ", &
-      r(4), 1.0d2*r(4)/max(r0(4), 1d-15)
-  end if
-  write (*, *)
-  end if
-
-end subroutine check_convergence
+! subroutine check_convergence(r0, r, verbose, inewt, assemble_field_flag, converged)
+!   use mpi
+!   use aAdjKeep
+!   use commonvars
+!   use commonpars
+!   implicit none
+! 
+!   integer, parameter :: NRES = 4
+! 
+!   real(8), intent(in) :: r0(NRES), r(NRES)
+!   integer, intent(in) :: inewt
+!   integer, intent(in) :: verbose
+!   integer, intent(in) :: assemble_field_flag
+! 
+!   integer, intent(out) :: converged(NRES)
+!   character(len=80) :: fomt
+! 
+!   converged(:) = 0
+! 
+!   if (r0(1)*NS_NL_UTOL >= r(1)) converged(1) = 1
+!   if (r0(2)*NS_NL_PTOL >= r(2)) converged(2) = 1
+!   if (r0(3)*LSC_NL_TOL >= r(3)) converged(3) = 1
+!   if (r0(4)*LSC_NL_TOL >= r(4)) converged(4) = 1
+!   if (ismaster .and. verbose > 0) then
+!   fomt = "(I3,a,x,ES13.6,x,F12.6)"
+!   if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
+!     write (*, fomt) inewt, ") Total Mom. Res. Norm = ", &
+!       r(1), 1.0d2*r(1)/max(r0(1), 1d-15)
+!     write (*, fomt) inewt, ") Continuity Res. Norm = ", &
+!       r(2), 1.0d2*r(2)/max(r0(2), 1d-15)
+!   end if
+! 
+!   if (iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
+!     write (*, fomt) inewt, ") LS Res. Norm = ", &
+!       r(3), 1.0d2*r(3)/max(r0(3), 1d-15)
+!   end if
+!   if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
+!     write (*, fomt) inewt, ") TEM Res. Norm = ", &
+!       r(4), 1.0d2*r(4)/max(r0(4), 1d-15)
+!   end if
+!   write (*, *)
+!   end if
+! 
+! end subroutine check_convergence
 
 !======================================================================
 !

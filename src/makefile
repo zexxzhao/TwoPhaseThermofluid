@@ -1,67 +1,28 @@
-##################################
-# Configuration
-##################################
+
 include ../make.config
 
-###NAME := nrel_rot
-###NAME := 5mw_fsi
-###NAME := 5mw_old
-
 NAME:=ns
-##################################
-#  Files
-##################################
-include file.list
-OFILES = $(MODFILES:.f90=.o)\
-         $(F90FILES:.f90=.o)\
-         $(F77FILES:.f=.o)
+TARGET:=${DEST}/${NAME}.exe 
 
-OBJFILES = $(MODFILES:%.f90=${OBJ}/%.o)\
-           $(F90FILES:%.f90=${OBJ}/%.o)\
-           $(F77FILES:%.f=${OBJ}/%.o)
+SUBDIR:=legacy util
 
-##################################
-# Targets
-##################################
+all: ${TARGET}
 
-default: ${DEST}/${NAME}.exe 
+${TARGET}: ${SUBDIR}
+	${CC} ${CFLAGS} -o $@ obj/*.o ${LIBS} -lgfortran -lm -ldl -lmpichfort
 
-info:
-	@echo "FC    :" ${FC}  
-	@echo "FFLAGS:" ${FFLAGS}  
-	@echo "CC    :" ${CC}  
-	@echo "CFLAGS:" ${CFLAGS}  
-	@echo "NAME  :" ${NAME}
-	@echo "DEST  :" ${DEST} 
-	@echo "LIBS  :" ${LIBS}	
-	@echo "OBJ   :" ${OBJ} 
+${SUBDIR}:
+	for DIR in $@; do\
+		cd $${DIR} && ${MAKE} && cd ..; \
+	done
 
-${DEST}/${NAME}.exe:${OBJFILES} | ${DEST}
-	rm -rf ${DEST}/${NAME}.exe
-	${FC}   ${OBJFILES} ${LIBS} -o  ${DEST}/${NAME}.exe
-	@ls -lh ${DEST}/${NAME}.exe
 
-${OBJ}:
-	mkdir   ${OBJ}
 
-${DEST}:	
-	mkdir   ${DEST}
-	
 clean:
-	rm -rf obj *.mod ${DEST}/${NAME}.exe
-	
-##################################
-# Rules
-##################################
+	for DIR in ${SUBDIR}; do\
+		cd $${DIR} && ${MAKE} clean && cd ..; \
+	done
+	rm -f ${TARGET}
 
-
-${OBJ}/%.o: %.f90 | ${OBJ}
-	$(FC) $(FFLAGS) -c $< -o $@
-
-${OBJ}/%.o: %.f | ${OBJ}
-	$(FC) $(FFLAGS) -c $< -o $@
-
-
-
-.PHONY.: clean
+.PHONY: all ${SUBDIR} clean
 

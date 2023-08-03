@@ -1,6 +1,6 @@
-MODFILES = modules.f90
+MODSRCFILES = modules.f90
 
-F90FILES =\
+F90SRCFILES =\
   alloc.f90\
   BCLhs_3D.f90\
   ctypes.f90\
@@ -95,7 +95,7 @@ F90FILES =\
   solveNavStoLS.f90\
 
 
-F77FILES =\
+F77SRCFILES =\
   stab_conv.f\
   SparseGMRES_mesh.f\
   SparseGMRES_ls.f\

@@ -21,6 +21,10 @@ subroutine solmultiphasethermofluid_stag(istep)
   integer :: assemble_field_flag
   real(8) :: sol(NNODE, 6)
   real(8) :: t1, t2
+  real(8) :: utol(4)
+  
+  utol = (/NS_NL_UTOL, NS_NL_PTOL, LSC_NL_TOL, LSC_NL_TOL/)
+  inewt = 0
   ! momres0 = -1.0d0
   ! conres0 = -1.0d0
   ! convres0 = -1.0d0
@@ -29,30 +33,38 @@ subroutine solmultiphasethermofluid_stag(istep)
   residual(:) = 0d0
   residual0(:) = 0d0
   converged(:) = 0
+
+  IBC(:, :) = 0
   call setBCs_NSVOF()
   call setBCs_Tem()
   call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
                             ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
-  call calculate_residual(residual0)
+  call calculate_residual(residual0, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
   residual(:) = residual0(:)
-  call check_convergence(residual0, residual, 1, 0, &
-                         ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
-                         converged)
+  call check_convergence(converged, residual, residual0, utol, &
+                         ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
+  call print_residual(residual, residual0, utol, &
+                      ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
+                      inewt)
 
   do inewt = 1, NS_NL_itermax
 
     !---------------------------
     ! Solve NavStoVOF
     !---------------------------
+    IBC(:, :) = 0
     call setBCs_NSVOF()
     IBC(:, 6:8) = 1
     call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                               ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
-    call calculate_residual(residual)
-    call check_convergence(residual0, residual, 1, inewt, &
-                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
-                           converged)
+    call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
+    call check_convergence(converged, residual, residual0, utol, &
+                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+    call print_residual(residual, residual0, utol, &
+                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
+                        inewt)
+
     if (myid .eq. 0) then
       call CPU_TIME(t1)
     end if
@@ -81,15 +93,19 @@ subroutine solmultiphasethermofluid_stag(istep)
     ! Solve Temperature
     !-----------------------------
     if (istep > 10) then
+      IBC(:, :) = 0
       call setBCs_Tem()
       IBC(:, 1:5) = 1
       IBC(:, 7:8) = 1
       call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                                 ASSEMBLE_FIELD_TEM)
-      call calculate_residual(residual)
-      call check_convergence(residual0, residual, 1, inewt, &
-                            ASSEMBLE_FIELD_TEM, &
-                            converged)
+      call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
+      call check_convergence(converged, residual, residual0, utol, &
+                             ASSEMBLE_FIELD_TEM)
+      call print_residual(residual, residual0, utol, &
+                          ASSEMBLE_FIELD_TEM, &
+                          inewt)
+
       !write(*,*) "Residual T = ", residual0(4), residual(4)
       if (myid .eq. 0) then
         call CPU_TIME(t1)
@@ -108,13 +124,19 @@ subroutine solmultiphasethermofluid_stag(istep)
       Tg = Tg + gami*Delt*sol(:, 6)
 
     end if
+    IBC(:, :) = 0
+    call setBCs_NSVOF()
+    call setBCs_Tem()
     call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
-    call calculate_residual(residual)
-    call check_convergence(residual0, residual, 1, inewt, &
-                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
-                           converged)
+    call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
+    call check_convergence(converged, residual, residual0, utol, &
+                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
+    call print_residual(residual, residual0, utol, &
+                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
+                        inewt)
+
     if(ismaster ) write (*, *) "Convergence:", converged
     if (size(converged) == sum(converged)) exit
 

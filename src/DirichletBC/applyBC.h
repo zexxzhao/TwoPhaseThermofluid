@@ -1,7 +1,6 @@
 #progma once
 
-typedef IndexType int;
-typedef ScalarType double;
+
 
 #define ROW_MAJOR_INDEX_2D(i, j, n) (i * n + j)
 #define COL_MAJOR_INDEX_2D(i, j, n) (j * n + i)

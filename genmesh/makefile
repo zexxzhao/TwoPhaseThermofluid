@@ -1,9 +1,8 @@
 ##################################
 # System definitions
 ##################################
-#include ../code/defs/select
-#include ../code/defs/$(defs)
 include ../make.config
+OBJ=${DIRECTORY}/genmesh/obj
 
 ####FFLAGS =$(DFFLAGS)  
 
