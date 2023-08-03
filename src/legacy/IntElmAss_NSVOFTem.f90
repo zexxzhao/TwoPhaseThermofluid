@@ -411,12 +411,17 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       dTdxi(1) = sum(Tl(:)*shgradgu(:, 1))
       dTdxi(2) = sum(Tl(:)*shgradgu(:, 2))
       dTdxi(3) = sum(Tl(:)*shgradgu(:, 3))
-      if (is_fluid) then
-        rho = phi*rhow + (1 - phi)*rhoa
-        mu = phi*muw + (1 - phi)*mua
-        cp = phi*cpw + (1 - phi)*cpa
-        hk = phi*kappaw + (1 - phi)*kappaa
-      else
+      ui(1) = sum(ul(:, 1)*shlu(:))
+      ui(2) = sum(ul(:, 2)*shlu(:))
+      ui(3) = sum(ul(:, 3)*shlu(:))
+      umi(1) = sum(uml(:, 1)*shlu(:))
+      umi(2) = sum(uml(:, 2)*shlu(:))
+      umi(3) = sum(uml(:, 3)*shlu(:))
+      rho = phi*rhow + (1 - phi)*rhoa
+      mu = phi*muw + (1 - phi)*mua
+      cp = phi*cpw + (1 - phi)*cpa
+      hk = phi*kappaw + (1 - phi)*kappaa
+      if (.not. is_fluid) then
         rho = 2.7d3
         mu = 1d3
         cp = 921.0d0

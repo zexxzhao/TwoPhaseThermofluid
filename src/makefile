@@ -9,7 +9,7 @@ SUBDIR:=legacy util
 all: ${TARGET}
 
 ${TARGET}: ${SUBDIR}
-	${CC} ${CFLAGS} -o $@ obj/*.o ${LIBS} -lgfortran -lm -ldl -lmpichfort
+	${CC} ${CFLAGS} obj/*.o ${LIBS} ${MPI_COMPILE_FLAGS} ${MPI_LINK_FLAGS} -lgfortran -lm -ldl -o $@ 
 
 ${SUBDIR}:
 	for DIR in $@; do\
