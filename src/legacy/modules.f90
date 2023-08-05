@@ -375,6 +375,7 @@ module commonvars
 
   integer, allocatable :: BCugType(:, :)
   real(8), allocatable :: BCugValu(:, :), phi_bg(:)
+  integer, allocatable :: BCphigType(:), BCTgType(:)
   real(8) :: usettle
   ! Flags
   logical :: move, mono, conv, shel

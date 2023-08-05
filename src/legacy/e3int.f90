@@ -70,8 +70,8 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
     end do
   end do
 
-  rho = rhow
-  mu = muw
+  rho = rhow * phi + rhoa * (1.0d0 - phi)
+  mu = muw * phi + rhoa * (1.0d0 - phi)
 
 !  ! NS-ALE PDE Residual
 !  dphidxi0(1) = 0.0d0

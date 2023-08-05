@@ -1,7 +1,7 @@
 !======================================================================
 !
 !======================================================================
-subroutine allocMatVec(SH, NM)
+subroutine allocMatVec()
 
   use aAdjKeep
   use commonvars
@@ -9,8 +9,6 @@ subroutine allocMatVec(SH, NM)
 
   implicit none
 
-  type(shell_bld), intent(inout) :: SH
-  type(shell_nmb), intent(inout) :: NM
   integer :: NGAUSSMAX, i
 
   ! Allocate solution vectors
@@ -58,56 +56,56 @@ subroutine allocMatVec(SH, NM)
   !--------------------------------------------
   ! allocation for shell
   !--------------------------------------------
-  if (solshell) then
-    ! allocate the shell RHS and LHS
-!  allocate(SH%RHSG(SH%TSP%NNODE,NSD), &
-!           SH%RHSG_EXT(SH%TSP%NNODE,NSD), &
-!           SH%RHSG_GRA(SH%TSP%NNODE,NSD))
+  ! if (solshell) then
+  !   ! allocate the shell RHS and LHS
+! !  allocate(SH%RHSG(SH%TSP%NNODE,NSD), &
+! !           SH%RHSG_EXT(SH%TSP%NNODE,NSD), &
+! !           SH%RHSG_GRA(SH%TSP%NNODE,NSD))
 
-    allocate (SH%RHSG(SH%NRB%NNODE, NSD), &
-              SH%RHSG_EXT(SH%NRB%NNODE, NSD), &
-              SH%RHSG_GRA(SH%NRB%NNODE, NSD))
+  !   allocate (SH%RHSG(SH%NRB%NNODE, NSD), &
+  !             SH%RHSG_EXT(SH%NRB%NNODE, NSD), &
+  !             SH%RHSG_GRA(SH%NRB%NNODE, NSD))
 
-    allocate (SH%LHSK(NSD*NSD, SH%icnt))
-    SH%RHSG = 0.0d0; SH%RHSG_EXT = 0.0d0; SH%RHSG_GRA = 0.0d0
-    SH%LHSK = 0.0d0
+  !   allocate (SH%LHSK(NSD*NSD, SH%icnt))
+  !   SH%RHSG = 0.0d0; SH%RHSG_EXT = 0.0d0; SH%RHSG_GRA = 0.0d0
+  !   SH%LHSK = 0.0d0
 
-    ! Allocate solution variables for SHELL
-    allocate (SH%FEM%dsh(SH%FEM%NNODE, NSD), SH%FEM%dshOld(SH%FEM%NNODE, NSD), &
-              SH%FEM%ush(SH%FEM%NNODE, NSD), SH%FEM%ushOld(SH%FEM%NNODE, NSD), &
-              SH%FEM%ash(SH%FEM%NNODE, NSD), SH%FEM%ashOld(SH%FEM%NNODE, NSD))
-    SH%FEM%dsh = 0.0d0; SH%FEM%dshOld = 0.0d0
-    SH%FEM%ush = 0.0d0; SH%FEM%ushOld = 0.0d0
-    SH%FEM%ash = 0.0d0; SH%FEM%ashOld = 0.0d0
+  !   ! Allocate solution variables for SHELL
+  !   allocate (SH%FEM%dsh(SH%FEM%NNODE, NSD), SH%FEM%dshOld(SH%FEM%NNODE, NSD), &
+  !             SH%FEM%ush(SH%FEM%NNODE, NSD), SH%FEM%ushOld(SH%FEM%NNODE, NSD), &
+  !             SH%FEM%ash(SH%FEM%NNODE, NSD), SH%FEM%ashOld(SH%FEM%NNODE, NSD))
+  !   SH%FEM%dsh = 0.0d0; SH%FEM%dshOld = 0.0d0
+  !   SH%FEM%ush = 0.0d0; SH%FEM%ushOld = 0.0d0
+  !   SH%FEM%ash = 0.0d0; SH%FEM%ashOld = 0.0d0
 
-!  allocate(SH%TSP%dsh(SH%TSP%NNODE,NSD), SH%TSP%dshOld(SH%TSP%NNODE,NSD), &
-!           SH%TSP%ush(SH%TSP%NNODE,NSD), SH%TSP%ushOld(SH%TSP%NNODE,NSD), &
-!           SH%TSP%ash(SH%TSP%NNODE,NSD), SH%TSP%ashOld(SH%TSP%NNODE,NSD))
-!  SH%TSP%dsh = 0.0d0; SH%TSP%dshOld = 0.0d0
-!  SH%TSP%ush = 0.0d0; SH%TSP%ushOld = 0.0d0
-!  SH%TSP%ash = 0.0d0; SH%TSP%ashOld = 0.0d0
+! !  allocate(SH%TSP%dsh(SH%TSP%NNODE,NSD), SH%TSP%dshOld(SH%TSP%NNODE,NSD), &
+! !           SH%TSP%ush(SH%TSP%NNODE,NSD), SH%TSP%ushOld(SH%TSP%NNODE,NSD), &
+! !           SH%TSP%ash(SH%TSP%NNODE,NSD), SH%TSP%ashOld(SH%TSP%NNODE,NSD))
+! !  SH%TSP%dsh = 0.0d0; SH%TSP%dshOld = 0.0d0
+! !  SH%TSP%ush = 0.0d0; SH%TSP%ushOld = 0.0d0
+! !  SH%TSP%ash = 0.0d0; SH%TSP%ashOld = 0.0d0
 
-    allocate (SH%NRB%dsh(SH%NRB%NNODE, NSD), SH%NRB%dshOld(SH%NRB%NNODE, NSD), &
-              SH%NRB%ush(SH%NRB%NNODE, NSD), SH%NRB%ushOld(SH%NRB%NNODE, NSD), &
-              SH%NRB%ash(SH%NRB%NNODE, NSD), SH%NRB%ashOld(SH%NRB%NNODE, NSD))
-    SH%NRB%dsh = 0.0d0; SH%NRB%dshOld = 0.0d0
-    SH%NRB%ush = 0.0d0; SH%NRB%ushOld = 0.0d0
-    SH%NRB%ash = 0.0d0; SH%NRB%ashOld = 0.0d0
-  end if
+  !   allocate (SH%NRB%dsh(SH%NRB%NNODE, NSD), SH%NRB%dshOld(SH%NRB%NNODE, NSD), &
+  !             SH%NRB%ush(SH%NRB%NNODE, NSD), SH%NRB%ushOld(SH%NRB%NNODE, NSD), &
+  !             SH%NRB%ash(SH%NRB%NNODE, NSD), SH%NRB%ashOld(SH%NRB%NNODE, NSD))
+  !   SH%NRB%dsh = 0.0d0; SH%NRB%dshOld = 0.0d0
+  !   SH%NRB%ush = 0.0d0; SH%NRB%ushOld = 0.0d0
+  !   SH%NRB%ash = 0.0d0; SH%NRB%ashOld = 0.0d0
+  ! end if
 
-  !--------------------------------------------
-  ! Allocate solution variables for Non-matching boundaries
-  !--------------------------------------------
-  if (nonmatch) then
-    do i = 1, 2
-      allocate (NM%FEM(i)%dsh(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%dshOld(NM%FEM(i)%NNODE, NSD), &
-                NM%FEM(i)%ush(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%ushOld(NM%FEM(i)%NNODE, NSD), &
-                NM%FEM(i)%ash(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%ashOld(NM%FEM(i)%NNODE, NSD))
-      NM%FEM(i)%dsh = 0.0d0; NM%FEM(i)%dshOld = 0.0d0
-      NM%FEM(i)%ush = 0.0d0; NM%FEM(i)%ushOld = 0.0d0
-      NM%FEM(i)%ash = 0.0d0; NM%FEM(i)%ashOld = 0.0d0
-    end do
-  end if
+  ! !--------------------------------------------
+  ! ! Allocate solution variables for Non-matching boundaries
+  ! !--------------------------------------------
+  ! if (nonmatch) then
+  !   do i = 1, 2
+  !     allocate (NM%FEM(i)%dsh(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%dshOld(NM%FEM(i)%NNODE, NSD), &
+  !               NM%FEM(i)%ush(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%ushOld(NM%FEM(i)%NNODE, NSD), &
+  !               NM%FEM(i)%ash(NM%FEM(i)%NNODE, NSD), NM%FEM(i)%ashOld(NM%FEM(i)%NNODE, NSD))
+  !     NM%FEM(i)%dsh = 0.0d0; NM%FEM(i)%dshOld = 0.0d0
+  !     NM%FEM(i)%ush = 0.0d0; NM%FEM(i)%ushOld = 0.0d0
+  !     NM%FEM(i)%ash = 0.0d0; NM%FEM(i)%ashOld = 0.0d0
+  !   end do
+  ! end if
 end subroutine allocMatVec
 
 !======================================================================

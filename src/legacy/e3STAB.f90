@@ -1,14 +1,16 @@
 !======================================================================
 ! Stabilization parameters (tauM, tauC) for VMS
 !======================================================================
-subroutine e3STAB_3D(Gij, Ginv, AD_VEL_L, AD_VEL_L1, rLi, tauM, tauP, tauLS, &
+subroutine e3STAB_3D(Gij, Ginv, AD_VEL_L, AD_VEL_L1, rLi, rhoi, mui, &
+                     tauM, tauP, tauLS, &
                      tauC, tauBar, tauBar1, uprime, cfl)
   use aAdjKeep
   use commonvars
   implicit none
 
   real(8), intent(in)  :: Gij(NSD, NSD), Ginv(NSD, NSD), &
-                          AD_VEL_L(NSD), AD_VEL_L1(NSD), rLi(NSD)
+                          AD_VEL_L(NSD), AD_VEL_L1(NSD), rLi(NSD), &
+                          rhoi, mui
   real(8), intent(out) :: tauM, tauC, tauP, tauBar, tauBar1, &
                           cfl(2), uprime(NSD), tauLS
 
@@ -50,19 +52,19 @@ subroutine e3STAB_3D(Gij, Ginv, AD_VEL_L, AD_VEL_L1, rLi, tauM, tauP, tauLS, &
 
   cfl(1) = Delt*sqrt(taua)
 
-  nu = mu/rho
+  nu = mui/rhoi
   taud = nu*nu*m_k*gij2
   taut = dtfact*Dtgl*Dtgl
 
   taus = taua + taud
 
   ! Get tauM - so far a scalar
-  tauM = 1.0d0/(rho*sqrt(taus + taut))
+  tauM = 1.0d0/(rhoi*sqrt(taus + taut))
   tauLS = 1.0d0/(sqrt(taua1 + taut + kappa*kappa*m_k*gij2))
   tauP = tauM
 
   ! Get tauC
-  tauC = rho*sqrt(taus)/(Gij(1, 1) + Gij(2, 2) + Gij(3, 3))
+  tauC = rhoi*sqrt(taus)/(Gij(1, 1) + Gij(2, 2) + Gij(3, 3))
 !!!  tauC = rho*sqrt(taus)/sqrt(gij2)
 !!!  tauC = 1.0d0/(tauM*(Gij(1,1)+Gij(2,2)+Gij(3,3)))
 
@@ -82,8 +84,9 @@ subroutine e3STAB_3D(Gij, Ginv, AD_VEL_L, AD_VEL_L1, rLi, tauM, tauP, tauLS, &
   a1 = taut + taua + taud
   a3 = taut + taua1 + kappa*kappa*m_k*gij2
   a2 = dtfact*Dtgl
-  tauBar1 = -a2/(a1*sqrt(a3) + a3*sqrt(a1))
-  tauBar1 = tauBar1*cross_flag
+  tauBar1 = 0.0d0
+  !tauBar1 = -a2/(a1*sqrt(a3) + a3*sqrt(a1))
+  !tauBar1 = tauBar1*cross_flag
 !  tauBar1 = 0d0
 end subroutine e3STAB_3D
 

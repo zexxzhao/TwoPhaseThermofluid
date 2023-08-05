@@ -294,15 +294,14 @@ subroutine getparam
   ! BC for "setBCs_CFD"
   allocate (BCugType(NBOUND, NSD), &
             BCugValu(NBOUND, NSD))
-
   BCugType = 0
   do bb = 1, NBOUND
-    ! i = bound(bb)%FACE_ID
     i = bb
     write (fnum(1), '(I4)') i
     fname(1) = 'BCugType'//trim(adjustl(fnum(1)))
     call iread3(fname(1), BCugType(i, 1:3))
   end do
+
 
   BCugValu = 0.0d0
   do bb = 1, NBOUND
@@ -317,6 +316,24 @@ subroutine getparam
         call rread(fname(1), BCugValu(i, j))
       end if
     end do
+  end do
+
+  allocate (BCphigType(NBOUND), &
+            BCTgType(NBOUND))
+  BCphigType(:) = 0
+  BCTgType(:) = 0
+  do bb = 1, NBOUND
+    i = bb
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCphigType'//trim(adjustl(fnum(1)))
+    call iread3(fname(1), BCphigType(i))
+  end do
+
+  do bb = 1, NBOUND
+    i = bb
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCTgType'//trim(adjustl(fnum(1)))
+    call iread3(fname(1), BCTgType(i))
   end do
 
   ! call rread("usettle", usettle)

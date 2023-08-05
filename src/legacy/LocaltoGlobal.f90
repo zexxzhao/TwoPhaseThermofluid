@@ -23,6 +23,37 @@ end subroutine LocaltoGlobal_3D
 !======================================================================
 !
 !======================================================================
+subroutine LocaltoGlobalNSVOF_3D(RHSGu, RHSGp, RHSGls, &
+                                 NNODE, NSD, &
+                                 NSHL, &
+                                 ix, &
+                                 Rhsu, Rhsp, Rhsls)
+
+  !use aAdjKeep
+  !use commonvars
+  implicit none
+
+  integer, intent(in) :: NNODE, NSD, NSHL
+  real(8), intent(in) :: Rhsu(NSD, NSHL), Rhsp(NSHL), Rhsls(NSHL)
+
+  integer, intent(in) :: ix(NSHL)
+
+  real(8), intent(inout) :: RHSGu(NNODE, NSD), RHSGp(NNODE), RHSGls(NNODE)
+  integer :: bb, gix
+
+  do bb = 1, NSHL
+    gix = ix(bb)
+    RHSGu(gix, :) = RHSGu(gix, :) + Rhsu(:, bb)
+    RHSGp(gix) = RHSGp(gix) + Rhsp(bb)
+    RHSGls(gix) = RHSGls(gix) + Rhsls(bb)
+  end do
+
+end subroutine LocaltoGlobalNSVOF_3D
+
+!======================================================================
+!
+!======================================================================
+
 subroutine LocaltoGlobal_3D_mesh(nshl, iel, Rhsm)
 
   use aAdjKeep

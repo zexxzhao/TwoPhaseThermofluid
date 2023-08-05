@@ -2,7 +2,8 @@
 !
 !======================================================================
 subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
-                                acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, assemble_tensor_flag)
+                                acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                                assemble_tensor_flag)
   use aAdjKeep
   use mpi
   use commonvars
@@ -109,11 +110,6 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         ! phi_bgl(i) = phi_bg(j)
       end do
 
-      ! Get the density and viscosity.
-      ! Now just set it to water and constant for each element
-      rho = rhow
-      mu = muw
-
       ! initialize local resistance matrix
       xKebe11 = 0.0d0
       xGebe = 0.0d0
@@ -149,6 +145,8 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
           umi(i) = sum(uml(:, i)*shlu)
           xi(i) = sum(xl(:, i)*shlu)
         end do
+        rho = rhow * phi + rhoa * (1d0 - phi)
+        mu = muw * phi + mua * (1d0 - phi)
 
         do j = 1, NSD
           dphidxi(j) = sum(phil*shgradgu(:, j))

@@ -196,7 +196,7 @@ end subroutine readSol
 !======================================================================
 ! Generate initial condition
 !======================================================================
-subroutine generateIC(SH)
+subroutine generateIC()
 
   use aAdjKeep
   use commonvars
@@ -205,9 +205,7 @@ subroutine generateIC(SH)
 
   implicit none
 
-  type(shell_bld), intent(inout) :: SH
-
-  integer :: i, j, k, n, iel
+  integer :: i, j, k, n, iel, b
   real(8) :: xi(3), xi1, xi3, rr
   real(8) :: utmp(3), ptmp, rhotmp
   real(8) :: elem_h, rtmp
@@ -219,17 +217,17 @@ subroutine generateIC(SH)
   time = 0.0d0
   Mass_init = -1.0d0
 
-  vbn0(1) = 0.0d0
-  vbn0(2) = 0.0d0
-  vbn0(3) = 0.0d0
-  dbn0 = 0.0d0
-  wbn0(1) = 0.0d0
-  wbn0(2) = 0.0d0
-  wbn0(3) = 0.0d0
-  Rn0 = 0.0d0
-  Rn0(1, 1) = 1.0d0
-  Rn0(2, 2) = 1.0d0
-  Rn0(3, 3) = 1.0d0
+  ! vbn0(1) = 0.0d0
+  ! vbn0(2) = 0.0d0
+  ! vbn0(3) = 0.0d0
+  ! dbn0 = 0.0d0
+  ! wbn0(1) = 0.0d0
+  ! wbn0(2) = 0.0d0
+  ! wbn0(3) = 0.0d0
+  ! Rn0 = 0.0d0
+  ! Rn0(1, 1) = 1.0d0
+  ! Rn0(2, 2) = 1.0d0
+  ! Rn0(3, 3) = 1.0d0
 
 !!$  do i = 1, NNODE
 !!$    call getWave(ugold(i,:), phigold(i), xg(i,:), 0.0d0)
@@ -282,15 +280,20 @@ subroutine generateIC(SH)
     ! end if
     ugold(i, :) = 0d0
     ugold(i, 1) = 1.0d0
-    if(sqrt(sum(xg(i, :)**2)) < 0.5001d0) then
-      ugold(i, 1) = 0.0d0
-    end if
     Tgold(i) = 0.0d0
-    if(sqrt(sum(xg(i, :)**2)) < 0.5d0 + 1d-6) then
+    if(NODEID(i) == 101) then
+      ugold(i, 1) = 0.0d0
       Tgold(i) = 1.0d0
     end if
 
   end do
+  do b = 1,NBOUND
+    if(bound(b)%FACE_ID /= 5) cycle
+    do i = 1,bound(b)%NNODE
+      n = bound(b)%BNODES(i)
+      Tgold(n) = 0.0d0
+    end do
+  enddo
   ! call commu(ugold, 3, "out")
 
   !call getinflow(0,0)
@@ -301,14 +304,14 @@ subroutine generateIC(SH)
   ugmold = 0.0d0
   acgmold = 0.0d0
 
-  thetaOld = 0.0d0
-  thetdOld = 0.0d0
-  theddOld = 0.0d0
+  ! thetaOld = 0.0d0
+  ! thetdOld = 0.0d0
+  ! theddOld = 0.0d0
 
-  vbn1 = vbn0
-  dbn1 = dbn0
-  wbn1 = wbn0
-  Rn1 = Rn0
+  ! vbn1 = vbn0
+  ! dbn1 = dbn0
+  ! wbn1 = wbn0
+  ! Rn1 = Rn0
 
   ug = ugold
   acg = acgold
@@ -316,6 +319,8 @@ subroutine generateIC(SH)
 
   phig = phigold
   rphig = rphigold
+  Tg = Tgold
+  rTg = rTgold
 
   dg = dgold
   ugm = ugmold
@@ -325,31 +330,31 @@ subroutine generateIC(SH)
   thetd = thetdOld
   thedd = theddOld
 
-  if (solshell) then
-!    SH%TSP%dshOld = 0.0d0
-    !   SH%TSP%ushOld = 0.0d0
-    !  SH%TSP%ashOld = 0.0d0
+  ! if (solshell) then
+! !    SH%TSP%dshOld = 0.0d0
+  !   !   SH%TSP%ushOld = 0.0d0
+  !   !  SH%TSP%ashOld = 0.0d0
 
-    SH%NRB%dshOld = 0.0d0
-    SH%NRB%ushOld = 0.0d0
-    SH%NRB%ashOld = 0.0d0
+  !   SH%NRB%dshOld = 0.0d0
+  !   SH%NRB%ushOld = 0.0d0
+  !   SH%NRB%ashOld = 0.0d0
 
-    SH%FEM%dshOld = 0.0d0
-    SH%FEM%ushOld = 0.0d0
-    SH%FEM%ashOld = 0.0d0
+  !   SH%FEM%dshOld = 0.0d0
+  !   SH%FEM%ushOld = 0.0d0
+  !   SH%FEM%ashOld = 0.0d0
 
-!    SH%TSP%dsh = SH%TSP%dshOld
-    !   SH%TSP%ush = SH%TSP%ushOld
-    !  SH%TSP%ash = SH%TSP%ashOld
+! !    SH%TSP%dsh = SH%TSP%dshOld
+  !   !   SH%TSP%ush = SH%TSP%ushOld
+  !   !  SH%TSP%ash = SH%TSP%ashOld
 
-    SH%NRB%dsh = SH%NRB%dshOld
-    SH%NRB%ush = SH%NRB%ushOld
-    SH%NRB%ash = SH%NRB%ashOld
+  !   SH%NRB%dsh = SH%NRB%dshOld
+  !   SH%NRB%ush = SH%NRB%ushOld
+  !   SH%NRB%ash = SH%NRB%ashOld
 
-    SH%FEM%dsh = SH%FEM%dshOld
-    SH%FEM%ush = SH%FEM%ushOld
-    SH%FEM%ash = SH%FEM%ashOld
-  end if
+  !   SH%FEM%dsh = SH%FEM%dshOld
+  !   SH%FEM%ush = SH%FEM%ushOld
+  !   SH%FEM%ash = SH%FEM%ashOld
+  ! end if
 end subroutine generateIC
 
 subroutine writeVelocity(istep)

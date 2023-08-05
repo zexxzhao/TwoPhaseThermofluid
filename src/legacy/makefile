@@ -9,10 +9,10 @@ include ../../make.config
 include file.list
 
 
+MODOBJFILES = $(MODSRCFILES:%.f90=${OBJDIR}/%.o)
 MODFILES = $(MODSRCFILES:%.f90=${OBJDIR}/%.mod)
 
-OBJFILES = $(MODSRCFILES:%.f90=${OBJDIR}/%.o) \
-		   $(F90SRCFILES:%.f90=${OBJDIR}/%.o)\
+OBJFILES = $(F90SRCFILES:%.f90=${OBJDIR}/%.o)\
            $(F77SRCFILES:%.f=${OBJDIR}/%.o)
 
 ##################################
@@ -20,6 +20,8 @@ OBJFILES = $(MODSRCFILES:%.f90=${OBJDIR}/%.o) \
 ##################################
 
 all: ${OBJFILES}
+
+${OBJFILES}: ${MODOBJFILES}
 
 clean:
 	rm -f ${OBJFILES} 

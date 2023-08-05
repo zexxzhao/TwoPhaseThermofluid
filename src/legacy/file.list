@@ -37,7 +37,6 @@ F90SRCFILES =\
   SparseProd.f90\
   solveFlow.f90\
   solveNavSto.f90\
-  solveNavStoDG.f90\
   solveNavStoVOFTem.f90\
   solveKLShell.f90\
   solveMesh.f90\

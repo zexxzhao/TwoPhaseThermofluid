@@ -168,7 +168,8 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       tauM = 0.0d0; tauP = 0.0d0; tauC = 0.0d0; tauBar = 0.0d0; tauLS = 0.0d0
 
       call e3STAB_3D(Gij, Ginv, uadvi, uadvi_ls, rLi, &
-                     tauM, tauP, tauLS, tauC, tauBar, tauBar1, uprime, cfl_loc)
+                     tauM, tauP, tauLS, tauC, tauBar, tauBar1, uprime, cfl_loc, &
+                     rho, mu)
 
       cfl(1) = max(cfl(1), cfl_loc(1))
 !!!      cfl(2)  = max(cfl(2), cfl_loc(2))
@@ -232,10 +233,13 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                             xLSebe, xLSUebe, xULSebe, xPLSebe)
     end if
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-      call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
-      do aa = 1, NSHL
-        RHSGLS(IEN(iel, aa)) = RHSGLS(IEN(iel, aa)) + Rhsphi(aa)
-      end do
+      ! call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
+      ! do aa = 1, NSHL
+      !   RHSGLS(IEN(iel, aa)) = RHSGLS(IEN(iel, aa)) + Rhsphi(aa)
+      ! end do
+      call LocalToGlobalNSVOF_3D(RHSGu, RHSGp, RHSGls, &
+                                 NNODE, NSD, NSHL,&
+                                 IEN(iel, :), rhsu, rhsp, rhsphi)
     end if
 
   end do

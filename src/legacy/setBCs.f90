@@ -254,10 +254,11 @@ subroutine setBCs_NSVOF()
       end if
     end do
 
-    if (bound(b)%FACE_ID == 1) then
+    if (BCphigType(bound(b)%FACE_ID) == 1) then
       do j = 1, bound(b)%NNODE
         k = bound(b)%BNODES(j)
         IBC(k, 5) = 1
+        rphig(k) = 0.0d0 
       end do
     end if
   end do  ! end loop: all faces
@@ -285,10 +286,12 @@ subroutine setBCs_Tem()
   ! IBC(:, :) = 1
   IBC(:, 6) = 0
   do b = 1, NBOUND
-    if (bound(b)%FACE_ID == 1) then
+    if (BCTgType(bound(b)%FACE_ID) == 1) then
       do j = 1, bound(b)%NNODE
         k = bound(b)%BNODES(j)
         IBC(k, 6) = 1
+        Tg(k) = 0.0d0 
+        rTg(k) = 0.0d0 
       end do
     end if
   end do  ! end loop: all faces

@@ -7,7 +7,7 @@ OBJ=${DIRECTORY}/genmesh/obj
 ####FFLAGS =$(DFFLAGS)  
 
 #=========================================
-all: tet2mesh patch2mesh patch2net partmesh restart2vtk restart2tec genmesh gmsh_mesh geomData average2tec
+all: doc tet2mesh patch2mesh patch2net partmesh restart2vtk restart2tec genmesh gmsh_mesh geomData average2tec
 
 clean:
 	/bin/rm -rf *.mod *.o obj $(DEST)/genmesh $(DEST)/tet2mesh $(DEST)/patch2mesh $(DEST)/partmesh $(DEST)/restart2vtk $(DEST)/restart2tec $(DEST)/geomData $(DEST)/average2tec
@@ -98,3 +98,16 @@ $(DEST)/geomData: obj/geomData.o | $(DEST)
 
 $(DEST)/average2tec: obj/datatypes.o obj/mesh.o obj/writeTEC.o obj/average2tec.o | $(DEST)
 	$(FC) $(FFLAGS) $^ -o $(DEST)/average2tec
+
+doc:
+	@echo "========================================================================="
+	@echo "= "
+	@echo "= This partition code handles internal surface elements"
+	@echo "= as the slaves of the volume elements with bigger "
+	@echo "= Element IDs. For example, if an element is shared "
+	@echo "= by two tetrahedra with Element ID 101 and 102, respectively, "
+	@echo "= F2E will save the element with ID 102 only."
+	@echo "= "
+	@echo "========================================================================="
+	@sleep 2
+.PHONY: doc
