@@ -149,6 +149,7 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
     ! write(*,*) myid, "ug-alpha", sum(ugAlpha(:, :) ** 2), assemble_tensor_flag 
     call IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                          acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                         TgAlpha, rTgAlpha, &
                          assemble_tensor_flag)
     ! write(*,*) myid, "RHSgu1", sum(RHSGu(:, :) ** 2), &
     !       sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)

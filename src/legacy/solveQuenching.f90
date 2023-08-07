@@ -1,12 +1,119 @@
+!======================================================================
+!
+!======================================================================
+subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag)
+  use aAdjKeep
+  use mpi
+  use commonvars
+  use commonpars
 
+  implicit none
+
+  integer, intent(in) :: assemble_tensor_flag ! assembe Jacobian mat or vec
+  integer, intent(in) :: assemble_field_flag ! assemble NS + LS/VOF + Tem
+
+  real(8) :: dgAlpha(NNODE, NSD), &
+             ugAlpha(NNODE, NSD), ugmAlpha(NNODE, NSD), &
+             acgAlpha(NNODE, NSD), acgmAlpha(NNODE, NSD), &
+             pgAlpha(NNODE), phigAlpha(NNODE), rphigAlpha(NNODE), &
+             rTgAlpha(NNODE), TgAlpha(NNODE)
+
+  real(8) :: t1, t2
+
+  !---------------------------------
+  ! Alpha stage
+  !---------------------------------
+  acgAlpha = acgold + almi*(acg - acgold)
+  acgmAlpha = acgmold + almi*(acgm - acgmold)
+  ugAlpha = ugold + alfi*(ug - ugold)
+  ugmAlpha = ugmold + alfi*(ugm - ugmold)
+  dgAlpha = dgold + alfi*(dg - dgold)
+  pgAlpha = pg
+
+  phigAlpha = phigold + alfi*(phig - phigold)
+  rphigAlpha = rphigold + almi*(rphig - rphigold)
+
+  TgAlpha = Tgold + alfi*(Tg - Tgold)
+  rTgAlpha = rTgold + almi*(rTg - rTgold)
+
+  !---------------------------------
+  ! zero out RHS and LHS
+  !---------------------------------
+
+  if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
+    RHSGu = 0.0d0
+    RHSGp = 0.0d0
+    RHSGls = 0.0d0
+    RHSGtem = 0.0d0
+  end if
+
+  if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
+    LHSK11 = 0.0d0
+    LHSG = 0.0d0
+    LHSD1 = 0.0d0
+    LHSM = 0.0d0
+
+    LHSLS = 0.0d0
+    LHSULS = 0.0d0
+    LHSLSU = 0.0d0
+    LHSPLS = 0.0d0
+
+    LHSTem = 0.0d0
+  endif
+
+  if (myid .eq. 0) then
+    call CPU_TIME(t1)
+  endif
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF) > 0) then
+    ! write(*,*) myid, "ug-alpha", sum(ugAlpha(:, :) ** 2), assemble_tensor_flag 
+    call IntElmAss_NSVOF_Quenching(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+                         acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                         TgAlpha, rTgAlpha, &
+                         assemble_tensor_flag)
+    ! write(*,*) myid, "RHSgu1", sum(RHSGu(:, :) ** 2), &
+    !       sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
+    call FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+                              acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                              assemble_tensor_flag)
+    ! write(*,*) myid, "RHSgu2", sum(RHSGu(:, :) ** 2), &
+    !      sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
+  end if
+  if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
+    call IntElmAss_Tem_Quenching(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+                       acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+                       TgAlpha, rTgAlpha, &
+                       assemble_tensor_flag)
+
+  end if
+
+  if (myid .eq. 0) then
+    call CPU_TIME(t2)
+    write (*, *) "Total time assemble:", t2 - t1, "seconds"
+  end if
+
+  if (numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
+    if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
+      call commu(RHSGp, 1, 'in ')
+      call commu(RHSGu, NSD, 'in ')
+    endif
+    if(iand(assemble_field_flag, ASSEMBLE_FIELD_VOF) > 0) then
+      call commu(RHSGls, 1, 'in ')
+    endif
+    if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
+      call commu(RHSGTem, 1, 'in ')
+    endif
+  end if
+
+end subroutine assembleQuenching
 !======================================================================
 !
 !======================================================================
 
-subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
-                           acgmAlpha, pgAlpha, phigAlpha, dphidtgAlpha, &
-                           TgAlpha, rTgAlpha, &
-                           assemble_tensor_flag)
+subroutine IntElmAss_NSVOF_Quenching(&
+  dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+  acgmAlpha, pgAlpha, phigAlpha, dphidtgAlpha, &
+  TgAlpha, rTgAlpha, &
+  assemble_tensor_flag)
   use aAdjKeep
   use commonvars
   use commonpars
@@ -35,6 +142,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   real(8), allocatable :: fl(:, :), dl(:, :), ul(:, :), wl(:), acl(:, :), &
                           uml(:, :), acml(:, :), pl(:), dlold(:, :), &
                           xl(:, :), dumb(:, :), phil(:), ulold(:, :), dphidtl(:)
+  real(8), allocatable :: Tl(:), rTl(:)
 
   real(8), allocatable :: gp(:, :), gw(:)
 
@@ -45,6 +153,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
              dphidxi(NSD), duidxi(NSD, NSD), dphidxidxj(NSD, NSD), &
              duidxixj(NSD, NSD, NSD), duiolddxi(NSD, NSD), &
              dxidx(NSD, NSD), dpridxi(NSD), rLi(NSD)
+  real(8) :: Ti, rTi, dTdxi(NSD)
 
   real(8) :: Gij(NSD, NSD), Ginv(NSD, NSD)
   real(8) :: cfl(2), gcfl(2), cfl_loc(2)
@@ -52,6 +161,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   real(8) :: res_phic_tmp1, res_phic_tmp2
   real(8) :: Qi, Si(3, 3), Omegai(3, 3)
   logical :: is_fluid
+  real(8) :: rhoi, mui
 
   volm = 0.0d0
   vol_ex = 0.0d0
@@ -73,6 +183,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                     xl, dumb, phil, ulold, dphidtl, &
                     xKebe11, xGebe, xDebe1, xMebe, Rhsu, Rhsm, Rhsp, Rhsq, Rhsl, &
                     xLSebe, xLSUebe, xULSebe, xPLsebe, Rhsphi)
+        deallocate (Tl, rTl)
         deallocate (ibc_loc)
       end if
 
@@ -90,6 +201,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                 pl(NSHL), dlold(NSHL, NSD), xl(NSHL, NSD), &
                 dumb(NSHL, NSD), phil(NSHL), ulold(NSHL, NSD), dphidtl(NSHL), &
                 gp(NGAUSS, NSD), gw(NGAUSS))
+      allocate (Tl(NSHL), rTl(NSHL))
       allocate (ibc_loc(NSHL, NSD))
       ! get Gaussian points and weights
       call genGPandGW(gp, gw, NGAUSS)
@@ -117,6 +229,8 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       pl(i) = pgAlpha(idx)
       phil(i) = phigAlpha(idx)
       dphidtl(i) = dphidtgAlpha(idx)
+      Tl(i) = TgAlpha(idx)
+      rTl(i) = rTgAlpha(idx)
     end do
 
     dumb = 0.0d0
@@ -161,12 +275,32 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                        di, ui, aci, umi, acmi, pri, fi, &
                        ddidxi, duidxi, duidxixj, dpridxi, &
                        phi, dphidxi, dphidxidxj, dphidtl, dphidti, xi, rLi)
-      if(NSHL == 6 .and. abs(ui(1) - 1.0) > 1d-3) then
-        !write(*,*) "PRISM", ui(1), duidxi(1, :)
-      endif
+      rTi = sum(rTl(:)*shlu(:))
+      Ti = sum(Tl(:)*shlu(:))
+      dTdxi(1) = sum(Tl(:)*shgradgu(:, 1))
+      dTdxi(2) = sum(Tl(:)*shgradgu(:, 2))
+      dTdxi(3) = sum(Tl(:)*shgradgu(:, 3))
+      rho = rhow * phi + rhoa * (1d0 - phi)
+      mu = muw * phi + mua * (1d0 - phi)
+      cp = cpw * phi + cpa * (1d0 - phi)
+      hk = kappaw * phi + kappaa * (1d0 - phi)
+      if (.not. is_fluid) then
+        rho = 2.7d3
+        mu = 1d3
+        cp = 921.0d0
+        hk = 205.0d0
+        uadvi(:) = 0d0
+        ui(:) = 0d0
+        umi(:) = 0d0
+      end if
+      rhoi = rho
+      mui = mu
+      fi(:) = rhoi * gravvec(:)
+  
       ! ALE Advective Velocity
       uadvi(:) = ui(:) - umi(:)
-      uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
+      uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle ! usettle = 0d0
+  
       tauM = 0.0d0; tauP = 0.0d0; tauC = 0.0d0; tauBar = 0.0d0; tauLS = 0.0d0
 
       call e3STAB_3D(Gij, Ginv, uadvi, uadvi_ls, rLi, &
@@ -195,23 +329,27 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0 .and. is_fluid) then
 
-        call e3LHS_3D_fluid_Old(nshl, ui, umi, aci, pri, duidxi, dpridxi, &
-                                dphidxi, dphidxidxj, dphidti, &
-                                rLi, tauM, tauP, tauLS, tauC, tauBar, tauBar1, &
-                                k_dc, k_dc_phi, gw(igauss), shlu, shgradgu, &
-                                shhessgu, xKebe11, xGebe, xDebe1, xMebe, &
-                                xLSebe, xLSUebe, xULSebe, xPLSebe)
+        call e3LHS_3D_fluid_quenching(&
+          nshl, ui, umi, aci, pri, duidxi, dpridxi, &
+          dphidxi, dphidxidxj, dphidti, phi, &
+          rLi, rhoi, mui, &
+          tauM, tauP, tauLS, tauC, tauBar, tauBar1, &
+          k_dc, k_dc_phi, gw(igauss), shlu, shgradgu, &
+          shhessgu, xKebe11, xGebe, xDebe1, xMebe, &
+          xLSebe, xLSUebe, xULSebe, xPLSebe)
 
       end if
 
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0 .and. is_fluid) then
-        call e3RHS_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, &
-                            pri, rLi, fi, duidxi, ddidxi, &
-                            tauM, tauP, tauLS, tauC, tauBar, tauBar1, k_dc, k_dc_phi, &
-                            gw(igauss), shlu, shgradgu, uprime, &
-                            Rhsu, Rhsp, phi, &
-                            dpridxi, dphidxi, dphidxidxj, dphidti, &
-                            RHSphi)
+        call e3RHS_3D_fluid_quenching(&
+          nshl, ui, aci, umi, acmi, uadvi, &
+          pri, rLi, fi, duidxi, ddidxi, &
+          tauM, tauP, tauLS, tauC, tauBar, tauBar1, k_dc, k_dc_phi, &
+          gw(igauss), shlu, shgradgu, uprime, &
+          Rhsu, Rhsp, phi, &
+          dpridxi, dphidxi, dphidxidxj, dphidti, &
+          Ti, rTi, rhoi, mui, &
+          RHSphi)
 
       end if
       ! if(ismaster) write(*,*) "flag = ", assemble_tensor_flag
@@ -251,6 +389,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
               xl, dumb, phil, ulold, dphidtl, &
               Rhsu, Rhsm, Rhsp, Rhsq, Rhsl, xDebe1, xMebe, gp, gw, &
               xLSebe, xLSUebe, xULSebe, Rhsphi)
+  deallocate (Tl, rTl)
   deallocate (ibc_loc)
   if (.true.) then
     ! Find largest CFL-number and output to screen
@@ -265,11 +404,11 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
     end if
   end if
 
-end subroutine IntElmAss_NSVOF
+end subroutine IntElmAss_NSVOF_Quenching
 !======================================================================
 !
 !======================================================================
-subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+subroutine IntElmAss_Tem_Quenching(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                          acgmAlpha, pgAlpha, phigAlpha, dphidtgAlpha, &
                          TgAlpha, rTgAlpha, &
                          assemble_tensor_flag)
@@ -325,6 +464,7 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   logical :: is_fluid
   real(8) :: fact1, fact2
   real(8), allocatable :: shconv(:), tmp(:)
+  real(8) :: Se, mdot, vdot
 
   fact1 = almi
   fact2 = alfi * gami * Delt
@@ -454,7 +594,15 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       tau_tem = tau_tem + 3.0d0 * (hk / rho / cp) ** 2 * sum(Gij ** 2)
       tau_tem = 1d0/rho/cp/sqrt(tau_tem)
 
-      res_tem1 = rho*cp*(rTi + sum(uadvi(:)*dTdxi(:)))
+      if(Ti > 1d2 + 2.73d2) then
+        mdot = c_evap * (1 - phi) * rhow * (Ti - Ts) / Ts
+      else
+        mdot = c_cond * phi * rhoa * (Ti - Ts) / Ts
+      endif
+      vdot = mdot / rhoa - mdot / rhow
+
+      Se = ((cpw - cpa) * (Ti - Ts) - Lh) * mdot 
+      res_tem1 = rho*cp*(rTi + sum(uadvi(:)*dTdxi(:))) - Se
       ! resume here
       res_tem2 = 0d0
 
@@ -464,12 +612,13 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         end do
       end do
 
-      ! hk = hk + 1.0d0 * abs(res_tem1) / sqrt(res_tem2 + 1d-10)
+      hk = hk + 1.0d0 * abs(res_tem1) / sqrt(res_tem2 + 1d-10)
       !k_dc_phi = 1d0*abs(res_phic_tmp1)/(sqrt(res_phic_tmp2) + 0.0000000000001d0)
 !        write(*,*) "kc:", k_dc, k_dc_phi
 !        k_dc = 0d0
       !k_dc_phi = 0d0
-!        k_dc = 0.0
+      ! k_dc = 1d0 * abs(res_tem1) / (sqrt(res_tem2) + 1d-10)
+
       tmp(:)  = shlu(:) + tau_tem * rho * cp * shconv(:)
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
         ! e3LHS_3D_tem()
@@ -525,4 +674,4 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   deallocate (rTl, Tl, RHStem, xTebe)
   deallocate(shconv, tmp)
 
-end subroutine IntElmAss_Tem
+end subroutine IntElmAss_Tem_Quenching

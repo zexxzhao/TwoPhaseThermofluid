@@ -38,6 +38,7 @@ F90SRCFILES =\
   solveFlow.f90\
   solveNavSto.f90\
   solveNavStoVOFTem.f90\
+  solveQuenching.f90\
   solveKLShell.f90\
   solveMesh.f90\
   shell_BCLhs_3D.f90\

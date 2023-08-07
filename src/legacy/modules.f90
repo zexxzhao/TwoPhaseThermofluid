@@ -369,6 +369,7 @@ module commonvars
              phi_t, C_t, Re, Pe, Gr, Fr, Ra, Sr, Pr, dphi_bg(3), cross_flag
 
   real(8) :: cp, hk
+  real(8) :: Ts, c_cond, c_evap, lh
   ! Setup
   real(8) :: Froude, Uin
   integer :: BCtype(99)

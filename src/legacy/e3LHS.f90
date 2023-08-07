@@ -1033,3 +1033,323 @@ subroutine e3bLHS_DG(nshl, shlu, shgradgu, ui, umi, duidxi, tauB, gwt, &
   end do
 
 end subroutine e3bLHS_DG
+
+!======================================================================
+!
+!======================================================================
+subroutine e3LHS_3D_fluid_quenching(&
+    nshl, ui, umi, aci, pri, duidxi, &
+    dpridxi, dphidxi, dphidxidxj, dphidti, phii, &
+    rLi, rhoi, mui, &
+    tauM, tauP, tauLS, tauC, &
+    tauBar, tauBar1, kap_dc, kap_dc_phi, gwt, shgu, shgradgu, &
+    shhessgu, xKebe11, &
+    xGebe, xDebe1, xMebe, &
+    xLSebe, xLSUebe, &
+    xULSebe, xPLSebe)
+
+  use aAdjKeep
+  use commonvars
+  implicit none
+
+  integer, intent(in) :: nshl
+
+  real(8), intent(in) :: ui(NSD), umi(NSD), aci(NSD), pri, kap_dc, kap_dc_phi, &
+                         duidxi(NSD, NSD), dpridxi(NSD), rLi(NSD), &
+                         dphidxi(NSD), dphidxidxj(NSD, NSD), dphidti, phii, &
+                         rhoi, mui, &
+                         shgu(NSHL), shgradgu(NSHL, NSD), &
+                         shhessgu(NSHL, NSD, NSD), &
+                         gwt, tauM, tauP, tauLS, tauC, tauBar, tauBar1
+
+  real(8), intent(inout) :: xKebe11(NSD*NSD, NSHL, NSHL), &
+                            xGebe(NSD, NSHL, NSHL), &
+                            xDebe1(NSD, NSHL, NSHL), &
+                            xMebe(NSHL, NSHL), &
+                            xLSebe(NSHL, NSHL), &
+                            xLSUebe(NSD, NSHL, NSHL), &
+                            xULSebe(NSD, NSHL, NSHL), &
+                            xPLSebe(NSHL, NSHL)
+
+  integer :: aa, bb, i, j
+
+  real(8) :: fact1, fact2, fact3, &
+             tmp1(NSHL), tmp1_ls(NSHL), tmp2(NSHL), tmp4(NSHL, NSHL), &
+             advu1(NSD), advu2(NSD), mupkdc, kappadc, &
+             res_phic, res_phid, res_phi, nu, tmp3(NSD), tmp5(NSHL), tmp6(NSD), shconvggu(NSHL), shconvggls(NSHL)
+
+  real(8) :: advu_ls(3)
+  real(8) :: shconv(NSHL), divu
+  ! loop over local shape functions in each direction
+  fact1 = almi
+  fact2 = alfi*gami*Delt
+  fact3 = alfi*beti*Delt*Delt
+
+  drhodphi = rhow - rhoa
+  dmudphi = muw - mua
+
+  nu = mui/rhoi
+
+  mupkdc = mui + kap_dc
+  kappadc = kappa + kap_dc_phi
+
+!  write(*,*) "kappadc:", kappadc
+  tmp1 = 0.0d0
+  tmp1_ls = 0.0d0
+  tmp2 = 0.0d0
+  tmp4 = 0.0d0
+
+  advu1(:) = ui(:) - umi(:)
+  advu2(:) = -tauM*rLi(:)
+  advu_ls(:) = advu1(:) + gravvec(:)*usettle ! usettel = 0d0
+!  advu_ls (3) = advu_ls(3) - usettle
+  do aa = 1, NSHL
+    shconv(aa) = sum(shgradgu(aa, :)*advu1)
+  enddo
+  divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
+  tmp1(:) = rhoi*(advu1(1)*shgradgu(:, 1) + &! Na,_j (u_j-um_j)
+                 advu1(2)*shgradgu(:, 2) + &
+                 advu1(3)*shgradgu(:, 3))
+
+  tmp1_ls(:) = rhoi*(advu_ls(1)*shgradgu(:, 1) + &! Na,_j (u_j-um_j)
+                    advu_ls(2)*shgradgu(:, 2) + &
+                    advu_ls(3)*shgradgu(:, 3))
+
+  tmp2(:) = advu2(1)*shgradgu(:, 1) + &! Na,_i (-tauM*Li)
+            advu2(2)*shgradgu(:, 2) + &
+            advu2(3)*shgradgu(:, 3)
+
+  tmp5(:) = kappa*(shhessgu(:, 1, 1) &
+                   + shhessgu(:, 2, 2) + shhessgu(:, 3, 3))
+
+  tmp6(:) = gravvec(1)*duidxi(:, 1) + &! gravvec*duidxi
+            gravvec(2)*duidxi(:, 2) + &
+            gravvec(3)*duidxi(:, 3)
+
+  do aa = 1, NSHL
+    !shconvggu(aa) = sum(shgradgu(aa, :)*advu1)
+    !shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
+  end do
+
+  res_phic = dphidti + sum(advu_ls(:)*dphidxi(:)) !Convective part of the residual
+
+  res_phi = res_phic - (kappa*dphidxidxj(1, 1) + &
+                        kappa*dphidxidxj(2, 2) + &
+                        kappa*dphidxidxj(3, 3))
+
+  do bb = 1, NSHL      ! Diagonal blocks of K11
+    do aa = 1, NSHL
+
+      tmp4(aa, bb) = fact1*(shgu(aa)*rhoi*shgu(bb) + &
+                            tmp1(aa)*tauM*rhoi*shgu(bb)) + &
+                     fact2*(shgu(aa)*tmp1(bb) + &
+                            tmp1(aa)*tauM*tmp1(bb) + &
+                            mupkdc*(shgradgu(aa, 1)*shgradgu(bb, 1) + &
+                                    shgradgu(aa, 2)*shgradgu(bb, 2) + &
+                                    shgradgu(aa, 3)*shgradgu(bb, 3)) + &
+                            tmp2(aa)*rhoi*tauBar*tmp2(bb))
+    end do
+  end do
+
+  ! Physics-Physics Interaction
+  do bb = 1, NSHL
+    do aa = 1, NSHL
+      xKebe11(1, aa, bb) = xKebe11(1, aa, bb) + &
+                           (tmp4(aa, bb) + &
+                            fact2*(shgradgu(aa, 1)*mupkdc*shgradgu(bb, 1) + &
+                                   shgradgu(aa, 1)*(tauC+mui/3d0)*shgradgu(bb, 1)))*DetJ*gwt !rho*Vlsic*grad(Na)*Rc
+
+      xKebe11(5, aa, bb) = xKebe11(5, aa, bb) + &
+                           (tmp4(aa, bb) + &
+                            fact2*(shgradgu(aa, 2)*mupkdc*shgradgu(bb, 2) + &
+                                   shgradgu(aa, 2)*(tauC+mui/3d0)*shgradgu(bb, 2)))*DetJ*gwt
+
+      xKebe11(9, aa, bb) = xKebe11(9, aa, bb) + &
+                           (tmp4(aa, bb) + &
+                            fact2*(shgradgu(aa, 3)*mupkdc*shgradgu(bb, 3) + &
+                                   shgradgu(aa, 3)*(tauC+mui/3d0)*shgradgu(bb, 3)))*DetJ*gwt
+
+      xKebe11(2, aa, bb) = xKebe11(2, aa, bb) + &
+                           fact2*(shgradgu(aa, 2)*mupkdc*shgradgu(bb, 1) + &
+                                  shgradgu(aa, 1)*(tauC+mui/3d0)*shgradgu(bb, 2))*DetJ*gwt
+
+      xKebe11(4, aa, bb) = xKebe11(4, aa, bb) + &
+                           fact2*(shgradgu(aa, 1)*mupkdc*shgradgu(bb, 2) + &
+                                  shgradgu(aa, 2)*(tauC+mui/3d0)*shgradgu(bb, 1))*DetJ*gwt
+
+      xKebe11(3, aa, bb) = xKebe11(3, aa, bb) + &
+                           fact2*(shgradgu(aa, 3)*mupkdc*shgradgu(bb, 1) + &
+                                  shgradgu(aa, 1)*(tauC+mui/3d0)*shgradgu(bb, 3))*DetJ*gwt
+
+      xKebe11(7, aa, bb) = xKebe11(7, aa, bb) + &
+                           fact2*(shgradgu(aa, 1)*mupkdc*shgradgu(bb, 3) + &
+                                  shgradgu(aa, 3)*(tauC+mui/3d0)*shgradgu(bb, 1))*DetJ*gwt
+
+      xKebe11(6, aa, bb) = xKebe11(6, aa, bb) + &
+                           fact2*(shgradgu(aa, 3)*mupkdc*shgradgu(bb, 2) + &
+                                  shgradgu(aa, 2)*(tauC+mui/3d0)*shgradgu(bb, 3))*DetJ*gwt
+
+      xKebe11(8, aa, bb) = xKebe11(8, aa, bb) + &
+                           fact2*(shgradgu(aa, 2)*mupkdc*shgradgu(bb, 3) + &
+                                  shgradgu(aa, 3)*(tauC+mui/3d0)*shgradgu(bb, 2))*DetJ*gwt
+    end do
+  end do
+
+  ! Physics-Mesh
+  ! Divergence Matrix
+  do bb = 1, NSHL
+    do aa = 1, NSHL
+      xGebe(1, aa, bb) = xGebe(1, aa, bb) + &
+                         fact2*(-shgradgu(aa, 1)*shgu(bb) + &
+                                tmp1(aa)*tauM*shgradgu(bb, 1))*DetJ*gwt
+      xGebe(2, aa, bb) = xGebe(2, aa, bb) + &
+                         fact2*(-shgradgu(aa, 2)*shgu(bb) + &
+                                tmp1(aa)*tauM*shgradgu(bb, 2))*DetJ*gwt
+      xGebe(3, aa, bb) = xGebe(3, aa, bb) + &
+                         fact2*(-shgradgu(aa, 3)*shgu(bb) + &
+                                tmp1(aa)*tauM*shgradgu(bb, 3))*DetJ*gwt
+    end do
+  end do
+
+  ! Physics-LS
+  ! Divergence Matrix
+
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xULSebe(1, aa, bb) = xULSebe(1, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(1) - &
+  !                                 tauM*tmp1(aa)*gravvec(1)*shgu(bb))*DetJ*gwt
+  !     xULSebe(2, aa, bb) = xULSebe(2, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(2) - &
+  !                                 tauM*tmp1(aa)*gravvec(2)*shgu(bb))*DetJ*gwt
+  !     xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+  !                          fact2*(-shgu(aa)*shgu(bb)*gravvec(3) - &
+  !                                 tauM*tmp1(aa)*gravvec(3)*shgu(bb))*DetJ*gwt
+  !   end do
+  ! end do
+
+!  do bb = 1, NSHL
+!    do aa = 1, NSHL
+!      xULSebe(1,aa,bb) = xULSebe(1,aa,bb) + &
+!       (fact2*(-shgu(aa)*shgu(bb)*gravvec(1)) &
+!        tauLS*( fact1*shgu(aa)*shgu(bb)*gravvec(1)+ &
+!                fact2*shgu(aa)*gravvec(1)*tmp1_ls(bb)) + &
+!        )*DetJ*gwt
+
+!      xULSebe(2,aa,bb) = xULSebe(2,aa,bb) + &
+!       (fact2*(-shgu(aa)*shgu(bb)*gravvec(2)) &
+  !tauLS*( fact1*shgu(aa)*shgu(bb)*gravvec(2)+ &
+  !        fact2*shgu(aa)*gravvec(2)*tmp1_ls(bb))+&
+!        )*DetJ*gwt
+
+!      xULSebe(3,aa,bb) = xULSebe(3,aa,bb) + &
+!       (fact2*(-shgu(aa)*shgu(bb)*gravvec(3)) &
+!        tauLS*( fact1*shgu(aa)*shgu(bb)*gravvec(3)+ &
+!                fact2*shgu(aa)*gravvec(3)*tmp1_ls(bb))
+!        )*DetJ*gwt
+!    end do
+!  end do
+
+  ! Physics-LS
+  ! Divergence Matrix, added by Jinhui
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+  !                          tauBar1*(fact1*shconvggu(aa)*shgu(bb) + fact2*shconvggu(aa)*shconvggls(bb))*DetJ*gwt
+  !   end do
+  ! end do
+
+  ! LS-Physics
+  ! Divergence Matrix
+
+  ! do bb = 1, NSHL
+  !   do aa = 1, NSHL
+  !     xLSUebe(1, aa, bb) = xLSUebe(1, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(1))*DetJ*gwt!+&
+! !               shgradgu(aa,1)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !     xLSUebe(2, aa, bb) = xLSUebe(2, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(2))*DetJ*gwt!+&
+! !               shgradgu(aa,2)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !     xLSUebe(3, aa, bb) = xLSUebe(3, aa, bb) + &
+  !                          fact2*(shgu(aa)*shgu(bb)*dphidxi(3))*DetJ*gwt!+ &
+! !               shgradgu(aa,3)*tauLS*shgu(bb)*res_phi)*DetJ*gwt
+  !   end do
+  ! end do
+
+  ! Physics-Physics
+  ! Divergence Matrix
+  do bb = 1, NSHL
+    do aa = 1, NSHL
+      xDebe1(1, aa, bb) = xDebe1(1, aa, bb) + &
+                          (fact2*(shgu(aa)*shgradgu(bb, 1) + &
+                                  shgradgu(aa, 1)*tauP*tmp1(bb)) + &
+                           fact1*(shgradgu(aa, 1)*tauP*rhoi*shgu(bb)))*DetJ*gwt
+
+      xDebe1(2, aa, bb) = xDebe1(2, aa, bb) + &
+                          (fact2*(shgu(aa)*shgradgu(bb, 2) + &
+                                  shgradgu(aa, 2)*tauP*tmp1(bb)) + &
+                           fact1*(shgradgu(aa, 2)*tauP*rhoi*shgu(bb)))*DetJ*gwt
+
+      xDebe1(3, aa, bb) = xDebe1(3, aa, bb) + &
+                          (fact2*(shgu(aa)*shgradgu(bb, 3) + &
+                                  shgradgu(aa, 3)*tauP*tmp1(bb)) + &
+                           fact1*(shgradgu(aa, 3)*tauP*rhoi*shgu(bb)))*DetJ*gwt
+    end do
+  end do
+
+  ! Mass Matrix and LS matrix
+  do bb = 1, NSHL
+    do aa = 1, NSHL
+      xMebe(aa, bb) = xMebe(aa, bb) + &
+                      fact2*tauP*(shgradgu(aa, 1)*shgradgu(bb, 1) + &
+                                  shgradgu(aa, 2)*shgradgu(bb, 2) + &
+                                  shgradgu(aa, 3)*shgradgu(bb, 3))*DetJ*gwt
+
+    end do
+  end do
+
+  do bb = 1, NSHL
+    do aa = 1, NSHL
+      xLSebe(aa, bb) = xLSebe(aa, bb) + &
+              (shgu(aa) + tauls * shconv(aa)) * &
+              (fact1 * shgu(bb) + fact2 * shconv(bb) + fact2 * shgu(bb) * divu) * DetJ * gwt
+
+    end do
+  end do
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * shgu(aa) * drhodphi * shgu(bb) * rLi(:) / rhoi * DetJ * gwt
+      xULSebe(1, aa, bb) = xULSebe(1, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 1) + duidxi(1, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      xULSebe(2, aa, bb) = xULSebe(2, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 2) + duidxi(2, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      xULSebe(3, aa, bb) = xULSebe(3, aa, bb) + &
+        fact2 * sum(shgradgu(aa, :) * duidxi(:, 3) + duidxi(3, :)) * dmudphi * shgu(bb) * DetJ * gwt
+      
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * drhodphi * tauM * shconv(aa) * shgu(bb) * (rLi(:)+dpridxi(:)) * DetJ * gwt
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * rhoi * tauM * shconv(aa) * shgu(bb) * drhodphi * rLi(:) / rhoi * DetJ * gwt
+      xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
+        fact2 * shgu(bb) * (tauC*drhodphi + dmudphi/3d0) * divu * shgradgu(aa, :) * DetJ * gwt
+    enddo
+  enddo
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xLSUebe(:, aa, bb) = xLSUebe(:, aa, bb) + &
+        fact2 * tauls * res_phic * shgu(bb) * shgradgu(aa, :) * DetJ * gwt
+      xLSUebe(:, aa, bb) = xLSUebe(:, aa, bb) + &
+        fact2 * (shgu(aa) + tauls * shconv(aa)) * &
+        (shgu(bb) * dphidxi(:) + phii * shgradgu(bb, :)) * DetJ * gwt
+    enddo
+  enddo
+  do aa = 1, NSHL
+    do bb = 1, NSHL
+      xPLSebe(aa, bb) = xPLSebe(aa, bb) + &
+        fact2 * tauM * drhodphi / rhoi * shgu(bb) * sum(rLi(:) * shgradgu(aa, :)) * DetJ * gwt
+    enddo
+  enddo
+
+
+end subroutine e3LHS_3D_fluid_quenching

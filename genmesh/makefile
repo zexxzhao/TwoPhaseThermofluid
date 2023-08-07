@@ -104,10 +104,9 @@ doc:
 	@echo "= "
 	@echo "= This partition code handles internal surface elements"
 	@echo "= as the slaves of the volume elements with bigger "
-	@echo "= Element IDs. For example, if an element is shared "
+	@echo "= Element IDs. For example, if a triangle is shared "
 	@echo "= by two tetrahedra with Element ID 101 and 102, respectively, "
 	@echo "= F2E will save the element with ID 102 only."
 	@echo "= "
 	@echo "========================================================================="
-	@sleep 2
 .PHONY: doc

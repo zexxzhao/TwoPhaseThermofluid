@@ -233,7 +233,10 @@ subroutine getparam
   call rread("CP_WATER", cpw)
   call rread("HK_AIR", kappaa)
   call rread("HK_WATER", kappaw)
-
+  call rread("T_SAT", Ts)
+  call rread("LATENT_HEAT", lh)
+  call rread("C_COND", c_cond)
+  call rread("C_EVAP", c_evap)
   !call rread("Re", Re)
   !call rread("Pe", Pe)
   !call rread("Gr", Gr)
@@ -250,7 +253,7 @@ subroutine getparam
   !mu = muw
 
   mp_eps = 3.0d0
-  gravity = -0.0d0 ! -1.0d0/(Fr**2.0d0)
+  gravity = -9.81d0 ! -1.0d0/(Fr**2.0d0)
 
   gravvec(1) = 0.0d0
   gravvec(2) = 0.0d0
