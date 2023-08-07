@@ -109,7 +109,6 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
       Rhsu(i, aa) = Rhsu(i, aa) - &
                     (shgu(aa)*tmp1(i) + &
                      sum(shgradgu(aa, :)*tmp2(i, :)))*DetJ*gwt
-
     end do
   end do
 
@@ -527,6 +526,7 @@ subroutine e3Rhs_3D_fluid_quenching( &
                           Ti, rTi, dTdxi, &
                           rhoi, mui, &
                           RHSphi)
+  use mpi
   use aAdjKeep
   use commonvars
   implicit none
@@ -590,41 +590,42 @@ subroutine e3Rhs_3D_fluid_quenching( &
             uprime1(2)*duidxi(:, 2) + &
             uprime1(3)*duidxi(:, 3)
 
+
   tmp2(1, 1) = -ptot + 2.0d0*mupkdc*(duidxi(1, 1) - 1d0/3d0 * vdot) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(1) &
-               + rho*uprime1(1)*tauBar*tmp4(1)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(1) &
+               + rhoi*uprime1(1)*tauBar*tmp4(1)
 
   tmp2(1, 2) = mupkdc*(duidxi(1, 2) + duidxi(2, 1)) &
-               - rho*(uadvi(2) + uprime1(2))*uprime1(1) &
-               + rho*uprime1(2)*tauBar*tmp4(1)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(1) &
+               + rhoi*uprime1(2)*tauBar*tmp4(1)
 
   tmp2(1, 3) = mupkdc*(duidxi(1, 3) + duidxi(3, 1)) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(1) &
-               + rho*uprime1(3)*tauBar*tmp4(1)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(1) &
+               + rhoi*uprime1(3)*tauBar*tmp4(1)
 
   tmp2(2, 1) = mupkdc*(duidxi(2, 1) + duidxi(1, 2)) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(2) &
-               + rho*uprime1(1)*tauBar*tmp4(2)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(2) &
+               + rhoi*uprime1(1)*tauBar*tmp4(2)
 
   tmp2(2, 2) = -ptot + 2.0d0*mupkdc*(duidxi(2, 2) - 1d0/3d0 * vdot)&
-               - rho*(uadvi(2) + uprime1(2))*uprime1(2) &
-               + rho*uprime1(2)*tauBar*tmp4(2)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(2) &
+               + rhoi*uprime1(2)*tauBar*tmp4(2)
 
   tmp2(2, 3) = mupkdc*(duidxi(2, 3) + duidxi(3, 2)) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(2) &
-               + rho*uprime1(3)*tauBar*tmp4(2)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(2) &
+               + rhoi*uprime1(3)*tauBar*tmp4(2)
 
   tmp2(3, 1) = mupkdc*(duidxi(3, 1) + duidxi(1, 3)) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(3) &
-               + rho*uprime1(1)*tauBar*tmp4(3)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(3) &
+               + rhoi*uprime1(1)*tauBar*tmp4(3)
 
   tmp2(3, 2) = mupkdc*(duidxi(3, 2) + duidxi(2, 3)) &
-               - rho*(uadvi(2) + uprime1(2))*uprime1(3) &
-               + rho*uprime1(2)*tauBar*tmp4(3)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(3) &
+               + rhoi*uprime1(2)*tauBar*tmp4(3)
 
   tmp2(3, 3) = -ptot + 2.0d0*mupkdc*(duidxi(3, 3) - 1d0/3d0 * vdot) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(3) &
-               + rho*uprime1(3)*tauBar*tmp4(3)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(3) &
+               + rhoi*uprime1(3)*tauBar*tmp4(3)
 
   ! Physics Residual
   do aa = 1, NSHL
@@ -639,12 +640,14 @@ subroutine e3Rhs_3D_fluid_quenching( &
 
     end do
   end do
-
-  ! Physics Residual
-  ! do aa = 1, NSHL
-  !   Rhsu(3, aa) = Rhsu(3, aa) - &
-  !                 (sum(shgradgu(aa, :)*uadvi(:))*tauBar1*res_phi)*DetJ*gwt
-  ! end do
+  if(isnan(sum(tmp2))) then
+    write(*,*) "MYID=", myid
+    write(*,*) "tmp2=", tmp2
+    write(*,*) "[vdot, mdot] = ", vdot, mdot
+    write(*,*) "mupkdc=", mui, kap_dc
+    write(*,*) ptot, rhoi, tmp4(:)
+    ! call mpi_abort(MPI_COMM_WORLD, mpi_err)
+  endif
 
   do aa = 1, NSHL
     Rhsp(aa) = Rhsp(aa) - &
@@ -654,21 +657,7 @@ subroutine e3Rhs_3D_fluid_quenching( &
   end do
 
   do aa = 1, NSHL
-    ! Rhsphi(aa) = Rhsphi(aa) - &
-    !              (res_phic*shgu(aa) + sum(shgradgu(aa, :)*kappadc*dphidxi(:)) + &
-    !               tauLS*shconv(aa)*res_phi)*DetJ*gwt
     RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phi * DetJ * gwt
   end do
-!  write(*,*) kappadc, Rhsphi(1:4)
-  ! do aa = 1, NSHL
-  !   Rhsphi(aa) = Rhsphi(aa) - &
-  !                (shgradgu(aa, 3)*tauBar1*res_phi/rho)*DetJ*gwt
-  ! end do
-
-!!!  do aa = 1, NSHL
-!!!    Rhsp(aa) = Rhsp(aa) - &
-!!!               ( shgu(aa)*divu + &
-!!!                 sum(shgradgu(aa,:)*tauP*rLi(:)) )*DetJ*gwt
-!!!  end do
 
 end subroutine e3Rhs_3D_fluid_quenching

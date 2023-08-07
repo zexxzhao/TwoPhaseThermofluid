@@ -261,37 +261,20 @@ subroutine generateIC()
   pgold = 0.0d0
   rphigold = 0.0d0
   elem_h = 0.0005d0
+  phigold(:) = 0d0
+  phig(:) = 0d0
+  ugold(:, :) = 0d0
+  Tgold(:) = 75d0 + 273d0
   do i = 1, NNODE
-    phigold(i) = 0d0!-1.0d0/(gravity*Fr**2.0d0)*xg(i,3) + 1.0d0!+ 1.0d0/(2.0d0*gravity*Fr**2.0d0)
-    pgold(i) = 0.0d0!(phigold(i)-phi_bg(i))*gravvec(3)*xg(i,3)
-    !  phigold(i)  =  rhotmp
-    ! if (xg(i, 1) <= position_init) then
-    !   phigold(i) = 1d0
-    ! end if
-    ! if (xg(i, 1) > position_init + elem_h) then
-    !   phigold(i) = 0d0
-    ! end if
-    ! if ((xg(i, 1) <= position_init + elem_h) .and. (xg(i, 1) >= position_init)) then
-    !   rtmp = xg(i, 1) - position_init
-    !   phigold(i) = -rtmp/(elem_h) + 1d0
-    !   ugold(i, 1) = (ug_rand(i, 1) - 0.5)/10000d0
-    !   ugold(i, 2) = (ug_rand(i, 2) - 0.5)/10000d0
-    !   ugold(i, 3) = (ug_rand(i, 3) - 0.5)/10000d0
-    ! end if
-    ugold(i, :) = 0d0
-    ugold(i, 1) = 1.0d0
-    Tgold(i) = 0.0d0
     if(NODEID(i) == 101) then
-      ugold(i, 1) = 0.0d0
-      Tgold(i) = 1.0d0
+      Tgold(i) = 5d2 + 273d0
     end if
-
   end do
   do b = 1,NBOUND
     if(bound(b)%FACE_ID /= 5) cycle
     do i = 1,bound(b)%NNODE
       n = bound(b)%BNODES(i)
-      Tgold(n) = 0.0d0
+      Tgold(n) = 5d2 + 273d0
     end do
   enddo
   ! call commu(ugold, 3, "out")

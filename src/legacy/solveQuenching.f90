@@ -348,18 +348,13 @@ subroutine IntElmAss_NSVOF_Quenching(&
           gw(igauss), shlu, shgradgu, uprime, &
           Rhsu, Rhsp, phi, &
           dpridxi, dphidxi, dphidxidxj, dphidti, &
-          Ti, rTi, rhoi, mui, &
+          Ti, rTi, dTdxi, rhoi, mui, &
           RHSphi)
 
       end if
       ! if(ismaster) write(*,*) "flag = ", assemble_tensor_flag
 
     end do
-    do aa = 1, NSHL
-      do bb = 1,NSD
-        ibc_loc(aa, bb) = ibc(ien(iel, aa), bb)
-      enddo
-    enddo
 
     ! Apply Dirichlet BCs
     ! if(myid == 1 .and. iel == 1794 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then

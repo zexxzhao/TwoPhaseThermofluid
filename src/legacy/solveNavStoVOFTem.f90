@@ -94,7 +94,7 @@ subroutine print_residual(r, r0, utol, assemble_field_flag, inewt)
   integer, intent(in) :: inewt
 
   character(len=80) :: fomt
-  fomt = "(I3,a,x,ES13.6,x,F12.6,x,F12.6,x)"
+  fomt = "(I3,a,x,ES13.6,x,F12.6,a,F12.6,a)"
   if(ismaster) then
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
       write(*,fomt) inewt, ") Total Mom. Res. Norm = ", &
