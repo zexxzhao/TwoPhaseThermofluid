@@ -329,14 +329,14 @@ subroutine getparam
     i = bb
     write (fnum(1), '(I4)') i
     fname(1) = 'BCphigType'//trim(adjustl(fnum(1)))
-    call iread3(fname(1), BCphigType(i))
+    call iread(fname(1), BCphigType(i))
   end do
 
   do bb = 1, NBOUND
     i = bb
     write (fnum(1), '(I4)') i
     fname(1) = 'BCTgType'//trim(adjustl(fnum(1)))
-    call iread3(fname(1), BCTgType(i))
+    call iread(fname(1), BCTgType(i))
   end do
 
   ! call rread("usettle", usettle)

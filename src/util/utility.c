@@ -124,10 +124,10 @@ void FORTRAN_NAME(check_convergence)(IndexType *pConverged,
     check_convergence(pConverged, pResidual, pResidual0, pResidualTol, *assembleFieldFlag);
 }
 
-void FORTRAN_NAME(print_residual)(const ScalarType *pResidual,
-                                  const ScalarType *pResidual0,
-                                  const ScalarType *pResidualTol,
-                                  IndexType *assembleFieldFlag,
-                                  IndexType *iter) {
+void FORTRAN_NAME(print_residual_c)(const ScalarType *pResidual,
+                                    const ScalarType *pResidual0,
+                                    const ScalarType *pResidualTol,
+                                    IndexType *assembleFieldFlag,
+                                    IndexType *iter) {
     print_residual(pResidual, pResidual0, pResidualTol, *assembleFieldFlag, *iter);
 }
