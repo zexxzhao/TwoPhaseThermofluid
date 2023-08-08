@@ -1,11 +1,76 @@
 !======================================================================
 !
 !======================================================================
+subroutine prop_interp(prop_a, prop_b, phi, prop_out)
+  real(8), intent(in) :: prop_a, prop_b, phi
+  real(8), intent(out) :: prop_out
+
+  prop_out = prop_a * phi + prop_b * (1 - phi)
+end subroutine prop_interp
+
+!======================================================================
+!
+!======================================================================
+subroutine e3int_qr(NSHL, NSD, NVAR, shlu, vall, vali)
+  implicit none
+  integer, intent(in) :: NSHL, NSD, NVAR
+  real(8), intent(in) :: shlu(NSHL)
+  real(8), intent(in) :: vall(NSHL, NVAR)
+  real(8), intent(out) :: vali(NVAR)
+
+  integer :: i
+  do i = 1, NVAR
+    vali(i) = sum(vall(:, i)*shlu(:))
+  enddo
+end subroutine e3int_qr
+
+!======================================================================
+!
+!======================================================================
+subroutine e3int_qr_grad(NSHL, NSD, NVAR, shgradlu, vall, gradvali)
+  implicit none
+  integer, intent(in) :: NSHL, NSD, NVAR
+  real(8), intent(in) :: shgradlu(NSHL, NSD)
+  real(8), intent(in) :: vall(NSHL, NVAR)
+  real(8), intent(out) :: gradvali(NVAR, NSD)
+
+  integer :: i, j
+  do i = 1, NVAR
+    do j = 1, NSD
+      gradvali(i, j) = sum(vall(:, i)*shgradlu(:, j))
+    enddo
+  enddo
+end subroutine e3int_qr_grad
+
+!======================================================================
+!
+!======================================================================
+subroutine e3int_qr_hess(NSHL, NSD, NVAR, shhesslu, vall, hessvali)
+  implicit none
+  integer, intent(in) :: NSHL, NSD, NVAR
+  real(8), intent(in) :: shhesslu(NSHL, NSD, NSD)
+  real(8), intent(in) :: vall(NSHL, NVAR)
+  real(8), intent(out) :: hessvali(NVAR, NSD, NSD)
+
+  integer :: i, j, k
+  do i = 1, NVAR
+    do j = 1, NSD
+      do k = 1, NSD
+        hessvali(i, j, k) = sum(vall(:, i)*shhesslu(:, j, k))
+      enddo
+    enddo
+  enddo
+end subroutine e3int_qr_hess
+!======================================================================
+!
+!======================================================================
 subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
                        shlu, shgradlu, shgradgu, shhessgu, dxidx, &
                        Ginv, di, ui, aci, umi, acmi, pri, fi, ddidxi, &
                        duidxi, duidxixj, dpridxi, phi, &
-                       dphidxi, dphidxixj, dphidtl, dphidti, xi, rLi)
+                       dphidxi, dphidxixj, dphidtl, dphidti, xi, &
+                       rhoi, mui, &
+                       rLi, res_phi)
   use aAdjKeep
   use commonvars
   implicit none
@@ -25,6 +90,7 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
              dpridxi(NSD), phi, dphidxi(NSD), rLi(NSD), xi(NSD)
   real(8) :: uadv(NSD), He0, rho0, h, dphidxi0(NSD), dphidxixj(NSD, NSD), &
              dphidtl(NSHL), dphidti
+  real(8) :: rhoi, mui, res_phi
 
   xi = 0.0d0
   di = 0.0d0
@@ -70,8 +136,8 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
     end do
   end do
 
-  rho = rhow * phi + rhoa * (1.0d0 - phi)
-  mu = muw * phi + rhoa * (1.0d0 - phi)
+  rhoi = rhow * phi + rhoa * (1.0d0 - phi)
+  mui = muw * phi + rhoa * (1.0d0 - phi)
 
 !  ! NS-ALE PDE Residual
 !  dphidxi0(1) = 0.0d0
@@ -82,18 +148,85 @@ subroutine e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, pl, fl, phil, &
 !  rho0 = (1.0d0-He0)*rhoa + He0*rhow
 
 !  fi = fi + (rho-rho0)*gravvec
-
+  fi(:) = rhoi * gravvec(:)
   uadv(:) = ui(:) - umi(:)
 
-  rLi(:) = rho*aci(:) + &
-           rho*(duidxi(:, 1)*uadv(1) + &
-                duidxi(:, 2)*uadv(2) + &
-                duidxi(:, 3)*uadv(3)) + &
-           dpridxi(:) - gravvec(:)*phi - fi(:) - &
-           mu*(duidxixj(:, 1, 1) + duidxixj(:, 2, 2) + duidxixj(:, 3, 3))
-
+  rLi(:) = rhoi*aci(:) + &
+           rhoi*(duidxi(:, 1)*uadv(1) + &
+                 duidxi(:, 2)*uadv(2) + &
+                 duidxi(:, 3)*uadv(3)) + &
+           dpridxi(:) - fi(:) - &
+           mui*(duidxixj(:, 1, 1) + duidxixj(:, 2, 2) + duidxixj(:, 3, 3)) - &
+           mui*2d0/3d0*(duidxixj(1, 1, :) + duidxixj(2, 2, :) + duidxixj(3, 3, :))
 end subroutine e3int_fluid
 
+!======================================================================
+!
+!======================================================================
+
+subroutine e3int_rLi(NSD, rhoi, mui, &
+                    aci, duidxi, uadvi, &
+                    dpridxi, fi, duidxixj, &
+                    rLi)
+  implicit none
+  integer, intent(in) :: NSD
+  real(8), intent(in) :: rhoi, mui
+  real(8), intent(in) :: aci(NSD), duidxi(NSD, NSD), uadvi(NSD)
+  real(8), intent(in) :: dpridxi(NSD), fi(:)
+  real(8), intent(in) :: duidxixj(NSD, NSD, NSD)
+
+  real(8), intent(out) :: rLi(NSD)
+  rLi(:) = rhoi*aci(:) + &
+           rhoi*(duidxi(:, 1)*uadvi(1) + &
+                 duidxi(:, 2)*uadvi(2) + &
+                 duidxi(:, 3)*uadvi(3)) + &
+           dpridxi(:) - fi(:) - &
+           mui*(duidxixj(:, 1, 1) + duidxixj(:, 2, 2) + duidxixj(:, 3, 3)) - &
+           mui*2d0/3d0*(duidxixj(1, 1, :) + duidxixj(2, 2, :) + duidxixj(3, 3, :))
+end subroutine e3int_rLi
+!======================================================================
+!
+!======================================================================
+
+subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, duidxi, mdot, rhoa, resphi)
+  implicit none
+  integer, intent(in) :: NSD
+  real(8), intent(in) :: rphii, phii, dphidxi(NSD)
+  real(8), intent(in) :: uadvi(NSD), duidxi(NSD, NSD)
+  real(8), intent(in) :: mdot, rhoa
+  
+  real(8), intent(out) :: resphi
+
+  real(8) :: divu
+  integer :: i
+
+  do i = 1, NSD
+    divu = divu + duidxi(i, i)
+  enddo
+  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * divu - mdot / rhoa
+end subroutine e3int_resphi
+!======================================================================
+!
+!======================================================================
+
+subroutine e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhoi, cpi, hki, restem)
+  implicit none
+  integer, intent(in) :: NSD
+  real(8), intent(in) :: rTi, Ti, dTdxi(NSD), dTdxixj(NSD, NSD)
+  real(8), intent(in) :: uadvi(NSD)
+  real(8), intent(in) :: Se, rhoi, cpi, hki
+  real(8), intent(out) :: restem
+
+  real(8) :: lapT
+  integer :: i
+  ! calculate laplacian of temperature
+  lapT = 0.0d0
+  do i = 1, NSD
+    lapT = lapT + dTdxixj(i, i)
+  enddo
+
+  restem = rhoi*cpi*(rTi + sum(uadvi(:)*dTdxi(:))) - Se - hki * lapT
+end subroutine e3int_restem
 !======================================================================
 !
 !======================================================================

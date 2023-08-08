@@ -318,6 +318,8 @@ module commonvars
   ! Navier-Stokes solver
   real(8) :: mua, rhoa, muw, rhow
   real(8) :: cpa, cpw, kappaa, kappaw
+  real(8) :: rhos, mus, cps, kappas
+
   real(8) :: NS_kdc_w, NS_kdc_a, fine_tau
 
   real(8) :: NS_GMRES_tol, NS_NL_Utol, NS_NL_Ptol
@@ -365,10 +367,13 @@ module commonvars
   real(8) :: gravity, gravvec(3)
 
   ! Interface
-  real(8) :: mp_eps, mu, rho, dmudphi, drhodphi, kappa, beta_t, phi_inf, &
-             phi_t, C_t, Re, Pe, Gr, Fr, Ra, Sr, Pr, dphi_bg(3), cross_flag
+  real(8) :: mp_eps, beta_t, phi_inf, &
+             phi_t, C_t, Re, Pe, Gr, Fr, &
+             Ra, Sr, Pr, dphi_bg(3), cross_flag
 
-  real(8) :: cp, hk
+  !real(8) :: mu, rho, dmudphi, drhodphi
+  real(8) :: kappa
+  !real(8) :: cp, hk
   real(8) :: Ts, c_cond, c_evap, lh
   ! Setup
   real(8) :: Froude, Uin
@@ -377,9 +382,11 @@ module commonvars
   integer, allocatable :: BCugType(:, :)
   real(8), allocatable :: BCugValu(:, :), phi_bg(:)
   integer, allocatable :: BCphigType(:), BCTgType(:)
-  real(8) :: usettle
+  real(8), allocatable :: BCphigValu(:), BCTgValu(:)
+
+  ! real(8) :: usettle
   ! Flags
-  logical :: move, mono, conv, shel
+  ! logical :: move, mono, conv, shel
 
   ! rotation
   real(8) :: theta, thetd, thedd, thetaOld, thetdOld, theddOld, &
@@ -438,3 +445,96 @@ module mpi
 
   integer, allocatable :: ilworku(:), ilworkp(:)
 end module mpi
+
+module configuration
+
+  type VMSConfigType
+    logical :: use_taubar
+    logical :: use_sliding_velocity
+    real(8) :: NS_kdc_w, NS_kdc_a
+    real(8) :: LSC_kdc
+    real(8) :: Tem_kdc
+
+  end type VMSConfigType
+
+  type KSPConfigType
+
+    integer :: NRES
+    integer, allocatable :: max_iter(:), min_iter(:)
+    real(8), allocatable :: atol(:), rtol(:)
+  end type KSPConfigType
+
+  type NewtonRaphsonConfigType
+
+    integer :: NRES
+    integer :: max_iter, min_iter
+    real(8), allocatable :: atol(:), rtol(:)
+  end type NewtonRaphsonConfigType
+
+  type ConfigType
+    logical :: iga
+    logical :: fem_flag
+    logical :: use_hessian
+    logical :: calc_cfl
+    type(VMSConfigType) :: vms
+    type(KSPConfigType) :: ksp
+    type(NewtonRaphsonConfigType) :: newton_raphson
+  end type ConfigType
+  contains
+  subroutine init_config(config)
+    use aAdjKeep
+    use commonvars
+  
+    implicit none
+    type(ConfigType), intent(out) :: config
+
+    integer :: NRES = 4
+
+    config%iga = iga
+    config%fem_flag = fem_flag /= 0
+    config%use_hessian = .false.
+
+    config%vms%use_taubar = .false.
+    config%vms%use_sliding_velocity = .false.
+    config%vms%NS_kdc_w = NS_kdc_w
+    config%vms%NS_kdc_a = NS_kdc_a
+    config%vms%LSC_kdc = LSC_kdc
+    config%vms%Tem_kdc = 1d0
+
+    config%ksp%NRES = NRES
+    allocate(config%ksp%max_iter(NRES))
+    allocate(config%ksp%min_iter(NRES))
+    allocate(config%ksp%atol(NRES))
+    allocate(config%ksp%rtol(NRES))
+  
+    config%ksp%max_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, LSC_GMRES_itermax/)
+    config%ksp%min_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, LSC_GMRES_itermax/)
+    config%ksp%atol(:) = (/1d-12, 1d-12, 1d-12, 1d-12/)
+    config%ksp%rtol(:) = (/NS_GMRES_tol, NS_GMRES_tol, LSC_GMRES_tol, LSC_GMRES_tol/)
+
+    config%newton_raphson%NRES = NRES
+    allocate(config%newton_raphson%atol(NRES))
+    allocate(config%newton_raphson%rtol(NRES))
+
+    config%newton_raphson%max_iter = NS_NL_itermax
+    config%newton_raphson%min_iter = 1
+    config%newton_raphson%atol(:) = (/1d-12, 1d-12, 1d-12, 1d-12/)
+    config%newton_raphson%rtol(:) = (/NS_NL_Utol, NS_NL_Ptol, LSC_NL_tol, LSC_NL_tol/)
+  end subroutine init_config
+
+  subroutine finalize_config(config)
+    use aAdjKeep
+    use commonvars
+  
+    implicit none
+    type(ConfigType), intent(inout) :: config
+
+    deallocate(config%ksp%max_iter)
+    deallocate(config%ksp%min_iter)
+    deallocate(config%ksp%atol)
+    deallocate(config%ksp%rtol)
+    deallocate(config%newton_raphson%atol)
+    deallocate(config%newton_raphson%rtol)
+
+  end subroutine finalize_config
+end module configuration

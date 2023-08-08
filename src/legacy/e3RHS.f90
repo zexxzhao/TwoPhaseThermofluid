@@ -2,7 +2,7 @@
 !
 !======================================================================
 subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
-                          rLi, fi, duidxi, ddidxi, tauM, tauP, tauLS, &
+                          rLi, fi, duidxi, ddidxi, rhoi, mui, tauM, tauP, tauLS, &
                           tauC, tauBar, tauBar1, kap_dc, kap_dc_phi, gwt, shgu, &
                           shgradgu, uprime, Rhsu, Rhsp, phi, &
                           dpridxi, dphidxi, dphidxidxj, dphidti, &
@@ -16,6 +16,7 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
                          uadvi(NSD), pri, rLi(NSD), fi(NSD), &
                          duidxi(NSD, NSD), ddidxi(NSD, NSD), gwt, &
                          shgu(NSHL), shgradgu(NSHL, NSD), kap_dc, kap_dc_phi, &
+                         rhoi, mui, &
                          tauM, tauP, tauLS, tauC, tauBar, tauBar1, uprime(NSD)
 
   real(8), intent(in) :: dpridxi(NSD), dphidxi(NSD), dphidxidxj(NSD, NSD), dphidti
@@ -44,7 +45,7 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
   uprime1(:) = uprime(:)
   ! uprime1(3) = uprime(3) - res_phi*tauBar1*fine_tau
 
-  mupkdc = mu + kap_dc
+  mupkdc = mui + kap_dc
   kappadc = kappa + kap_dc_phi
 
   divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
@@ -55,7 +56,7 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
   enddo
   ptot = pri - tauC*divu
 
-  tmp1(:) = rho*(aci(:) + advu(1)*duidxi(:, 1) &
+  tmp1(:) = rhoi*(aci(:) + advu(1)*duidxi(:, 1) &
                  + advu(2)*duidxi(:, 2) &
                  + advu(3)*duidxi(:, 3)) - fi(:)
 
@@ -64,40 +65,40 @@ subroutine e3Rhs_3D_fluid(nshl, ui, aci, umi, acmi, uadvi, pri, &
             uprime1(3)*duidxi(:, 3)
 
   tmp2(1, 1) = -ptot + 2.0d0*mupkdc*duidxi(1, 1) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(1) &
-               + rho*uprime1(1)*tauBar*tmp4(1)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(1) &
+               + rhoi*uprime1(1)*tauBar*tmp4(1)
 
   tmp2(1, 2) = mupkdc*(duidxi(1, 2) + duidxi(2, 1)) &
-               - rho*(uadvi(2) + uprime1(2))*uprime1(1) &
-               + rho*uprime1(2)*tauBar*tmp4(1)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(1) &
+               + rhoi*uprime1(2)*tauBar*tmp4(1)
 
   tmp2(1, 3) = mupkdc*(duidxi(1, 3) + duidxi(3, 1)) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(1) &
-               + rho*uprime1(3)*tauBar*tmp4(1)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(1) &
+               + rhoi*uprime1(3)*tauBar*tmp4(1)
 
   tmp2(2, 1) = mupkdc*(duidxi(2, 1) + duidxi(1, 2)) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(2) &
-               + rho*uprime1(1)*tauBar*tmp4(2)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(2) &
+               + rhoi*uprime1(1)*tauBar*tmp4(2)
 
   tmp2(2, 2) = -ptot + 2.0d0*mupkdc*duidxi(2, 2) &
-               - rho*(uadvi(2) + uprime1(2))*uprime1(2) &
-               + rho*uprime1(2)*tauBar*tmp4(2)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(2) &
+               + rhoi*uprime1(2)*tauBar*tmp4(2)
 
   tmp2(2, 3) = mupkdc*(duidxi(2, 3) + duidxi(3, 2)) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(2) &
-               + rho*uprime1(3)*tauBar*tmp4(2)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(2) &
+               + rhoi*uprime1(3)*tauBar*tmp4(2)
 
   tmp2(3, 1) = mupkdc*(duidxi(3, 1) + duidxi(1, 3)) &
-               - rho*(uadvi(1) + uprime1(1))*uprime1(3) &
-               + rho*uprime1(1)*tauBar*tmp4(3)
+               - rhoi*(uadvi(1) + uprime1(1))*uprime1(3) &
+               + rhoi*uprime1(1)*tauBar*tmp4(3)
 
   tmp2(3, 2) = mupkdc*(duidxi(3, 2) + duidxi(2, 3)) &
-               - rho*(uadvi(2) + uprime1(2))*uprime1(3) &
-               + rho*uprime1(2)*tauBar*tmp4(3)
+               - rhoi*(uadvi(2) + uprime1(2))*uprime1(3) &
+               + rhoi*uprime1(2)*tauBar*tmp4(3)
 
   tmp2(3, 3) = -ptot + 2.0d0*mupkdc*duidxi(3, 3) &
-               - rho*(uadvi(3) + uprime1(3))*uprime1(3) &
-               + rho*uprime1(3)*tauBar*tmp4(3)
+               - rhoi*(uadvi(3) + uprime1(3))*uprime1(3) &
+               + rhoi*uprime1(3)*tauBar*tmp4(3)
 
   ! Physics Residual
   do aa = 1, NSHL
@@ -148,16 +149,18 @@ end subroutine e3Rhs_3D_fluid
 !======================================================================
 ! RHS for weak BC
 !======================================================================
-subroutine e3bRHS_outflow(nshl, nor, gwt, shlu, ui, umi, Rhsu, phi, gphi, Rhsphi)
+subroutine e3bRHS_outflow(nshl, nor, gwt, shlu, ui, umi, rhoi, mui, &
+                          Rhsu, phi, gphi, Rhsphi)
 
   use aAdjKeep
   use commonvars
   implicit none
 
   integer, intent(in) :: nshl
+  real(8), intent(in) :: shlu(NSHL), nor(NSD), gwt, ui(NSD), umi(NSD)
+  real(8), intent(in) :: rhoi, mui, phi, gphi
 
   real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsphi(NSHL)
-  real(8), intent(in)    :: shlu(NSHL), nor(NSD), gwt, ui(NSD), umi(NSD), phi, gphi
 
   integer :: aa, bb, i
   real(8) :: uneg, unor, tmp1(NSD), tmp2
@@ -168,7 +171,7 @@ subroutine e3bRHS_outflow(nshl, nor, gwt, shlu, ui, umi, Rhsu, phi, gphi, Rhsphi
   unor = sum((ui - umi)*nor)  ! u \cdot n
   uneg = 0.5d0*(unor - abs(unor))
 
-  tmp1(:) = -uneg*rho*(ui(:) - umi(:))
+  tmp1(:) = -uneg*rhoi*(ui(:) - umi(:))
 
   tmp2 = -uneg*(phi - gphi)
 
@@ -187,67 +190,67 @@ end subroutine e3bRHS_outflow
 !======================================================================
 !
 !======================================================================
-subroutine e3Rhs_3D_struct(nshl, aci, ui, fi, Ftens, Stens, gwt, &
-                           shlu, shgradgu, Rhsu, dc)
-
-  use aAdjKeep
-  use commonvars
-
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer :: aa, i, j
-
-  real(8) :: gwt, shlu(NSHL), shgradgu(NSHL, NSD), &
-             fact1, aci(NSD), ui(NSD), fi(NSD), &
-             Rhsu(NSD, NSHL), Ftens(NSD, NSD), Stens(NSD, NSD), dc
-
-  real(8) :: tmp1(NSD), tmp2(NSD, NSD)
-
-  tmp1 = 0d+0
-  tmp2 = 0d+0
-
-!  dC = 5.0d+4
-!  dc = 6.0d+5
-!  dC = 0.0d0
-
-  tmp1(:) = rho*aci(:) + dC*ui(:) - fi(:)
-
-  ! First P-K Stress
-  do j = 1, NSD
-    do i = 1, NSD
-      tmp2(i, j) = Ftens(i, 1)*Stens(1, j) &
-                   + Ftens(i, 2)*Stens(2, j) &
-                   + Ftens(i, 3)*Stens(3, j)
-!                + FPKS0(i,j)
-    end do
-  end do
-
-  ! Discrete Residual
-  do aa = 1, NSHL
-
-    Rhsu(1, aa) = Rhsu(1, aa) - &
-                  (shlu(aa)*tmp1(1) + &
-                   shgradgu(aa, 1)*tmp2(1, 1) + &
-                   shgradgu(aa, 2)*tmp2(1, 2) + &
-                   shgradgu(aa, 3)*tmp2(1, 3))*DetJ*gwt
-
-    Rhsu(2, aa) = Rhsu(2, aa) - &
-                  (shlu(aa)*tmp1(2) + &
-                   shgradgu(aa, 1)*tmp2(2, 1) + &
-                   shgradgu(aa, 2)*tmp2(2, 2) + &
-                   shgradgu(aa, 3)*tmp2(2, 3))*DetJ*gwt
-
-    Rhsu(3, aa) = Rhsu(3, aa) - &
-                  (shlu(aa)*tmp1(3) + &
-                   shgradgu(aa, 1)*tmp2(3, 1) + &
-                   shgradgu(aa, 2)*tmp2(3, 2) + &
-                   shgradgu(aa, 3)*tmp2(3, 3))*DetJ*gwt
-
-  end do
-
-end subroutine e3Rhs_3D_struct
+! subroutine e3Rhs_3D_struct(nshl, aci, ui, fi, Ftens, Stens, gwt, &
+!                            shlu, shgradgu, Rhsu, dc)
+! 
+!   use aAdjKeep
+!   use commonvars
+! 
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer :: aa, i, j
+! 
+!   real(8) :: gwt, shlu(NSHL), shgradgu(NSHL, NSD), &
+!              fact1, aci(NSD), ui(NSD), fi(NSD), &
+!              Rhsu(NSD, NSHL), Ftens(NSD, NSD), Stens(NSD, NSD), dc
+! 
+!   real(8) :: tmp1(NSD), tmp2(NSD, NSD)
+! 
+!   tmp1 = 0d+0
+!   tmp2 = 0d+0
+! 
+! !  dC = 5.0d+4
+! !  dc = 6.0d+5
+! !  dC = 0.0d0
+! 
+!   tmp1(:) = rho*aci(:) + dC*ui(:) - fi(:)
+! 
+!   ! First P-K Stress
+!   do j = 1, NSD
+!     do i = 1, NSD
+!       tmp2(i, j) = Ftens(i, 1)*Stens(1, j) &
+!                    + Ftens(i, 2)*Stens(2, j) &
+!                    + Ftens(i, 3)*Stens(3, j)
+! !                + FPKS0(i,j)
+!     end do
+!   end do
+! 
+!   ! Discrete Residual
+!   do aa = 1, NSHL
+! 
+!     Rhsu(1, aa) = Rhsu(1, aa) - &
+!                   (shlu(aa)*tmp1(1) + &
+!                    shgradgu(aa, 1)*tmp2(1, 1) + &
+!                    shgradgu(aa, 2)*tmp2(1, 2) + &
+!                    shgradgu(aa, 3)*tmp2(1, 3))*DetJ*gwt
+! 
+!     Rhsu(2, aa) = Rhsu(2, aa) - &
+!                   (shlu(aa)*tmp1(2) + &
+!                    shgradgu(aa, 1)*tmp2(2, 1) + &
+!                    shgradgu(aa, 2)*tmp2(2, 2) + &
+!                    shgradgu(aa, 3)*tmp2(2, 3))*DetJ*gwt
+! 
+!     Rhsu(3, aa) = Rhsu(3, aa) - &
+!                   (shlu(aa)*tmp1(3) + &
+!                    shgradgu(aa, 1)*tmp2(3, 1) + &
+!                    shgradgu(aa, 2)*tmp2(3, 2) + &
+!                    shgradgu(aa, 3)*tmp2(3, 3))*DetJ*gwt
+! 
+!   end do
+! 
+! end subroutine e3Rhs_3D_struct
 
 !======================================================================
 !
@@ -343,6 +346,7 @@ end subroutine e3Rhs_3D_mesh
 !======================================================================
 subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
                        shlu, shgradgu, ui, umi, pri, duidxi, gi, &
+                       rhoi, mui, &
                        Rhsu, Rhsp, ti, tmp1, tmp2)
   use aAdjKeep
   use commonvars
@@ -356,19 +360,19 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
                             nor(NSD), tauB, tauNor, gwt, &
                             ui(NSD), umi(NSD), pri, duidxi(NSD, NSD), &
                             gi(NSD)
-
+  real(8), intent(in)    :: rhoi, mui
   integer :: aa, bb, i
   real(8) :: fact1, fact2, upos, uneg, unor, tr, pt33, gmul, gnor
 
   tmp1 = 0.0d0
   tmp2 = 0.0d0
 
-  ti(:) = -pri*nor(:) + mu*(duidxi(:, 1)*nor(1) + &
-                            duidxi(:, 2)*nor(2) + &
-                            duidxi(:, 3)*nor(3) + &
-                            duidxi(1, :)*nor(1) + &
-                            duidxi(2, :)*nor(2) + &
-                            duidxi(3, :)*nor(3))
+  ti(:) = -pri*nor(:) + mui*(duidxi(:, 1)*nor(1) + &
+                             duidxi(:, 2)*nor(2) + &
+                             duidxi(:, 3)*nor(3) + &
+                             duidxi(1, :)*nor(1) + &
+                             duidxi(2, :)*nor(2) + &
+                             duidxi(3, :)*nor(3))
 
   ! Relative normal velocity for convective term
   unor = sum((ui - umi)*nor)  ! u \cdot n
@@ -381,7 +385,7 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
 
   tmp1(:) = -ti(:) &
             + tauB*(ui(:) - gi(:)) &
-            - uneg*rho*(ui(:) - gi(:)) &
+            - uneg*rhoi*(ui(:) - gi(:)) &
             + (tauNor - tauB)*unor*nor(:)
 
   ! gmul =  1.0d0 => sym
@@ -389,7 +393,7 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
   gmul = 1.0d0
   do aa = 1, NSD
     do bb = 1, NSD
-      tmp2(aa, bb) = -gmul*mu*((ui(aa) - gi(aa))*nor(bb) &
+      tmp2(aa, bb) = -gmul*mui*((ui(aa) - gi(aa))*nor(bb) &
                                + (ui(bb) - gi(bb))*nor(aa))
     end do
   end do
@@ -477,43 +481,43 @@ end subroutine e3bRHS_3D_force
 ! RHS for DG/Non-matching
 ! for w1t1, fact=1.0; for w2t2, fact=-1.0
 !======================================================================
-subroutine e3bRHS_DG(nshl, shgu, shgradgu, gwt, ui, ti, nor, tauB, &
-                     Rhsu, Rhsp, sgn)
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  integer, intent(in)    :: nshl
-  real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsp(NSHL)
-  real(8), intent(in)    :: shgu(NSHL), shgradgu(NSHL, NSD), gwt, &
-                            ui(NSD), ti(NSD), &
-                            nor(NSD), tauB, sgn
-  integer :: aa, bb, i
-  real(8) :: tmp1(NSD), tmp2(NSD, NSD), upos, uneg, unor, gmul
-
-  tmp1 = 0.0d0
-  tmp2 = 0.0d0
-
-  unor = sum(ui*nor)
-
-  tmp1(:) = -0.5d0*ti(:) + tauB*ui(:)
-
-  ! viscous contribution (in weighting functions)
-  do aa = 1, NSD
-    do bb = 1, NSD
-      tmp2(aa, bb) = -0.5d0*mu*(ui(aa)*nor(bb) + ui(bb)*nor(aa))
-    end do
-  end do
-
-  do aa = 1, NSHL
-    do i = 1, NSD
-      Rhsu(i, aa) = Rhsu(i, aa) - sgn* &
-                    (shgu(aa)*tmp1(i) + &
-                     sum(shgradgu(aa, :)*tmp2(i, :)))*DetJb*gwt
-    end do
-    Rhsp(aa) = Rhsp(aa) + sgn*0.5d0*shgu(aa)*unor*DetJb*gwt
-  end do
-end subroutine e3bRHS_DG
+! subroutine e3bRHS_DG(nshl, shgu, shgradgu, gwt, ui, ti, nor, tauB, &
+!                      Rhsu, Rhsp, sgn)
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   integer, intent(in)    :: nshl
+!   real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsp(NSHL)
+!   real(8), intent(in)    :: shgu(NSHL), shgradgu(NSHL, NSD), gwt, &
+!                             ui(NSD), ti(NSD), &
+!                             nor(NSD), tauB, sgn
+!   integer :: aa, bb, i
+!   real(8) :: tmp1(NSD), tmp2(NSD, NSD), upos, uneg, unor, gmul
+! 
+!   tmp1 = 0.0d0
+!   tmp2 = 0.0d0
+! 
+!   unor = sum(ui*nor)
+! 
+!   tmp1(:) = -0.5d0*ti(:) + tauB*ui(:)
+! 
+!   ! viscous contribution (in weighting functions)
+!   do aa = 1, NSD
+!     do bb = 1, NSD
+!       tmp2(aa, bb) = -0.5d0*mu*(ui(aa)*nor(bb) + ui(bb)*nor(aa))
+!     end do
+!   end do
+! 
+!   do aa = 1, NSHL
+!     do i = 1, NSD
+!       Rhsu(i, aa) = Rhsu(i, aa) - sgn* &
+!                     (shgu(aa)*tmp1(i) + &
+!                      sum(shgradgu(aa, :)*tmp2(i, :)))*DetJb*gwt
+!     end do
+!     Rhsp(aa) = Rhsp(aa) + sgn*0.5d0*shgu(aa)*unor*DetJb*gwt
+!   end do
+! end subroutine e3bRHS_DG
 !======================================================================
 !
 !======================================================================

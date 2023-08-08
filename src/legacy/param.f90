@@ -321,8 +321,8 @@ subroutine getparam
     end do
   end do
 
-  allocate (BCphigType(NBOUND), &
-            BCTgType(NBOUND))
+  allocate (BCphigType(NBOUND), BCphigValu(NBOUND))
+  allocate (BCTgType(NBOUND), BCTgValu(NBOUND))
   BCphigType(:) = 0
   BCTgType(:) = 0
   do bb = 1, NBOUND
@@ -334,10 +334,27 @@ subroutine getparam
 
   do bb = 1, NBOUND
     i = bb
+    if (BCphigType(i) /= 1) cycle
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCphigValu'//trim(adjustl(fnum(1)))
+    call rread(fname(1), BCphigValu(i))
+  end do
+
+  do bb = 1, NBOUND
+    i = bb
     write (fnum(1), '(I4)') i
     fname(1) = 'BCTgType'//trim(adjustl(fnum(1)))
     call iread(fname(1), BCTgType(i))
   end do
+
+  do bb = 1, NBOUND
+    i = bb
+    if (BCTgType(i) /= 1) cycle
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCTgValu'//trim(adjustl(fnum(1)))
+    call rread(fname(1), BCTgValu(i))
+  end do
+
 
   ! call rread("usettle", usettle)
   ! Wave generating wall

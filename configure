@@ -20,14 +20,14 @@ echo >> ${CONFIGFILE}
 #########################
 # CONFIGURE GFORTRAN FLASG BASED ON GNU VERSION
 #########################
-USE_OLD_GCC=$(gcc --version | awk '/gcc/ && ($3+0)>=10.0{print "Version is greater than 10.0"}')
-
 echo "FC=${FC}">> ${CONFIGFILE}
-if [ -z "${USE_OLD_GCC}" ]
+GCC_VERSION=$(${CC} --version | awk '/gcc/ {print $NF+0}')
+
+if [ $(echo "${GCC_VERSION} >= 10.0" | bc -l) -eq 1 ];
 then
-    echo "FFLAGS:=-O2 -g -fPIC -fbounds-check -fcheck=mem" >> ${CONFIGFILE}
-else
     echo "FFLAGS:=-O2 -g -fPIC -fbounds-check -fcheck=mem -fallow-argument-mismatch" >> ${CONFIGFILE}
+else
+    echo "FFLAGS:=-O2 -g -fPIC -fbounds-check -fcheck=mem" >> ${CONFIGFILE}
 fi
 
 echo >> ${CONFIGFILE}

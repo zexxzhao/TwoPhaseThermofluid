@@ -38,6 +38,7 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   real(8) :: fact1, fact2, tauB, tauNor, gi(NSD), gphi, tauBLS
   real(8) :: gneg, wave_u, wave_phi
   real(8) :: e3(3)
+  real(8) :: rhoi, mui
   integer :: NGAUSSf
   e3 = 0d0
   e3(3) = -1d0
@@ -145,8 +146,8 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
           umi(i) = sum(uml(:, i)*shlu)
           xi(i) = sum(xl(:, i)*shlu)
         end do
-        rho = rhow * phi + rhoa * (1d0 - phi)
-        mu = muw * phi + mua * (1d0 - phi)
+        rhoi = rhow * phi + rhoa * (1d0 - phi)
+        mui = muw * phi + mua * (1d0 - phi)
 
         do j = 1, NSD
           dphidxi(j) = sum(phil*shgradgu(:, j))

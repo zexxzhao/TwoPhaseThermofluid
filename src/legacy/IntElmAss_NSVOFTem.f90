@@ -52,6 +52,7 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   real(8) :: res_phic_tmp1, res_phic_tmp2
   real(8) :: Qi, Si(3, 3), Omegai(3, 3)
   logical :: is_fluid
+  real(8) :: rhoi, mui
 
   volm = 0.0d0
   vol_ex = 0.0d0
@@ -165,13 +166,15 @@ subroutine IntElmAss_NSVOF(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         !write(*,*) "PRISM", ui(1), duidxi(1, :)
       endif
       ! ALE Advective Velocity
+      rhoi = rhow * phi + rhoa * (1.0d0 - phi)
+      mui = muw * phi + mua * (1.0d0 - phi)
       uadvi(:) = ui(:) - umi(:)
-      uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
+      uadvi_ls(:) = uadvi(:) !+ gravvec(:)*usettle
       tauM = 0.0d0; tauP = 0.0d0; tauC = 0.0d0; tauBar = 0.0d0; tauLS = 0.0d0
 
       call e3STAB_3D(Gij, Ginv, uadvi, uadvi_ls, rLi, &
                      tauM, tauP, tauLS, tauC, tauBar, tauBar1, uprime, cfl_loc, &
-                     rho, mu)
+                     rhoi, mui)
 
       cfl(1) = max(cfl(1), cfl_loc(1))
 !!!      cfl(2)  = max(cfl(2), cfl_loc(2))
@@ -325,6 +328,7 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   logical :: is_fluid
   real(8) :: fact1, fact2
   real(8), allocatable :: shconv(:), tmp(:)
+  real(8) :: rhoi, mui, cpi, hki
 
   fact1 = almi
   fact2 = alfi * gami * Delt
@@ -423,15 +427,15 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       umi(1) = sum(uml(:, 1)*shlu(:))
       umi(2) = sum(uml(:, 2)*shlu(:))
       umi(3) = sum(uml(:, 3)*shlu(:))
-      rho = phi*rhow + (1 - phi)*rhoa
-      mu = phi*muw + (1 - phi)*mua
-      cp = phi*cpw + (1 - phi)*cpa
-      hk = phi*kappaw + (1 - phi)*kappaa
+      rhoi = phi*rhow + (1 - phi)*rhoa
+      mui = phi*muw + (1 - phi)*mua
+      cpi = phi*cpw + (1 - phi)*cpa
+      hki = phi*kappaw + (1 - phi)*kappaa
       if (.not. is_fluid) then
-        rho = 2.7d3
-        mu = 1d3
-        cp = 921.0d0
-        hk = 205.0d0
+        rhoi = 2.7d3
+        mui = 1d3
+        cpi = 921.0d0
+        hki = 205.0d0
         uadvi(:) = 0d0
         ui(:) = 0d0
         umi(:) = 0d0
@@ -439,7 +443,7 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
       ! ALE Advective Velocity
       uadvi(:) = ui(:) - umi(:)
-      uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
+      uadvi_ls(:) = uadvi(:) !+ gravvec(:)*usettle
       tauM = 0.0d0; tauP = 0.0d0; tauC = 0.0d0; tauBar = 0.0d0; tauLS = 0.0d0
       do aa = 1, NSHL
         shconv(aa) = sum(uadvi(:)*shgradgu(aa, :))
@@ -451,10 +455,10 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
         enddo
       enddo
       tau_tem = tau_tem + 4.0d0 / Delt ** 2
-      tau_tem = tau_tem + 3.0d0 * (hk / rho / cp) ** 2 * sum(Gij ** 2)
-      tau_tem = 1d0/rho/cp/sqrt(tau_tem)
+      tau_tem = tau_tem + 3.0d0 * (hki / rhoi / cpi) ** 2 * sum(Gij ** 2)
+      tau_tem = 1d0/rhoi/cpi/sqrt(tau_tem)
 
-      res_tem1 = rho*cp*(rTi + sum(uadvi(:)*dTdxi(:)))
+      res_tem1 = rhoi*cpi*(rTi + sum(uadvi(:)*dTdxi(:)))
       ! resume here
       res_tem2 = 0d0
 
@@ -470,15 +474,15 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 !        k_dc = 0d0
       !k_dc_phi = 0d0
 !        k_dc = 0.0
-      tmp(:)  = shlu(:) + tau_tem * rho * cp * shconv(:)
+      tmp(:)  = shlu(:) + tau_tem * rhoi * cpi * shconv(:)
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
         ! e3LHS_3D_tem()
         ! xTebe(:, :) = 0.0d0
         do aa = 1, NSHL
           do bb = 1,NSHL
-            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact1 * rho * cp * shlu(bb) * gw(igauss) * DetJ
-            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact2 * rho * cp * shconv(bb) * gw(igauss) * DetJ
-            xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hk * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact1 * rhoi * cpi * shlu(bb) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact2 * rhoi * cpi * shconv(bb) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hki * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
           enddo
         enddo
       end if
@@ -486,9 +490,9 @@ subroutine IntElmAss_Tem(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         ! e3RHS_3D_tem()
         RHSTem(:) = RHStem(:) -  tmp(:) * res_tem1 * gw(igauss) * DetJ
-        RHSTem(:) = RHSTem(:) - hk * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
-        RHSTem(:) = RHSTem(:) - hk * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
-        RHSTem(:) = RHSTem(:) - hk * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
+        RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
+        RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
+        RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
       end if
     end do
     !if(sum(dTdxi(:) ** 2) > 0d0) then

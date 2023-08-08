@@ -258,7 +258,9 @@ subroutine setBCs_NSVOF()
       do j = 1, bound(b)%NNODE
         k = bound(b)%BNODES(j)
         IBC(k, 5) = 1
-        rphig(k) = 0.0d0 
+        phig(k) = BCphigValu(b) ! further dev
+        rphig(k) = ((phig(k) - phigold(k))*Dtgl &
+                    + (gami - 1.0d0)*rphigold(k))/gami
       end do
     end if
   end do  ! end loop: all faces
@@ -290,8 +292,9 @@ subroutine setBCs_Tem()
       do j = 1, bound(b)%NNODE
         k = bound(b)%BNODES(j)
         IBC(k, 6) = 1
-        Tg(k) = 0.0d0 
-        rTg(k) = 0.0d0 
+        Tg(k) = BCTgValu(b)
+        rTg(k) = ((Tg(k) - Tgold(k))*Dtgl &
+                  + (gami - 1.0d0)*rTgold(k))/gami
       end do
     end if
   end do  ! end loop: all faces

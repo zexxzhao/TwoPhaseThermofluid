@@ -126,74 +126,87 @@ end subroutine e3DC_beta3
 !======================================================================
 !
 !======================================================================
-subroutine e3DC_beta2(ui, duidxi, Gij, res, dxidx, kdc)
+subroutine e3DC_beta2(NSD, ns_kdc, Gij, res, kdc)
 
-  use aAdjKeep
-  use commonvars
+  !use aAdjKeep
+  !use commonvars
 
   implicit none
 
-  real(8), intent(in) :: Gij(NSD, NSD)
-  real(8) :: ui(NSD), duidxi(NSD, NSD), res(NSD), He, dxidx(NSD, NSD)
-  integer :: i, j
-  real(8) :: h4, resnorm, kdc
+  integer, intent(in) :: NSD
+  integer, intent(in) :: ns_kdc
+  real(8), intent(in) :: Gij(NSD, NSD), res(NSD)
+  real(8), intent(out) :: kdc
 
-  He = 1d0!!!(rho - rhoa)/(rhow - rhoa)
+  kdc = ns_kdc * sqrt(sum(res(:)*res(:)) / sum(Gij(:, :)*Gij(:, :)))
 
-  ! Convection based meshsize
-  h4 = 0d0
-  do j = 1, NSD
-    do i = 1, NSD
-      h4 = h4 + Gij(i, j)*Gij(i, j)
-    end do
-  end do
-
-  ! Residual norm
-  resnorm = sqrt(sum(res(:)*res(:)))
-
-  ! KDC parameter
-!  kdc = resnorm*(He*NS_kdc_w  + (1d0-He)*NS_kdc_a)/sqrt(h4)
-  kdc = resnorm/sqrt(h4)
 end subroutine e3DC_beta2
+!======================================================================
+!
+!======================================================================
+subroutine e3DC_scalar(NSD, c_kdc, Gij, res, gradc, kdc)
+
+  !use aAdjKeep
+  !use commonvars
+
+  implicit none
+
+  integer, intent(in) :: NSD
+  real(8), intent(in) :: c_kdc, Gij(NSD, NSD)
+  real(8), intent(in) :: res, gradc(NSD)
+  real(8) :: tmp, kdc
+  integer :: i, j
+
+  tmp = 0d0
+
+  do i = 1, NSD
+    do j = 1, NSD
+      tmp = tmp + Gij(i, j)*gradc(i)*gradc(j)
+    enddo
+  enddo
+
+  kdc = c_kdc * abs(res) / sqrt(tmp + 1d-12)
+
+end subroutine e3DC_scalar
 
 !======================================================================
 !
 !======================================================================
-subroutine e3DC_shakibNS(ui, duidxi, Ginv, res, dxidx, KAPPA_DC)
-
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  real(8), intent(in) :: Ginv(NSD, NSD)
-  real(8) :: ui(NSD), duidxi(NSD, NSD), res(NSD), He, dxidx(NSD, NSD)
-  real(8) :: KAPPA_DC(NSD, NSD)
-  integer :: i, j
-  real(8) :: resnorm, temp(NSD)
-
-  He = (rho - rhoa)/(rhow - rhoa)
-
-  ! Grad norm in reference coordinates
-  temp = 0.0d0
-  do j = 1, NSD
-    do i = 1, NSD
-      temp = temp + duidxi(:, i)*Ginv(i, j)*duidxi(:, j)
-    end do
-  end do
-
-  ! Residual norm
-  resnorm = sqrt(sum(res(:)*res(:)))
-
-  ! Kdc
-  KAPPA_DC = Ginv*(He*NS_kdc_w + (1d0 - He)*NS_kdc_a)* &
-             resnorm/(sqrt(sum(temp)) + 1d-3)
-
-end subroutine e3DC_shakibNS
+! subroutine e3DC_shakibNS(ui, duidxi, Ginv, res, dxidx, KAPPA_DC)
+! 
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   real(8), intent(in) :: Ginv(NSD, NSD)
+!   real(8) :: ui(NSD), duidxi(NSD, NSD), res(NSD), He, dxidx(NSD, NSD)
+!   real(8) :: KAPPA_DC(NSD, NSD)
+!   integer :: i, j
+!   real(8) :: resnorm, temp(NSD)
+! 
+!   He = (rho - rhoa)/(rhow - rhoa)
+! 
+!   ! Grad norm in reference coordinates
+!   temp = 0.0d0
+!   do j = 1, NSD
+!     do i = 1, NSD
+!       temp = temp + duidxi(:, i)*Ginv(i, j)*duidxi(:, j)
+!     end do
+!   end do
+! 
+!   ! Residual norm
+!   resnorm = sqrt(sum(res(:)*res(:)))
+! 
+!   ! Kdc
+!   KAPPA_DC = Ginv*(He*NS_kdc_w + (1d0 - He)*NS_kdc_a)* &
+!              resnorm/(sqrt(sum(temp)) + 1d-3)
+! 
+! end subroutine e3DC_shakibNS
 
 !======================================================================
 ! Stabilization parameter (tauB) for weak BC
 !======================================================================
-subroutine e3bSTAB_weak(tauB, tauBLS, tauNor, ui, nor, dxidx)
+subroutine e3bSTAB_weak(tauB, tauNor, ui, nor, dxidx, rhoi, mui)
 
   use aAdjKeep
   use commonvars
@@ -201,7 +214,9 @@ subroutine e3bSTAB_weak(tauB, tauBLS, tauNor, ui, nor, dxidx)
   implicit none
 
   real(8), intent(in)  :: ui(NSD), nor(NSD), dxidx(NSD, NSD)
-  real(8), intent(out) :: tauB, tauNor, tauBLS
+  real(8), intent(in)  :: rhoi, mui
+
+  real(8), intent(out) :: tauB, tauNor
 
   real(8) :: temp(NSD), hn, unor, upos, uneg
   integer :: i
@@ -213,8 +228,8 @@ subroutine e3bSTAB_weak(tauB, tauBLS, tauNor, ui, nor, dxidx)
 !!!  hn = 1.0d0/(sqrt(sum(temp*temp)))  ! hn for tets
   hn = 2.0d0/(sqrt(sum(temp*temp)))  ! hn for other elements
 
-  tauB = 4.0d0*mu/hn
-  tauBLS = 4.0d0*kappa/hn
+  tauB = 4.0d0*mui/hn
+  ! tauBLS = 4.0d0*kappa/hn
 
   unor = sum(ui*nor(:))
   upos = 0.5d0*(unor + abs(unor))
@@ -225,32 +240,125 @@ subroutine e3bSTAB_weak(tauB, tauBLS, tauNor, ui, nor, dxidx)
 end subroutine e3bSTAB_weak
 
 !======================================================================
-! Stabilization parameter (tauB) for DG
+! Stabilization parameters (tauM, tauC) for VMS
 !======================================================================
-subroutine e3bSTAB_DG(tauB, ui, nor, dxidx)
-  use aAdjKeep
-  use commonvars
-  use mpi
+subroutine e3STAB_3D_NSVOF(NSD, Gij, dt, uadvi, rhoi, mui, &
+                           tauM, tauP, tauC, tauLS)
+  ! use aAdjKeep
+  ! use commonvars
   implicit none
 
-  real(8), intent(in)  :: ui(NSD), nor(NSD), dxidx(NSD, NSD)
-  real(8), intent(out) :: tauB
+  integer, intent(in)  :: NSD
+  real(8), intent(in)  :: Gij(NSD, NSD), uadvi(NSD),&
+                          dt, rhoi, mui
+  real(8), intent(out) :: tauM, tauC, tauP, tauLS
 
-  real(8) :: temp(NSD), hn, unor, uneg
-  integer :: i
+  real(8) :: taua, taut, taud, m_k, nu
+  integer :: i, j
 
-  do i = 1, NSD
-    temp(i) = sum(dxidx(i, :)*nor)
+  ! dtfact = 4.0d0
+
+!!!  dtfact = 16.0d0
+!!!  dtfact = 64.0d0
+!!!  dtfact = 256.0d0
+
+  m_k = 3.0d0
+
+  ! get tauM, tauC, cfl(1)
+  taua = 0.0d0
+  do j = 1, NSD
+    do i = 1, NSD
+      taua = taua + uadvi(i)*Gij(i, j)*uadvi(j)
+    end do
   end do
 
-  hn = 1.0d0/(sqrt(sum(temp*temp)))
-  tauB = 16.0d0*mu/hn
+  nu = mui/rhoi
+  taud = nu * nu * m_k * sum(Gij(:, :) * Gij(:, :))
+  taut = 4.0d0 / (dt * dt)
 
-  unor = sum(ui*nor(:))
+  ! Get tauM
+  tauM = 1.0d0/(rhoi*sqrt(taut + taua + taud))
+  tauLS = 1.0d0/(sqrt(taut + taua))
+  tauP = tauM
 
-  uneg = 0.5d0*(unor - abs(unor))
-  tauB = tauB - rho*uneg
+  ! Get tauC
+  tauC = rhoi*sqrt(taua + taud)/(Gij(1, 1) + Gij(2, 2) + Gij(3, 3))
+end subroutine e3STAB_3D_NSVOF
 
-!!!  tauB = tauB + rho*abs(unor)
+!======================================================================
+! Stabilization parameter tauBar for Tem
+!======================================================================
+subroutine e3STAB_3D_TEM(NSD, Gij, uadvi, dt, rhoi, cpi, hki, &
+                         tau_tem)
+! use aAdjKeep
+! use commonvars
+implicit none
 
-end subroutine e3bSTAB_DG
+integer, intent(in)  :: NSD
+real(8), intent(in)  :: Gij(NSD, NSD), uadvi(NSD)
+real(8), intent(in)  :: dt, rhoi, cpi, hki
+real(8), intent(out) :: tau_tem
+
+real(8) :: m_k, k
+integer :: i, j
+
+m_k = 3.0d0
+
+tau_tem = 0.0d0
+do j = 1, NSD
+  do i = 1, NSD
+    tau_tem = tau_tem + uadvi(i)*Gij(i, j)*uadvi(j)
+  end do
+end do
+tau_tem = tau_tem + 4.0d0 / (dt * dt)
+
+k = hki / (rhoi * cpi)
+tau_tem = tau_tem + k * k * m_k * sum(Gij(:, :) * Gij(:, :))
+
+! Get tauM
+tau_tem = 1.0d0/(rhoi * cpi * sqrt(tau_tem))
+end subroutine e3STAB_3D_TEM
+!======================================================================
+! Stabilization parameter tauBar for NSVOF
+!======================================================================
+subroutine e3STAB_3D_NSVOF_TAUBAR(NSD, Gij, uadvi, uprime, tauBar)
+  implicit none
+
+  integer, intent(in)  :: NSD
+  real(8), intent(in)  :: Gij(NSD, NSD), uadvi(NSD), uprime(NSD)
+
+  real(8), intent(out) :: tauBar
+
+  integer :: i, j
+
+  ! Get TauBar
+  tauBar = 0.0d0
+  do i = 1, NSD
+    do j = 1, NSD
+      tauBar = tauBar + uprime(i)*Gij(i,j)*uprime(j)
+    end do
+  end do
+  tauBar = 1.0d0/sqrt(tauBar+1.0d-15)
+end subroutine e3STAB_3D_NSVOF_TAUBAR
+
+!======================================================================
+! Calculate the CFL number
+!======================================================================
+subroutine e3CFL(NSD, uadvi, Gij, dt, cfl)
+  implicit none
+  integer, intent(in)  :: NSD
+  real(8), intent(in)  :: uadvi(NSD), Gij(NSD, NSD)
+  real(8), intent(in)  :: dt
+
+  real(8), intent(out) :: cfl
+
+  integer :: i, j
+
+  do i = 1, NSD
+    do j = 1, NSD
+      cfl = cfl + uadvi(i)*Gij(i, j)*uadvi(j)
+    end do
+  end do
+  cfl = dt*sqrt(cfl)
+
+end subroutine e3CFL

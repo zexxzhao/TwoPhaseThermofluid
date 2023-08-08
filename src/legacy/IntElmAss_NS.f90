@@ -177,7 +177,7 @@ subroutine IntElmAss_3D(inewt, dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
         ! ALE Advective Velocity
         uadvi(:) = ui(:) - umi(:)
-        uadvi_ls(:) = uadvi(:) + gravvec(:)*usettle
+        uadvi_ls(:) = uadvi(:)! + gravvec(:)*usettle
         tauM = 0.0d0; tauP = 0.0d0; tauC = 0.0d0; tauBar = 0.0d0; tauLS = 0.0d0
 
         call e3STAB_3D(Gij, Ginv, uadvi, uadvi_ls, rLi, &
@@ -317,6 +317,7 @@ subroutine IntElmMesh_3D(dgAlpha)
   real(8) :: kappa_mesh, phi, dphidxi(NSD), xi(NSD)
 
   real(8) :: Gij(NSD, NSD), Ginv(NSD, NSD)
+  real(8) :: rhoi, mui
 
   NGAUSS = -1
   NSHL = -1
@@ -346,8 +347,8 @@ subroutine IntElmMesh_3D(dgAlpha)
       call genGPandGW(gp, gw, NGAUSS)
     end if
 
-    rho = 1.0d0
-    mu = 1.0d0  !3448275.86206897d0
+    rhoi = 1.0d0
+    mui = 1.0d0  !3448275.86206897d0
     lambda = 1.0d0  !31034482.7586207d0
     kappa_mesh = 0.0d0
 
