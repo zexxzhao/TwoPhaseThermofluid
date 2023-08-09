@@ -182,7 +182,7 @@ subroutine e3int_rLi(NSD, rhoi, mui, &
                  duidxi(:, 3)*uadvi(3)) + &
            dpridxi(:) - fi(:) - &
            mui*(duidxixj(:, 1, 1) + duidxixj(:, 2, 2) + duidxixj(:, 3, 3)) - &
-           mui*2d0/3d0*(duidxixj(1, 1, :) + duidxixj(2, 2, :) + duidxixj(3, 3, :))
+           mui*1d0/3d0*(duidxixj(1, 1, :) + duidxixj(2, 2, :) + duidxixj(3, 3, :))
 end subroutine e3int_rLi
 !======================================================================
 !

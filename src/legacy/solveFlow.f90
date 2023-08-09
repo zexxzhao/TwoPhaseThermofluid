@@ -1,15 +1,16 @@
 !======================================================================
 !
 !======================================================================
-subroutine solmultiphasethermofluid_stag(istep)
+subroutine solmultiphasethermofluid_stag(config, istep)
 
   use aAdjKeep
   use mpi
   use commonvars
   use commonpars
-
+  use configuration
   implicit none
 
+  type(ConfigType), intent(in) :: config
   integer, intent(in) :: istep
 
   integer :: inewt, i
@@ -37,7 +38,7 @@ subroutine solmultiphasethermofluid_stag(istep)
   call setBCs_Tem()
   !call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
   !                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
-  call assembleQuenching(ASSEMBLE_TENSOR_VEC, &
+  call assembleQuenching(config, ASSEMBLE_TENSOR_VEC, &
                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
   call calculate_residual(residual0, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
@@ -58,7 +59,7 @@ subroutine solmultiphasethermofluid_stag(istep)
     IBC(:, 6:8) = 1
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
     !                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
-    call assembleQuenching(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
+    call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
     call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
     call check_convergence(converged, residual, residual0, utol, &
@@ -101,7 +102,7 @@ subroutine solmultiphasethermofluid_stag(istep)
       IBC(:, 7:8) = 1
       ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
       !                           ASSEMBLE_FIELD_TEM)
-      call assembleQuenching(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
+      call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                              ASSEMBLE_FIELD_TEM)
       call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
       call check_convergence(converged, residual, residual0, utol, &
@@ -133,7 +134,7 @@ subroutine solmultiphasethermofluid_stag(istep)
     call setBCs_Tem()
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
     !                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
-    call assembleQuenching(ASSEMBLE_TENSOR_VEC, &
+    call assembleQuenching(config, ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
     call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)

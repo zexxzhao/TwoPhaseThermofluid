@@ -7,6 +7,8 @@ program NURBScode
   use mpi
   use commonvars
   use defs_shell
+  use configuration
+
   implicit none
 
   integer :: i, j, k, ii, istep, Rstep, nn, dd, ibld, avgstepold, avgstep
@@ -18,6 +20,7 @@ program NURBScode
                           NRmatOld(:, :, :), NRdotOld(:, :, :), NRddtOld(:, :, :)
 
   character(len=30) :: fname, iname, cname
+  type(ConfigType) :: config
 
   ! Initialize MPI
   call MPI_INIT(mpi_err)
@@ -34,6 +37,7 @@ program NURBScode
   nonmatch = .false.
   if (ismaster) write (*, *) "Get run parameters"
   call getparam()
+  call init_config(config)
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
   call input(myid + 1)
@@ -117,7 +121,7 @@ program NURBScode
   !--------------------------------------------
   if (ismaster) write (*, *) "Deallocating matrices and vectors"
   call deallocMatVec()
-
+  call finalize_config(config)
   ! Finalize MPI
   call MPI_FINALIZE(mpi_err)
 

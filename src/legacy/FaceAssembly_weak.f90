@@ -31,7 +31,7 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
   integer :: b, ifac, iel, igauss, i, j, k, hess_flag, aa, bb, nshl, outflow, traction
 
   real(8), allocatable :: gp(:, :), gw(:), mgp(:, :)
-  real(8) :: ui(NSD), pri, duidxi(NSD, NSD), phi, rphi, dphidxi(NSD), &
+  real(8) :: ui(NSD), pri, duidxi(NSD, NSD), phii, rphii, dphidxi(NSD), &
              Gij(NSD, NSD), Ginv(NSD, NSD), ti(NSD), nor(NSD), &
              bui(NSD), umi(NSD), dxidx(NSD, NSD), dphidx(NSD), xi(3)
   real(8) :: tmp1(NSD), tmp2(NSD, NSD)
@@ -138,24 +138,18 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                             Gij, Ginv, nor)
 
         ! Interpolate
-        pri = sum(pl*shlu)
-        phi = sum(phil*shlu)
-        rphi = sum(rphil*shlu)
-        do i = 1, NSD
-          ui(i) = sum(ul(:, i)*shlu)
-          umi(i) = sum(uml(:, i)*shlu)
-          xi(i) = sum(xl(:, i)*shlu)
-        end do
-        rhoi = rhow * phi + rhoa * (1d0 - phi)
-        mui = muw * phi + mua * (1d0 - phi)
+        call e3int_qr(NSHL, NSD, 1, shlu, pl, pri)
+        call e3int_qr(NSHL, NSD, 1, shlu, phil, phii)
+        call e3int_qr(NSHL, NSD, 1, shlu, rphil, rphii)
+        call e3int_qr(NSHL, NSD, NSD, shlu, ul, ui)
+        call e3int_qr(NSHL, NSD, NSD, shlu, uml, umi)
+        call e3int_qr(NSHL, NSD, NSD, shlu, xl, xi)
 
-        do j = 1, NSD
-          dphidxi(j) = sum(phil*shgradgu(:, j))
-          do i = 1, NSD
-            duidxi(i, j) = sum(ul(:, i)*shgradgu(:, j))
-          end do
-        end do
+        call e3int_qr_grad(NSHL, NSD, 1, shgradgu, phil, dphidxi)
+        call e3int_qr_grad(NSHL, NSD, NSD, shgradgu, ul, duidxi)
 
+        call prop_interp(rhow, rhoa, phii, rhoi)
+        call prop_interp(muw, mua, phii, mui)
         ! velocity on the rotor is mesh velocity, not zero...
         gi = umi
         gphi = 0d0
@@ -175,7 +169,7 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                            gw(igauss), shlu, shgradgu, xKebe11, &
                            xGebe, xDebe1, nor, &
                            xLSebe, xLSUebe, xULSebe, xPLSebe, &
-                           Rhsphi, phi, dphidxi)
+                           Rhsphi, phii, dphidxi)
         end if
 
       end do

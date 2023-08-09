@@ -363,9 +363,12 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
   real(8), intent(in)    :: rhoi, mui
   integer :: aa, bb, i
   real(8) :: fact1, fact2, upos, uneg, unor, tr, pt33, gmul, gnor
+  real(8) :: divu
 
   tmp1 = 0.0d0
   tmp2 = 0.0d0
+
+  divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
 
   ti(:) = -pri*nor(:) + mui*(duidxi(:, 1)*nor(1) + &
                              duidxi(:, 2)*nor(2) + &
@@ -373,6 +376,7 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
                              duidxi(1, :)*nor(1) + &
                              duidxi(2, :)*nor(2) + &
                              duidxi(3, :)*nor(3))
+  ti(:) = ti(:) -  2d0/3d0 * mui * divu * nor(:)
 
   ! Relative normal velocity for convective term
   unor = sum((ui - umi)*nor)  ! u \cdot n
@@ -404,6 +408,7 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
       Rhsu(i, aa) = Rhsu(i, aa) - &
                     (shlu(aa)*tmp1(i) + &
                      sum(shgradgu(aa, :)*tmp2(i, :)))*DetJb*gwt
+      RHSu(i, aa) = 
     end do
 
     Rhsp(aa) = Rhsp(aa) + shlu(aa)*(unor - gnor)*DetJb*gwt
