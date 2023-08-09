@@ -1,8 +1,13 @@
 #pragma once
 
-typedef int IndexType;
-typedef double ScalarType;
+typedef int FEMIndexType;
+typedef double FEMScalarType;
 
+typedef FEMIndexType IndexType;
+typedef FEMScalarType ScalarType;
+
+#include <stdbool.h>
+typedef bool FEMBoolType;
 
 
 /* BUGGY for double-evaluation */
@@ -29,3 +34,21 @@ typedef enum {
     ASSEMBLE_TENSOR_VEC = 2,
     ASSEMBLE_TENSOR_MAT = 4
 } AssembleTensorType;
+
+typedef enum {
+    FEM_SUCCESS = 0,
+    FEM_RUNTIME_ERROR = 1,
+    FEM_OUT_OF_BOUNDS = 2,
+    FEM_INVALID_INPUT = 4,
+    FEM_INVALID_STATE = 8,
+    FEM_INVALID_OPERATION = 16
+} FEMErrorCode;
+
+
+#define FEM_CHECK_ERROR(run) do {\
+    FEMErrorCode err = (run);\
+    if (err != FEM_SUCCESS) {\
+        fprintf(stderr, "Error %d at %s:%d\n", err, __FILE__, __LINE__);\
+        exit(err);\
+    }\
+} while (0)

@@ -447,39 +447,41 @@ module mpi
 end module mpi
 
 module configuration
+  use iso_c_binding
 
   type VMSConfigType
-    logical :: use_taubar
-    logical :: use_sliding_velocity
-    real(8) :: NS_kdc_w, NS_kdc_a
-    real(8) :: LSC_kdc
-    real(8) :: Tem_kdc
+    logical(c_bool) :: use_taubar
+    logical(c_bool) :: use_sliding_velocity
+    real(C_DOUBLE) :: NS_kdc_w, NS_kdc_a
+    real(C_DOUBLE) :: LSC_kdc
+    real(C_DOUBLE) :: Tem_kdc
 
   end type VMSConfigType
 
   type KSPConfigType
 
-    integer :: NRES
-    integer, allocatable :: max_iter(:), min_iter(:)
-    real(8), allocatable :: atol(:), rtol(:)
+    integer(C_INT) :: NRES
+    integer(C_INT), allocatable :: max_iter(:), min_iter(:)
+    real(C_DOUBLE), allocatable :: atol(:), rtol(:)
   end type KSPConfigType
 
   type NewtonRaphsonConfigType
 
     integer :: NRES
     integer :: max_iter, min_iter
-    real(8), allocatable :: atol(:), rtol(:)
+    real(C_DOUBLE), allocatable :: atol(:), rtol(:)
   end type NewtonRaphsonConfigType
 
   type ConfigType
-    logical :: iga
-    logical :: fem_flag
-    logical :: use_hessian
-    logical :: calc_cfl
+    logical(C_BOOL) :: iga
+    logical(C_BOOL) :: fem_flag
+    logical(C_BOOL) :: use_hessian
+    logical(C_BOOL) :: calc_cfl
     type(VMSConfigType) :: vms
     type(KSPConfigType) :: ksp
     type(NewtonRaphsonConfigType) :: newton_raphson
   end type ConfigType
+
   contains
   subroutine init_config(config)
     use aAdjKeep

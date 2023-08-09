@@ -4,7 +4,7 @@ include ../../make.config
 #OBJDIR=${DIRECTORY}/src/obj
 
 
-FILENAME:=utility.c
+FILENAME:=config.c utility.c main.c
 OBJFILES:=${FILENAME:%.c=${OBJDIR}/%.o}
 
 all: ${OBJFILES}

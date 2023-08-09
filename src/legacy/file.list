@@ -6,7 +6,6 @@ F90SRCFILES =\
   ctypes.f90\
   cname.f90\
   commu.f90\
-  driver.f90\
   e3LHS.f90\
   e3RHS.f90\
   e3STAB.f90\
