@@ -5,7 +5,9 @@ subroutine prop_interp(prop_a, prop_b, phi, prop_out)
   real(8), intent(in) :: prop_a, prop_b, phi
   real(8), intent(out) :: prop_out
 
-  prop_out = prop_a * (1 - phi) + prop_b * phi
+  real(8) :: phi_clipped
+  phi_clipped = max(0.0d0, min(1.0d0, phi))
+  prop_out = prop_a * (1 - phi_clipped) + prop_b * phi_clipped
 end subroutine prop_interp
 
 !======================================================================
@@ -200,7 +202,8 @@ subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, mdot, rhow, rhoa, resp
   real(8) :: vdot
   vdot = mdot / rhoa - mdot / rhow
 
-  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * vdot - mdot / rhoa
+  ! resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * vdot - mdot / rhoa
+  resphi = rphii + sum(uadvi(:) * dphidxi(:)) - mdot / rhoa
 end subroutine e3int_resphi
 !======================================================================
 !

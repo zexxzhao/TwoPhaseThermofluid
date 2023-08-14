@@ -1266,7 +1266,7 @@ subroutine e3LHS_3D_fluid_quenching(&
 
   ! real(8) :: advu_ls(3)
   real(8) :: shconv(NSHL), shconv_full(NSHL), divu, drmdu(NSHL)
-  real(8) :: drhodphi, dmudphi, tmp, mdot, vdot, rm(NSD), dmdphii, dmdTi
+  real(8) :: drhodphi, dmudphi, tmp, tmp1, mdot, vdot, rm(NSD), dmdphii, dmdTi
   real(8) :: diag(NSHL, NSHL)
   ! loop over local shape functions in each direction
   fact1 = almi
@@ -1323,13 +1323,14 @@ subroutine e3LHS_3D_fluid_quenching(&
     !shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
   end do
 
-  res_phic = dphidti + sum(advci(:)*dphidxi(:)) + phii * vdot - mdot / rhoa 
+  ! res_phic = dphidti + sum(advci(:)*dphidxi(:)) + phii * vdot - mdot / rhoa 
+  res_phic = dphidti + sum(advci(:)*dphidxi(:)) - mdot / rhoa 
 
   ! res_phic = res_phic - (kappa*dphidxidxj(1, 1) + &
   !                       kappa*dphidxidxj(2, 2) + &
   !                       kappa*dphidxidxj(3, 3))
 
-  tmp = rhoi * vdot + sum(advfi(:) * dphidxi(:)) * drhodphi
+  tmp1 = rhoi * vdot + sum(advfi(:) * dphidxi(:)) * drhodphi
   do bb = 1, NSHL      ! Diagonal blocks of K11
     do aa = 1, NSHL
 
@@ -1342,10 +1343,10 @@ subroutine e3LHS_3D_fluid_quenching(&
       !                fact1*tauM*shgu(aa)*rhoi*shgu(bb)*tmp + &
       !                fact2*tauM*shgu(aa)*rhoi*shconv(bb) * tmp
       tmp = 0d0
-      tmp = tmp + fact1 * shgu(aa) * rhoi * shgu(bb) + fact2 * shgu(aa) * shconv_full(bb)
+      tmp = tmp + fact1 * shgu(aa) * rhoi * shgu(bb) + fact2 * shgu(aa) * rhoi * shconv_full(bb)
       tmp = tmp + fact2 * mupkdc * sum(shgradgu(aa, :)*shgradgu(bb, :))
       tmp = tmp + rhoi * tauM * shconv_full(aa) * drmdu(bb)
-      tmp = tmp + shgu(aa) * tauM * drmdu(bb) * tmp
+      tmp = tmp + shgu(aa) * tauM * drmdu(bb) * tmp1
       diag(aa, bb) = tmp
     end do
   end do
@@ -1411,7 +1412,7 @@ subroutine e3LHS_3D_fluid_quenching(&
       xGebe(:, aa, bb) = xGebe(:, aa, bb) &
                        - fact2 * shgradgu(aa, :)*shgu(bb)*DetJ*gwt &
                        + fact2 * rhoi*shconv_full(aa)*tauM*shgradgu(bb, :)*DetJ*gwt &
-                       + fact2 * shgu(aa) * tauM * shgradgu(bb, :)*tmp*DetJ*gwt
+                       + fact2 * shgu(aa) * tauM * shgradgu(bb, :)*tmp1*DetJ*gwt
       
       ! xGebe(1, aa, bb) = xGebe(1, aa, bb) + &
       !                    fact2*(-shgradgu(aa, 1)*shgu(bb) + &
@@ -1529,8 +1530,10 @@ subroutine e3LHS_3D_fluid_quenching(&
   do bb = 1, NSHL
     do aa = 1, NSHL
       tmp = 0d0
-      tmp = tmp + fact1 * shgu(bb) + fact2 * shconv(bb) + fact2 * shgu(bb) * vdot 
-      tmp = tmp + fact2 * shgu(bb) * (dmdphii * phii * (1/rhoa - 1/rhow) - dmdphii/rhoa)
+      tmp = tmp + fact1 * shgu(bb) + fact2 * shconv(bb)
+      ! tmp = tmp + fact2 * shgu(bb) * vdot 
+      ! tmp = tmp + fact2 * shgu(bb) * dmdphii * phii * (1.0d0/rhoa - 1.0d0/rhow)
+      tmp = tmp - fact2 * shgu(bb) * dmdphii / rhoa
       xLSebe(aa, bb) = (shgu(aa) + tauls * shconv(aa)) * tmp * DetJ * gwt
       xLSebe(aa, bb) = xLSebe(aa, bb) + &
               fact2 * kappadc * sum(shgradgu(aa, :)*shgradgu(bb, :)) * DetJ * gwt
@@ -1558,7 +1561,7 @@ subroutine e3LHS_3D_fluid_quenching(&
       xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
         fact2 * shgu(bb) * (tauC*drhodphi/rhoi - dmudphi*2d0/3d0) * divu * shgradgu(aa, :) * DetJ * gwt
       xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
-        fact2 * drhodphi * tauM * shgu(aa) * shgu(bb) * tmp * rm(:)/rhoi* DetJ * gwt
+        fact2 * drhodphi * rm(:)/rhoi * tauM * shgu(aa) * shgu(bb) * tmp1 * DetJ * gwt
       xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &
         fact2 * drhodphi * tauM * shgu(aa) * rLi(:) * (shgu(bb)*vdot + shconv_full(bb))* DetJ * gwt
       xULSebe(:, aa, bb) = xULSebe(:, aa, bb) + &

@@ -650,6 +650,9 @@ subroutine e3Rhs_3D_fluid_quenching( &
     mdot = c_cond * (phi) * rhoa * (Ti - Ts) / Ts
   endif
   vdot = mdot / rhoa - mdot / rhow
+  if(mdot < 0) then
+    ! write(*,*) "Neg Init mdot", myid, mdot, phi, Ti, Ts, rhoa, rhow, c_evap, c_cond
+  endif
 
   uprime1(:) = uprime(:)
   ! uprime1(3) = uprime(3) - res_phi*tauBar1*fine_tau

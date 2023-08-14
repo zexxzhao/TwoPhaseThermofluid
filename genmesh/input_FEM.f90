@@ -336,20 +336,7 @@ subroutine input_fem(mesh, fname)
 
   end do
 
-  do i = 1, mesh%NBOUND 
-    if (mesh%bound(i)%FACE_ID == 5) then
-        do ifac = 1, mesh%bound(i)%NFACE
-            iel = mesh%bound(i)%F2E(ifac)
-            if(E_FLAG(iel) .ne. 102 .or. mesh%NSHL(iel) .ne. 6) then
-                write(*,*) "This 5-facet is not 102"
-                stop
-            endif
-            write(999,*) ifac, iel, E_FLAG(iel), mesh%NSHL(iel)
-
-        enddo
-    endif
-  enddo
-  
+ 
   deallocate(INE,cnt)
  
 

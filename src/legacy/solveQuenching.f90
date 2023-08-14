@@ -452,13 +452,14 @@ subroutine IntElmAss_NSVOF_Quenching(&
   if (config%calc_cfl) then
     ! Find largest CFL-number and output to screen
     if (numnodes > 1) then
-      gcfl = cfl
-      call MPI_ALLReduce(gcfl, cfl, 1, MPI_DOUBLE_PRECISION, &
+      call MPI_ALLReduce(cfl, gcfl, 1, MPI_DOUBLE_PRECISION, &
                          MPI_MAX, MPI_COMM_WORLD, mpi_err)
+    else
+      gcfl = cfl
     end if
     if (ismaster) then
       write (*, '(40("-"))')
-      write (*, *) "    CFL = ", cfl
+      write (*, *) "    CFL = ", gcfl
     end if
   end if
 
@@ -530,7 +531,7 @@ subroutine IntElmAss_Tem_Quenching(&
   real(8) :: Se, mdot, vdot
   real(8) :: rhoi, mui, cpi, hki, rhocpi
   real(8) :: k_dc_tem
-
+  real(8) :: dmdTi
   fact1 = almi
   fact2 = alfi * gami * Delt
 
@@ -629,8 +630,10 @@ subroutine IntElmAss_Tem_Quenching(&
 
       if(Ti > Ts) then
         mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
+        dmdTi = c_evap * (1-phii) * rhow / Ts
       else
         mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
+        dmdTi = c_cond * (phii) * rhoa / Ts
       endif
       vdot = mdot / rhoa - mdot / rhow
 
@@ -689,6 +692,8 @@ subroutine IntElmAss_Tem_Quenching(&
             !xTebe(aa, bb) = xTebe(aa, bb) + rhocpi * shconv_full(aa) * tau_tem * &
             !                rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) - tmp(aa) * fact2 * shlu(bb) * (cpw - cpa) * mdot * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) - tmp(aa) * fact2 * Se / mdot * dmdTi * shlu(bb) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hki * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
           enddo
         enddo

@@ -18,7 +18,7 @@ program restart2tec
   integer, allocatable :: PNNODE(:)
   real(8), allocatable ::  dg(:,:),  ug(:,:),  ugm(:,:),  pg(:), Tg(:),  phig(:) 
   real(8), allocatable :: rTg(:), rphig(:), acg(:, :)
-  real(8), allocatable :: idg(:,:), iug(:,:), iugm(:,:), ipg(:), iphig(:)
+  real(8), allocatable :: idg(:,:), iug(:,:), iugm(:,:), ipg(:), iphig(:), irphig(:)
   real(8), allocatable :: acgm(:, :), rhog(:), rho0g(:), mug(:), heg(:), hepg(:)
   real(8), allocatable :: var3d(:, :), var1d(:)
   real(8) :: rtmp, theta
@@ -139,6 +139,7 @@ program restart2tec
     allocate(iugm (imesh%NNODE,imesh%NSD))  
     allocate(ipg  (imesh%NNODE))  
     allocate(iphig(imesh%NNODE))       
+    allocate(irphig(imesh%NNODE))       
   end if
 
   ! Loop over time steps  
@@ -275,9 +276,9 @@ program restart2tec
 
 
     if (interp == -1) then 
-      call writeTEC(mesh, fname, ug, pg, Tg, phig, rflag)
+      call writeTEC(mesh, fname, ug, pg, Tg, phig, rphig, rflag)
     else
-      call writeTEC(imesh, fname, iug, ipg, Tg, iphig, rflag)
+      call writeTEC(imesh, fname, iug, ipg, Tg, iphig, irphig, rflag)
     end if
 
     do bn = 1, mesh%NBOUND

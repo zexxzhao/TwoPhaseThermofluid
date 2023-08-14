@@ -1,7 +1,7 @@
 !======================================================================
 ! subroutine to output as Tecplot format                 
 !======================================================================
-subroutine writeTEC(mesh, fname, ug, pg, Tg, phig, rflag)
+subroutine writeTEC(mesh, fname, ug, pg, Tg, phig, rphig, rflag)
 
   use class
    
@@ -13,7 +13,8 @@ subroutine writeTEC(mesh, fname, ug, pg, Tg, phig, rflag)
   real(8), intent(in) :: ug(mesh%NNODE,mesh%NSD), &
                          pg(mesh%NNODE), &
 						 Tg(mesh%NNODE), &
-                         phig(mesh%NNODE)
+                         phig(mesh%NNODE), &
+                         rphig(mesh%NNODE)
   integer, intent(in) :: rflag
 
   real(8) :: lxg(mesh%NSD), ldg(mesh%NSD), lug(mesh%NSD), lugm(mesh%NSD), umag, cs
@@ -39,7 +40,7 @@ subroutine writeTEC(mesh, fname, ug, pg, Tg, phig, rflag)
   open(ifil, file=fname, status='replace', form='formatted')
       
   write(ifil,*) 'VARIABLES =  "X" "Y" "Z" "U" "V" "W" &
-      "P" "PHI" "T" '
+      "P" "PHI" "RPHI" "T" '
   write(ifil,*) 'ZONE N=', mesh%NNode, ', E=', mesh%NElem
 
   ! Linear Tetrahedral
@@ -75,6 +76,7 @@ subroutine writeTEC(mesh, fname, ug, pg, Tg, phig, rflag)
                     lug, &            ! ug
                     pg(i), &          ! p
                     phig(i), &        ! phi
+                    rphig(i), &        ! rphi
                     Tg(i)             ! T
   end do
 
