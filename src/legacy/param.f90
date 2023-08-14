@@ -193,13 +193,12 @@ end subroutine getinflow
 !======================================================================
 ! subroutine to read in the parameters defined in 'param.dat'
 !======================================================================
-subroutine getparam
+subroutine getparam()
 
   use aAdjKeep
   use commonvars
   use commonpars
   use mpi
-
   implicit none
 
   integer :: inurbs, i, j, bb
@@ -208,22 +207,8 @@ subroutine getparam
   ! Time stepping
   call iread("Nstep", Nstep)
   call iread("ifq", ifq)
-  ! call iread("ifq_sh", ifq_sh)
-  ! call iread("ifq_tq", ifq_tq)
   call rread("Delt", Delt)
   call rread("rhoinf", rhoinf)
-  ! call rread("conv_time", conv_time)
-  ! call rread("mono_time", mono_time)
-  ! call rread("move_time", move_time)
-  ! call rread("shel_time", shel_time)
-
-  !if (mono_time >= 0.0d0) then
-  !  call iread("mono_iter", mono_iter)
-  !  call iread("LSC_pred_step", LSC_pred_step)
-  !else
-  !  mono_time = 99.0d9
-  !end if
-
   ! Physics
   call rread("DENS_AIR", rhoa)
   call rread("DENS_WATER", rhow)
@@ -233,24 +218,13 @@ subroutine getparam
   call rread("CP_WATER", cpw)
   call rread("HK_AIR", kappaa)
   call rread("HK_WATER", kappaw)
+  call rread("DENS_SOLID", rhos)
+  call rread("CP_SOLID", cps)
+  call rread("HK_SOLID", kappas)
   call rread("T_SAT", Ts)
   call rread("LATENT_HEAT", lh)
   call rread("C_COND", c_cond)
   call rread("C_EVAP", c_evap)
-  !call rread("Re", Re)
-  !call rread("Pe", Pe)
-  !call rread("Gr", Gr)
-  !call rread("Fr", Fr)
-  !call rread("Ra", Ra)
-  !call rread("Pr", Pr)
-  !call rread("Sr", Sr)
-  !call rread("cross_flag", cross_flag)
-  !call rread("top_flag", top_flag)
-
-  !mua = 1.0d0/Re
-  !muw = 1.0d0/Re
-  !rho = 1.0d0
-  !mu = muw
 
   mp_eps = 3.0d0
   gravity = -9.81d0 ! -1.0d0/(Fr**2.0d0)
@@ -260,6 +234,7 @@ subroutine getparam
   gravvec(3) = gravity!Ra/(Pr*Re**2.0d0)
 
   kappa = 1.0d0/(Sr*Re)!2.15d-4 !For Advection-Diffusion Equation
+  kappa = 0d0
 !  beta_t = 9.0d-4!3.4d-3
 !  phi_inf = 20.0d0
 
@@ -354,8 +329,6 @@ subroutine getparam
     fname(1) = 'BCTgValu'//trim(adjustl(fnum(1)))
     call rread(fname(1), BCTgValu(i))
   end do
-
-
   ! call rread("usettle", usettle)
   ! Wave generating wall
   ! call rread("wave_amp", wave_amp)
@@ -394,66 +367,58 @@ subroutine getparam
     water_depth = 1.0d0
   !end if
 
-  ! Rigid body
-  ! if (move_time >= 0.0d0) then
-  !   call rread("hull_mass", massb)
+  move_time = 99.0d9
 
-  !   Ibhat = 0.0d0
-  !   call rread("I11", Ibhat(1, 1))
-  !   call rread("I22", Ibhat(2, 2))
-  !   call rread("I33", Ibhat(3, 3))
-
-  !   call rread("I12", Ibhat(1, 2))
-  !   call rread("I13", Ibhat(1, 3))
-  !   call rread("I23", Ibhat(2, 3))
-
-  !   Ibhat(2, 1) = Ibhat(1, 2)
-  !   Ibhat(3, 1) = Ibhat(1, 3)
-  !   Ibhat(3, 2) = Ibhat(2, 3)
-
-  !   Ibhat = massb*hull_length*hull_length*Ibhat
-
-  !   call rread("xcg", xcg(1))
-  !   call rread("ycg", xcg(2))
-  !   call rread("zcg", xcg(3))
-  ! else
-    move_time = 99.0d9
-  ! end if
+  call iread("fem_flag", fem_flag)
+  !call iread("IGA", iga)
+  iga = .false.
 
   ! Navier-stokes solver
   call rread("NS_kdc_w", NS_kdc_w)
   call rread("NS_kdc_a", NS_kdc_a)
-  ! call rread("fine_tau", fine_tau)
+  call rread("LSC_kdc", LSC_kdc)
+  call rread("TEM_kdc", TEM_kdc)
 
-  call rread("NS_GMRES_tol", NS_GMRES_tol)
+  call rread("NS_GMRES_rtol", NS_GMRES_tol)
+  call rread("NS_GMRES_atol", NS_GMRES_atol)
   call iread("NS_GMRES_itermax", NS_GMRES_itermax)
   call iread("NS_GMRES_itermin", NS_GMRES_itermin)
-
-  call rread("NS_NL_Utol", NS_NL_Utol)
-  call rread("NS_NL_Ptol", NS_NL_Ptol)
-  call iread("NS_NL_itermax", NS_NL_itermax)
 
   ! call iread("NS_hessian", NS_hess_flag)
 
   ! Rigid body solver
-  RB_NL_Ftol = 1.0d-3
-  RB_NL_Mtol = 1.0d-3
+  ! RB_NL_Ftol = 1.0d-3
+  ! RB_NL_Mtol = 1.0d-3
 
   ! Mesh solver
   ! call rread("Mesh_NL_tol", Mesh_NL_tol)
   ! call rread("Mesh_GMRES_tol", Mesh_GMRES_tol)
   ! call iread("Mesh_GMRES_itermin", Mesh_GMRES_itermin)
   ! call iread("Mesh_GMRES_itermax", Mesh_GMRES_itermax)
-  call iread("fem_flag", fem_flag)
   ! Level Set Convection solver
-  ! call rread("LSC_kdc", LSC_kdc)
 
-  call rread("LSC_GMRES_tol", LSC_GMRES_tol)
+  call rread("LSC_GMRES_atol", LSC_GMRES_atol)
+  call rread("LSC_GMRES_rtol", LSC_GMRES_tol)
   call iread("LSC_GMRES_itermax", LSC_GMRES_itermax)
-  LSC_GMRES_itermin = 20
+  call iread("LSC_GMRES_itermin", LSC_GMRES_itermin)
 
-  call rread("LSC_NL_tol", LSC_NL_tol)
-  call iread("LSC_NL_itermax", LSC_NL_itermax)
+  call rread("TEM_GMRES_atol", TEM_GMRES_atol)
+  call rread("TEM_GMRES_rtol", TEM_GMRES_tol)
+  call iread("TEM_GMRES_itermax", TEM_GMRES_itermax)
+  call iread("TEM_GMRES_itermin", TEM_GMRES_itermin)
+
+  call rread("NS_NL_Urtol", NS_NL_Utol)
+  call rread("NS_NL_Prtol", NS_NL_Ptol)
+  call rread("NS_NL_Uatol", NS_NL_Uatol)
+  call rread("NS_NL_Patol", NS_NL_Patol)
+  call iread("NS_NL_itermax", NS_NL_itermax)
+
+  call rread("LSC_NL_atol", LSC_NL_atol)
+  call rread("LSC_NL_rtol", LSC_NL_tol)
+
+
+  call rread("TEM_NL_atol", TEM_NL_atol)
+  call rread("TEM_NL_rtol", TEM_NL_tol)
 
   ! Level Set redistance solver
   ! call rread("LSRD_kdc", LSRD_kdc)
@@ -465,7 +430,7 @@ subroutine getparam
 
   ! call rread("LSRD_NL_tol", LSRD_NL_tol)
   ! call iread("LSRD_NL_itermax", LSRD_NL_itermax)
-  LSRD_GMRES_itermin = 20
+  ! LSRD_GMRES_itermin = 20
 
   ! Level Set massfix solver
   ! call rread("Mass_NL_tol", Mass_NL_tol)

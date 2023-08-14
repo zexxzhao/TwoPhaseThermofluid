@@ -17,14 +17,14 @@ subroutine eval_shape(nshl, iel, gp, xl, dl, wl, shlu, shgradgu, shhessg, &
   integer :: pn, ni, nj, nk
 
   if (iga) then
-    pn = EPID(iel)
-    ni = EIJK(iel, 1)
-    nj = EIJK(iel, 2)
-    nk = EIJK(iel, 3)
+    ! pn = EPID(iel)
+    ! ni = EIJK(iel, 1)
+    ! nj = EIJK(iel, 2)
+    ! nk = EIJK(iel, 3)
 
-    call eval_shape_nurbs(nshl, gp, ni, nj, nk, patch(pn), xl + dl, wl, &
-                          shlu, shgradgu, shhessg, dxidx, Gij, Ginv, &
-                          hess_flag)
+    ! call eval_shape_nurbs(nshl, gp, ni, nj, nk, patch(pn), xl + dl, wl, &
+    !                       shlu, shgradgu, shhessg, dxidx, Gij, Ginv, &
+    !                       hess_flag)
   else
 
     if (nshl == 4 .or. nshl == 6) then
@@ -58,13 +58,13 @@ subroutine eval_faceshape(nshl, iel, gp, mgp, faceor, xl, dl, wl, shlu, &
   integer :: pn, ni, nj, nk, faceor
 
   if (iga) then
-    pn = EPID(iel)
-    ni = EIJK(iel, 1)
-    nj = EIJK(iel, 2)
-    nk = EIJK(iel, 3)
-    call eval_faceshape_nurbs(nshl, gp, faceor, ni, nj, nk, patch(pn), &
-                              xl + dl, wl, shlu, shgradgu, dxidx, &
-                              Gij, Ginv, nor)
+    ! pn = EPID(iel)
+    ! ni = EIJK(iel, 1)
+    ! nj = EIJK(iel, 2)
+    ! nk = EIJK(iel, 3)
+    ! call eval_faceshape_nurbs(nshl, gp, faceor, ni, nj, nk, patch(pn), &
+    !                           xl + dl, wl, shlu, shgradgu, dxidx, &
+    !                           Gij, Ginv, nor)
 
   else
     if (nshl == 4) then

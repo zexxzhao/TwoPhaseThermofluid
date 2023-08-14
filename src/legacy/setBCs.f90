@@ -154,48 +154,6 @@ subroutine setBCs_CFD()
 !    enddo
 
 end subroutine setBCs_CFD
-!======================================================================
-!
-!======================================================================
-subroutine get_solid_nodes_private()
-  use commonvars
-  use aAdjkeep
-  use mpi
-
-  implicit none
-
-  integer :: i, j, k, b, iel
-  real(8) :: cache(NNODE)
-
-  cache(:) = 1.0
-  do iel = 1, NELEM
-    if (ELM_ID(iel) == 101) then
-      do j = 1, ELMNSHL(iel)
-        k = IEN(iel, j)
-        cache(k) = 0.0d0
-      end do
-    end if
-  end do
-  do b = 1, NBOUND
-    if (bound(b)%FACE_ID == 5) then
-      do j = 1, bound(b)%NNODE
-        k = bound(b)%BNODES(j)
-        cache(k) = 1.0d0
-      end do
-    end if
-  end do
-  if (numnodes > 1) then
-    call commu(cache, 1, "in ")
-    call commu(cache, 1, "out")
-  end if
-  do i = 1, NNODE
-    if (cache(i) < 0.1d0) then
-      is_solid_node(i) = 1
-    else
-      is_solid_node(i) = 0
-    end if
-  end do
-end subroutine get_solid_nodes_private
 
 !======================================================================
 subroutine setBCs_NSVOF()
@@ -218,16 +176,23 @@ subroutine setBCs_NSVOF()
   ogam = 1.0d0/gami
   mgam = gami - 1.0d0
 
-  if (.not. is_solid_node_assigned) then
-    if(ismaster) write(*,*) "Generating BCs"
-    call get_solid_nodes_private()
-    is_solid_node_assigned = .true.
-  end if
-  IBC(:, 1) = IS_SOLID_NODE(:)
-  IBC(:, 2) = IS_SOLID_NODE(:)
-  IBC(:, 3) = IS_SOLID_NODE(:)
-  IBC(:, 4) = IS_SOLID_NODE(:)
-  IBC(:, 5) = IS_SOLID_NODE(:)
+  ! if (.not. is_solid_node_assigned) then
+  !   if(ismaster) write(*,*) "Generating BCs"
+  !   call get_solid_nodes_private()
+  !   is_solid_node_assigned = .true.
+  ! end if
+  ! IBC(:, 1) = IS_SOLID_NODE(:)
+  ! IBC(:, 2) = IS_SOLID_NODE(:)
+  ! IBC(:, 3) = IS_SOLID_NODE(:)
+  ! IBC(:, 4) = IS_SOLID_NODE(:)
+  ! IBC(:, 5) = IS_SOLID_NODE(:)
+  do i = 1, NNODE
+    if(NodeID(i) == 101) then
+      IBC(i, 1:5) = 1
+    else
+      IBC(i, 1:5) = 0
+    endif
+  enddo
   ! IBC(:, 6:8) = 1
 
   do b = 1, NBOUND
@@ -540,80 +505,80 @@ end subroutine setBCs
 !======================================================================
 !
 !======================================================================
-subroutine setMeshBCs()
-  use commonvars
-  use aAdjkeep
-
-  implicit none
-
-  integer :: b, i, j, k
-  real(8) :: rot(NSD)
-
-  do b = 1, NBOUND
-
-    if (bound(b)%FACE_ID >= 7) then ! Object
-      do j = 1, bound(b)%NNODE
-        i = bound(b)%BNODES(j)
-
-        rot = matmul(Rn1, (xg(i, :) - xcg))
-        dg(i, :) = dbn1 + rot - (xg(i, :) - xcg)
-
-        acgm(i, :) = (1.0d0/beti)*(-(ugmold(i, :)/Delt) &
-                                   + ((dg(i, :) - dgold(i, :))/(Delt*Delt)) &
-                                   + (beti - 0.5d0)*acgmold(i, :))
-
-        ugm(i, :) = ugmold(i, :) &
-                    + Delt*((1.0d0 - gami)*acgmold(i, :) + gami*acgm(i, :))
-
-        IBC(i, 4:6) = 1
-      end do
-    end if
-
-    ! Outflow/Inflow
-    if ((bound(b)%FACE_ID == 3) .or. (bound(b)%FACE_ID == 5)) then
-      do j = 1, bound(b)%NNODE
-        i = bound(b)%BNODES(j)
-        dg(i, 1:3) = 0.0d0
-        ugm(i, 1:3) = 0.0d0
-        acgm(i, 1:3) = 0.0d0
-        dgold(i, 1:3) = 0.0d0
-        ugmold(i, 1:3) = 0.0d0
-        acgmold(i, 1:3) = 0.0d0
-
-        IBC(i, 4:6) = 1
-      end do
-    end if
-
-    ! Sides
-    if ((bound(b)%FACE_ID == 2) .or. (bound(b)%FACE_ID == 4)) then
-      do j = 1, bound(b)%NNODE
-        i = bound(b)%BNODES(j)
-        dg(i, 1:3) = 0.0d0
-        ugm(i, 1:3) = 0.0d0
-        acgm(i, 1:3) = 0.0d0
-        dgold(i, 1:3) = 0.0d0
-        ugmold(i, 1:3) = 0.0d0
-        acgmold(i, 1:3) = 0.0d0
-
-        IBC(i, 4:6) = 1
-      end do
-    end if
-
-    ! Top/bottom
-    if ((bound(b)%FACE_ID == 1) .or. (bound(b)%FACE_ID == 6)) then
-      do j = 1, bound(b)%NNODE
-        i = bound(b)%BNODES(j)
-        dg(i, 1:3) = 0.0d0
-        ugm(i, 1:3) = 0.0d0
-        acgm(i, 1:3) = 0.0d0
-        dgold(i, 1:3) = 0.0d0
-        ugmold(i, 1:3) = 0.0d0
-        acgmold(i, 1:3) = 0.0d0
-
-        IBC(i, 4:6) = 1
-      end do
-    end if
-
-  end do
-
-end subroutine setMeshBCs
+! subroutine setMeshBCs()
+!   use commonvars
+!   use aAdjkeep
+! 
+!   implicit none
+! 
+!   integer :: b, i, j, k
+!   real(8) :: rot(NSD)
+! 
+!   do b = 1, NBOUND
+! 
+!     if (bound(b)%FACE_ID >= 7) then ! Object
+!       do j = 1, bound(b)%NNODE
+!         i = bound(b)%BNODES(j)
+! 
+!         rot = matmul(Rn1, (xg(i, :) - xcg))
+!         dg(i, :) = dbn1 + rot - (xg(i, :) - xcg)
+! 
+!         acgm(i, :) = (1.0d0/beti)*(-(ugmold(i, :)/Delt) &
+!                                    + ((dg(i, :) - dgold(i, :))/(Delt*Delt)) &
+!                                    + (beti - 0.5d0)*acgmold(i, :))
+! 
+!         ugm(i, :) = ugmold(i, :) &
+!                     + Delt*((1.0d0 - gami)*acgmold(i, :) + gami*acgm(i, :))
+! 
+!         IBC(i, 4:6) = 1
+!       end do
+!     end if
+! 
+!     ! Outflow/Inflow
+!     if ((bound(b)%FACE_ID == 3) .or. (bound(b)%FACE_ID == 5)) then
+!       do j = 1, bound(b)%NNODE
+!         i = bound(b)%BNODES(j)
+!         dg(i, 1:3) = 0.0d0
+!         ugm(i, 1:3) = 0.0d0
+!         acgm(i, 1:3) = 0.0d0
+!         dgold(i, 1:3) = 0.0d0
+!         ugmold(i, 1:3) = 0.0d0
+!         acgmold(i, 1:3) = 0.0d0
+! 
+!         IBC(i, 4:6) = 1
+!       end do
+!     end if
+! 
+!     ! Sides
+!     if ((bound(b)%FACE_ID == 2) .or. (bound(b)%FACE_ID == 4)) then
+!       do j = 1, bound(b)%NNODE
+!         i = bound(b)%BNODES(j)
+!         dg(i, 1:3) = 0.0d0
+!         ugm(i, 1:3) = 0.0d0
+!         acgm(i, 1:3) = 0.0d0
+!         dgold(i, 1:3) = 0.0d0
+!         ugmold(i, 1:3) = 0.0d0
+!         acgmold(i, 1:3) = 0.0d0
+! 
+!         IBC(i, 4:6) = 1
+!       end do
+!     end if
+! 
+!     ! Top/bottom
+!     if ((bound(b)%FACE_ID == 1) .or. (bound(b)%FACE_ID == 6)) then
+!       do j = 1, bound(b)%NNODE
+!         i = bound(b)%BNODES(j)
+!         dg(i, 1:3) = 0.0d0
+!         ugm(i, 1:3) = 0.0d0
+!         acgm(i, 1:3) = 0.0d0
+!         dgold(i, 1:3) = 0.0d0
+!         ugmold(i, 1:3) = 0.0d0
+!         acgmold(i, 1:3) = 0.0d0
+! 
+!         IBC(i, 4:6) = 1
+!       end do
+!     end if
+! 
+!   end do
+! 
+! end subroutine setMeshBCs

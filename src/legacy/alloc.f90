@@ -29,7 +29,7 @@ subroutine allocMatVec()
   allocate (rTg(NNODE), rTgold(NNODE))
   allocate (Tg(NNODE), Tgold(NNODE))
 
-  allocate (FPKS(NELEM, NSD, NSD))
+  ! allocate (FPKS(NELEM, NSD, NSD))
 
   ! allocate averaged solution vectors
   allocate (uavg(NNODE, NSD), pavg(NNODE))
@@ -125,17 +125,17 @@ subroutine deallocMatVec
   deallocate (xg, wg, IEN)
   deallocate (ELM_ID)
   deallocate (IPER, IBC)
-  deallocate (IS_SOLID_NODE)
+  ! deallocate (IS_SOLID_NODE)
 
   deallocate (EL_TYP, P_Flag, D_Flag)
 
-  if (NPATCH .gt. 0) deallocate (EPID, EIJK)
-  do i = 1, NPATCH
-    deallocate (patch(i)%U_KNOT)
-    deallocate (patch(i)%V_KNOT)
-    deallocate (patch(i)%W_KNOT)
-  end do
-  deallocate (patch)
+  !if (NPATCH .gt. 0) deallocate (EPID, EIJK)
+  !do i = 1, NPATCH
+  !  deallocate (patch(i)%U_KNOT)
+  !  deallocate (patch(i)%V_KNOT)
+  !  deallocate (patch(i)%W_KNOT)
+  !end do
+  !deallocate (patch)
 
   do i = 1, NBOUND
     deallocate (bound(i)%FACE_IEN)
@@ -157,7 +157,7 @@ subroutine deallocMatVec
   deallocate (rTg, rTgold)
   deallocate (Tg, Tgold)
   deallocate (uavg, pavg)
-  deallocate (FPKS)
+  ! deallocate (FPKS)
 
   ! deallocate Residuals
   deallocate (RHSGu, RHSGm, RHSGp, RHSGls, RHSGtem)

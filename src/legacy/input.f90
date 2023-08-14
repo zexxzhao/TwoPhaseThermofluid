@@ -30,7 +30,6 @@ subroutine input(id)
   !    counter = counter + 1
 !endif
 
-  write (*, *) fname !myid
   ! read nodes
   allocate (xg(NNODE, NSD), NodeID(NNODE))
   do i = 1, NNODE
@@ -44,7 +43,6 @@ subroutine input(id)
       read (mfid, *) (xg(i, j), j=1, NSD)
     end if
   end do
-  write (*, *) myid
   call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
   ! read elements
@@ -108,20 +106,20 @@ subroutine input(id)
   end if
 
   ! read patches
-  allocate (patch(NPATCH))
-  do i = 1, NPATCH
+  ! allocate (patch(NPATCH))
+  ! do i = 1, NPATCH
 
-    read (mfid, *) patch(i)%P, patch(i)%Q, patch(i)%R
-    read (mfid, *) patch(i)%MCP, patch(i)%NCP, patch(i)%OCP
+  !   read (mfid, *) patch(i)%P, patch(i)%Q, patch(i)%R
+  !   read (mfid, *) patch(i)%MCP, patch(i)%NCP, patch(i)%OCP
 
-    allocate (patch(i)%U_KNOT(patch(i)%MCP + patch(i)%P + 1))
-    allocate (patch(i)%V_KNOT(patch(i)%NCP + patch(i)%Q + 1))
-    allocate (patch(i)%W_KNOT(patch(i)%OCP + patch(i)%R + 1))
+  !   allocate (patch(i)%U_KNOT(patch(i)%MCP + patch(i)%P + 1))
+  !   allocate (patch(i)%V_KNOT(patch(i)%NCP + patch(i)%Q + 1))
+  !   allocate (patch(i)%W_KNOT(patch(i)%OCP + patch(i)%R + 1))
 
-    read (mfid, *) (patch(i)%U_KNOT(j), j=1, patch(i)%MCP + patch(i)%P + 1)
-    read (mfid, *) (patch(i)%V_KNOT(j), j=1, patch(i)%NCP + patch(i)%Q + 1)
-    read (mfid, *) (patch(i)%W_KNOT(j), j=1, patch(i)%OCP + patch(i)%R + 1)
-  end do
+  !   read (mfid, *) (patch(i)%U_KNOT(j), j=1, patch(i)%MCP + patch(i)%P + 1)
+  !   read (mfid, *) (patch(i)%V_KNOT(j), j=1, patch(i)%NCP + patch(i)%Q + 1)
+  !   read (mfid, *) (patch(i)%W_KNOT(j), j=1, patch(i)%OCP + patch(i)%R + 1)
+  ! end do
 
   close (mfid)
 
@@ -133,8 +131,8 @@ subroutine input(id)
 
   allocate (IBC(NNODE, 2*NSD + 2))
   IBC = 0
-  allocate (IS_SOLID_NODE(NNODE))
-  IS_SOLID_NODE_ASSIGNED = .false.
+  ! allocate (IS_SOLID_NODE(NNODE))
+  ! IS_SOLID_NODE_ASSIGNED = .false.
 
   allocate (EL_TYP(NELEM))
   EL_TYP = 0

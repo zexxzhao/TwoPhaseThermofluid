@@ -21,7 +21,7 @@ info:
 
 
 ${TARGET}: ${SUBDIR} | ${DEST}
-	${CC} ${CFLAGS} ${OBJDIR}/*.o ${LIBS} ${MPI_FLAGS} -lgfortran -lm -ldl -o $@ 
+	${CC} ${CFLAGS} ${OBJDIR}/*.o ${LIBS} ${MPI_FLAGS} -lm -ldl -o $@ 
 
 ${SUBDIR}: ${OBJDIR}
 	for DIR in $@; do\

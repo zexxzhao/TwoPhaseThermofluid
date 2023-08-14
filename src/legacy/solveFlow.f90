@@ -13,7 +13,7 @@ subroutine solmultiphasethermofluid_stag(config, istep)
   type(ConfigType), intent(in) :: config
   integer, intent(in) :: istep
 
-  integer :: inewt, i
+  integer :: inewt, i, NL_max
   ! real(8) :: momres0, conres0, convres0, meshres0, lsres0
   real(8) :: residual0(4), residual(4)
   integer :: converged(4)
@@ -22,7 +22,8 @@ subroutine solmultiphasethermofluid_stag(config, istep)
   real(8) :: t1, t2
   real(8) :: utol(4)
   
-  utol = (/NS_NL_UTOL, NS_NL_PTOL, LSC_NL_TOL, LSC_NL_TOL/)
+  ! utol = (/NS_NL_UTOL, NS_NL_PTOL, LSC_NL_TOL, TEM_NL_TOL/)
+  utol(:) = config%newton_raphson%rtol(:)
   inewt = 0
   ! momres0 = -1.0d0
   ! conres0 = -1.0d0
@@ -41,6 +42,7 @@ subroutine solmultiphasethermofluid_stag(config, istep)
   call assembleQuenching(config, ASSEMBLE_TENSOR_VEC, &
                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
 
+  ! write(*,*) "myid=", myid, "GET RHS0"
   call calculate_residual(residual0, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
   residual(:) = residual0(:)
   call check_convergence(converged, residual, residual0, utol, &
@@ -49,7 +51,12 @@ subroutine solmultiphasethermofluid_stag(config, istep)
                       ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                       inewt)
 
-  do inewt = 1, NS_NL_itermax
+  if(istep <= 1) then 
+    NL_max = 1
+  else 
+    NL_max = NS_NL_itermax
+  endif
+  do inewt = 1, NL_max
 
     !---------------------------
     ! Solve NavStoVOF
@@ -95,7 +102,7 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     !-----------------------------
     ! Solve Temperature
     !-----------------------------
-    if (istep > 10) then
+    if (istep > -10) then
       IBC(:, :) = 0
       call setBCs_Tem()
       IBC(:, 1:5) = 1

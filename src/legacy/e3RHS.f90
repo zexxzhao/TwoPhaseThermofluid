@@ -376,7 +376,7 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
                              duidxi(1, :)*nor(1) + &
                              duidxi(2, :)*nor(2) + &
                              duidxi(3, :)*nor(3))
-  ti(:) = ti(:) -  2d0/3d0 * mui * divu * nor(:)
+  ! ti(:) = ti(:) -  2d0/3d0 * mui * divu * nor(:)
 
   ! Relative normal velocity for convective term
   unor = sum((ui - umi)*nor)  ! u \cdot n
@@ -408,13 +408,88 @@ subroutine e3bRHS_weak(nshl, nor, tauB, tauNor, gwt, &
       Rhsu(i, aa) = Rhsu(i, aa) - &
                     (shlu(aa)*tmp1(i) + &
                      sum(shgradgu(aa, :)*tmp2(i, :)))*DetJb*gwt
-      RHSu(i, aa) = 
     end do
 
     Rhsp(aa) = Rhsp(aa) + shlu(aa)*(unor - gnor)*DetJb*gwt
   end do
 
 end subroutine e3bRHS_weak
+!======================================================================
+! RHS of weak BC for compressible flow
+!======================================================================
+subroutine e3bRHS_weak_CF(nshl, nor, tauB, tauNor, gwt, &
+                          shlu, shgradgu, ui, umi, pri, duidxi, gi, &
+                          rhoi, mui, &
+                          Rhsu, Rhsp, ti, tmp1, tmp2)
+  use aAdjKeep
+  use commonvars
+  implicit none
+
+  integer, intent(in) :: nshl
+
+  real(8), intent(inout) :: Rhsu(NSD, NSHL), Rhsp(NSHL)
+  real(8), intent(out)   :: ti(NSD), tmp1(NSD), tmp2(NSD, NSD)
+  real(8), intent(in)    :: shlu(NSHL), shgradgu(NSHL, NSD), &
+                            nor(NSD), tauB, tauNor, gwt, &
+                            ui(NSD), umi(NSD), pri, duidxi(NSD, NSD), &
+                            gi(NSD)
+  real(8), intent(in)    :: rhoi, mui
+  integer :: aa, bb, i
+  real(8) :: fact1, fact2, upos, uneg, unor, tr, pt33, gmul, gnor
+  real(8) :: divu, lambda
+
+  tmp1 = 0.0d0
+  tmp2 = 0.0d0
+
+  divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
+  lambda = -2d0/3d0 * mui
+
+  ti(:) = -pri*nor(:) + mui*(duidxi(:, 1)*nor(1) + &
+                             duidxi(:, 2)*nor(2) + &
+                             duidxi(:, 3)*nor(3) + &
+                             duidxi(1, :)*nor(1) + &
+                             duidxi(2, :)*nor(2) + &
+                             duidxi(3, :)*nor(3))
+  ti(:) = ti(:) + lambda * divu * nor(:)
+  ! ti(:) = ti(:) -  2d0/3d0 * mui * divu * nor(:)
+
+  ! Relative normal velocity for convective term
+  unor = sum((ui - umi)*nor)  ! u \cdot n
+  upos = 0.5d0*(unor + abs(unor))
+  uneg = 0.5d0*(unor - abs(unor))
+
+  ! Absolute normal for the rest
+  gnor = sum(gi*nor)
+  unor = sum(ui*nor)  ! u \cdot n
+
+  tmp1(:) = -ti(:) &
+            + tauB*(ui(:) - gi(:)) &
+            - uneg*rhoi*(ui(:) - gi(:)) &
+            + (tauNor - tauB)*unor*nor(:)
+
+  ! gmul =  1.0d0 => sym
+  ! gmul = -1.0d0 => skew
+  gmul = 1.0d0
+  do aa = 1, NSD
+    do bb = 1, NSD
+      tmp2(aa, bb) = -gmul*mui*((ui(aa) - gi(aa))*nor(bb) &
+                               + (ui(bb) - gi(bb))*nor(aa))
+    end do
+      tmp2(aa, aa) = tmp2(aa, aa) -gmul * lambda * nor(aa)
+  end do
+
+  ! gnor = 0.0d0
+  do aa = 1, NSHL
+    do i = 1, NSD
+      Rhsu(i, aa) = Rhsu(i, aa) - &
+                    (shlu(aa)*tmp1(i) + &
+                     sum(shgradgu(aa, :)*tmp2(i, :)))*DetJb*gwt
+    end do
+
+    Rhsp(aa) = Rhsp(aa) + shlu(aa)*(unor - gnor)*DetJb*gwt
+  end do
+
+end subroutine e3bRHS_weak_CF
 
 !======================================================================
 !
@@ -532,6 +607,7 @@ subroutine e3Rhs_3D_fluid_quenching( &
                           tauC, tauBar, tauBar1, kap_dc, kap_dc_phi, gwt, shgu, &
                           shgradgu, uprime, Rhsu, Rhsp, phi, &
                           dpridxi, dphidxi, dphidxidxj, rphi, &
+                          res_phic, &
                           Ti, rTi, dTdxi, &
                           rhoi, mui, &
                           RHSphi)
@@ -547,6 +623,7 @@ subroutine e3Rhs_3D_fluid_quenching( &
                          shgu(NSHL), shgradgu(NSHL, NSD), kap_dc, kap_dc_phi, &
                          tauM, tauP, tauLS, tauC, tauBar, tauBar1, uprime(NSD)
 
+  real(8), intent(in) :: res_phic
   real(8), intent(in) :: Ti, rTi, dTdxi
   real(8), intent(in) :: rhoi, mui
 
@@ -559,7 +636,7 @@ subroutine e3Rhs_3D_fluid_quenching( &
              tmp1(NSD), tmp2(NSD, NSD), tmp4(NSD), phi, uprime1(NSD), &
              shconv(NSHL)
 
-  real(8) :: res_phi, res_phic, phi1
+  real(8) :: res_phi, phi1
   real(8) :: uadvi_ls(NSD)
   real(8) :: vdot, mdot
 
@@ -568,14 +645,11 @@ subroutine e3Rhs_3D_fluid_quenching( &
   tmp1 = 0.0d0; tmp2 = 0.0d0; tmp4 = 0.0d0; divu = 0.0d0
 
   if(Ti > Ts) then
-    mdot = c_evap * (1 - phi) * rhow * (Ti - Ts) / Ts
+    mdot = c_evap * (1-phi) * rhow * (Ti - Ts) / Ts
   else
-    mdot = c_cond * phi * rhoa * (Ti - Ts) / Ts
+    mdot = c_cond * (phi) * rhoa * (Ti - Ts) / Ts
   endif
   vdot = mdot / rhoa - mdot / rhow
-
-  !Convective part of the residual
-  res_phi = rphi + sum(uadvi(:)*dphidxi(:)) + phi * divu - mdot / rhoa
 
   uprime1(:) = uprime(:)
   ! uprime1(3) = uprime(3) - res_phi*tauBar1*fine_tau
@@ -586,55 +660,66 @@ subroutine e3Rhs_3D_fluid_quenching( &
 
   advu(:) = uadvi(:) + uprime1(:)
   do aa = 1,NSHL
-    shconv(aa) = sum(uadvi(:)*shgradgu(aa, :))
+    shconv(aa) = sum(advu(:)*shgradgu(aa, :))
   enddo
-  ptot = pri - (tauC + mui/3d0) *divu
+  ptot = pri - (tauC - mui*2d0/3d0) *divu
 
   tmp1(:) = rhoi*(aci(:) + advu(1)*duidxi(:, 1) &
                  + advu(2)*duidxi(:, 2) &
                  + advu(3)*duidxi(:, 3)) - fi(:)
-  tmp1(:) = tmp1(:) - rhoi*uprime1(:) * divu
+  tmp1(:) = tmp1(:) - uprime1(:) * (vdot * rhoi + (rhow - rhoa) * sum(advu(:) * dphidxi(:)))
 
   tmp4(:) = uprime1(1)*duidxi(:, 1) + &
             uprime1(2)*duidxi(:, 2) + &
             uprime1(3)*duidxi(:, 3)
 
 
-  tmp2(1, 1) = -ptot + 2.0d0*mupkdc*(duidxi(1, 1) - 1d0/3d0 * vdot) &
-               - rhoi*(uadvi(1) + uprime1(1))*uprime1(1) &
-               + rhoi*uprime1(1)*tauBar*tmp4(1)
+  ! tmp2(:, :) = 0d0
+  do i = 1,NSD
+    do j = 1,NSD
+      tmp2(j, i) = mupkdc*(duidxi(i, j) + duidxi(j, i)) - &
+                   rhoi*advu(i)*uprime1(j) + &
+                   rhoi*uprime1(i)*tauBar*tmp4(j)
+    end do
+  enddo
+  do i = 1, NSD
+    tmp2(i, i) = tmp2(i, i) - ptot
+  enddo
+  ! tmp2(1, 1) = -ptot + 2.0d0*mupkdc*duidxi(1, 1) &
+  !              - rhoi*(uadvi(1) + uprime1(1))*uprime1(1) &
+  !              + rhoi*uprime1(1)*tauBar*tmp4(1)
 
-  tmp2(1, 2) = mupkdc*(duidxi(1, 2) + duidxi(2, 1)) &
-               - rhoi*(uadvi(2) + uprime1(2))*uprime1(1) &
-               + rhoi*uprime1(2)*tauBar*tmp4(1)
+  ! tmp2(1, 2) = mupkdc*(duidxi(1, 2) + duidxi(2, 1)) &
+  !              - rhoi*(uadvi(2) + uprime1(2))*uprime1(1) &
+  !              + rhoi*uprime1(2)*tauBar*tmp4(1)
 
-  tmp2(1, 3) = mupkdc*(duidxi(1, 3) + duidxi(3, 1)) &
-               - rhoi*(uadvi(3) + uprime1(3))*uprime1(1) &
-               + rhoi*uprime1(3)*tauBar*tmp4(1)
+  ! tmp2(1, 3) = mupkdc*(duidxi(1, 3) + duidxi(3, 1)) &
+  !              - rhoi*(uadvi(3) + uprime1(3))*uprime1(1) &
+  !              + rhoi*uprime1(3)*tauBar*tmp4(1)
 
-  tmp2(2, 1) = mupkdc*(duidxi(2, 1) + duidxi(1, 2)) &
-               - rhoi*(uadvi(1) + uprime1(1))*uprime1(2) &
-               + rhoi*uprime1(1)*tauBar*tmp4(2)
+  ! tmp2(2, 1) = mupkdc*(duidxi(2, 1) + duidxi(1, 2)) &
+  !              - rhoi*(uadvi(1) + uprime1(1))*uprime1(2) &
+  !              + rhoi*uprime1(1)*tauBar*tmp4(2)
 
-  tmp2(2, 2) = -ptot + 2.0d0*mupkdc*(duidxi(2, 2) - 1d0/3d0 * vdot)&
-               - rhoi*(uadvi(2) + uprime1(2))*uprime1(2) &
-               + rhoi*uprime1(2)*tauBar*tmp4(2)
+  ! tmp2(2, 2) = -ptot + 2.0d0*mupkdc*(duidxi(2, 2) - 1d0/3d0 * vdot)&
+  !              - rhoi*(uadvi(2) + uprime1(2))*uprime1(2) &
+  !              + rhoi*uprime1(2)*tauBar*tmp4(2)
 
-  tmp2(2, 3) = mupkdc*(duidxi(2, 3) + duidxi(3, 2)) &
-               - rhoi*(uadvi(3) + uprime1(3))*uprime1(2) &
-               + rhoi*uprime1(3)*tauBar*tmp4(2)
+  ! tmp2(2, 3) = mupkdc*(duidxi(2, 3) + duidxi(3, 2)) &
+  !              - rhoi*(uadvi(3) + uprime1(3))*uprime1(2) &
+  !              + rhoi*uprime1(3)*tauBar*tmp4(2)
 
-  tmp2(3, 1) = mupkdc*(duidxi(3, 1) + duidxi(1, 3)) &
-               - rhoi*(uadvi(1) + uprime1(1))*uprime1(3) &
-               + rhoi*uprime1(1)*tauBar*tmp4(3)
+  ! tmp2(3, 1) = mupkdc*(duidxi(3, 1) + duidxi(1, 3)) &
+  !              - rhoi*(uadvi(1) + uprime1(1))*uprime1(3) &
+  !              + rhoi*uprime1(1)*tauBar*tmp4(3)
 
-  tmp2(3, 2) = mupkdc*(duidxi(3, 2) + duidxi(2, 3)) &
-               - rhoi*(uadvi(2) + uprime1(2))*uprime1(3) &
-               + rhoi*uprime1(2)*tauBar*tmp4(3)
+  ! tmp2(3, 2) = mupkdc*(duidxi(3, 2) + duidxi(2, 3)) &
+  !              - rhoi*(uadvi(2) + uprime1(2))*uprime1(3) &
+  !              + rhoi*uprime1(2)*tauBar*tmp4(3)
 
-  tmp2(3, 3) = -ptot + 2.0d0*mupkdc*(duidxi(3, 3) - 1d0/3d0 * vdot) &
-               - rhoi*(uadvi(3) + uprime1(3))*uprime1(3) &
-               + rhoi*uprime1(3)*tauBar*tmp4(3)
+  ! tmp2(3, 3) = -ptot + 2.0d0*mupkdc*(duidxi(3, 3) - 1d0/3d0 * vdot) &
+  !              - rhoi*(uadvi(3) + uprime1(3))*uprime1(3) &
+  !              + rhoi*uprime1(3)*tauBar*tmp4(3)
 
   ! Physics Residual
   do aa = 1, NSHL
@@ -666,7 +751,8 @@ subroutine e3Rhs_3D_fluid_quenching( &
   end do
 
   do aa = 1, NSHL
-    RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phi * DetJ * gwt
+    RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phic * DetJ * gwt
+    RHSphi(aa) = RHSphi(aa) - kappadc * sum(shgradgu(aa, :) * dphidxi(:)) * DetJ * gwt
   end do
 
 end subroutine e3Rhs_3D_fluid_quenching

@@ -82,36 +82,36 @@
 !======================================================================
 !
 !======================================================================
-subroutine print_residual(r, r0, utol, assemble_field_flag, inewt)
-
-  use commonpars
-  use mpi
-
-  implicit none
-
-  real(8), intent(in) :: r(4), r0(4), utol(4)
-  integer, intent(in) :: assemble_field_flag
-  integer, intent(in) :: inewt
-
-  character(len=80) :: fomt
-  fomt = "(I3,a,x,ES13.6,x,F12.6,a,F12.6,a)"
-  if(ismaster) then
-    if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-      write(*,fomt) inewt, ") Total Mom. Res. Norm = ", &
-        r(1), 1.0d2*r(1)/max(r0(1), 1d-15), "%", 1.0d2*utol(1), "%"
-      write(*,fomt) inewt, ") Continuity Res. Norm = ", &
-        r(2), 1.0d2*r(2)/max(r0(2), 1d-15), "%", 1.0d2*utol(2), "%"
-    endif
-    if(iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
-      write(*,fomt) inewt, ") LS Res. Norm = ", &
-        r(3), 1.0d2*r(3)/max(r0(3), 1d-15), "%", 1.0d2*utol(3), "%"
-    endif
-    if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
-      write(*,fomt) inewt, ") TEM Res. Norm = ", &
-        r(4), 1.0d2*r(4)/max(r0(4), 1d-15), "%", 1.0d2*utol(4), "%"
-    endif
-  endif
-end subroutine print_residual
+! subroutine print_residual(r, r0, utol, assemble_field_flag, inewt)
+! 
+!   use commonpars
+!   use mpi
+! 
+!   implicit none
+! 
+!   real(8), intent(in) :: r(4), r0(4), utol(4)
+!   integer, intent(in) :: assemble_field_flag
+!   integer, intent(in) :: inewt
+! 
+!   character(len=80) :: fomt
+!   fomt = "(I3,a,x,ES13.6,x,F12.6,a,F12.6,a)"
+!   if(ismaster) then
+!     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
+!       write(*,fomt) inewt, ") Total Mom. Res. Norm = ", &
+!         r(1), 1.0d2*r(1)/max(r0(1), 1d-15), "%", 1.0d2*utol(1), "%"
+!       write(*,fomt) inewt, ") Continuity Res. Norm = ", &
+!         r(2), 1.0d2*r(2)/max(r0(2), 1d-15), "%", 1.0d2*utol(2), "%"
+!     endif
+!     if(iand(assemble_field_flag, ASSEMBLE_FIELD_LS) > 0) then
+!       write(*,fomt) inewt, ") LS Res. Norm = ", &
+!         r(3), 1.0d2*r(3)/max(r0(3), 1d-15), "%", 1.0d2*utol(3), "%"
+!     endif
+!     if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
+!       write(*,fomt) inewt, ") TEM Res. Norm = ", &
+!         r(4), 1.0d2*r(4)/max(r0(4), 1d-15), "%", 1.0d2*utol(4), "%"
+!     endif
+!   endif
+! end subroutine print_residual
 
 !======================================================================
 !

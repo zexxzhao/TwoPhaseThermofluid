@@ -37,7 +37,6 @@ program NURBScode
   nonmatch = .false.
   if (ismaster) write (*, *) "Get run parameters"
   call getparam()
-  call init_config(config)
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
   call input(myid + 1)
@@ -60,6 +59,7 @@ program NURBScode
   else
     call readSol(Rstep)
   end if
+  call init_config(config)
 
   !------------------------------------------
   ! Loop over time steps
@@ -94,7 +94,7 @@ program NURBScode
     !--------------------------------------------
     ! Solve Flow
     !--------------------------------------------
-    call solmultiphasethermofluid_stag(istep)
+    call solmultiphasethermofluid_stag(config, istep)
     !--------------------------------------------
     ! Update Old Quantities
     !--------------------------------------------

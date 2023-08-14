@@ -21,7 +21,7 @@ echo >> ${CONFIGFILE}
 # CONFIGURE GFORTRAN FLASG BASED ON GNU VERSION
 #########################
 echo "FC=${FC}">> ${CONFIGFILE}
-GCC_VERSION=$(${CC} --version | awk '/gcc/ {print $NF+0}')
+GCC_VERSION=$(${CC} --version | awk '/gcc/ {print $3+0}')
 
 if [ $(echo "${GCC_VERSION} >= 10.0" | bc -l) -eq 1 ];
 then

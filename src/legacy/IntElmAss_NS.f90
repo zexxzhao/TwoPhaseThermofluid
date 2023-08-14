@@ -349,7 +349,7 @@ subroutine IntElmMesh_3D(dgAlpha)
 
     rhoi = 1.0d0
     mui = 1.0d0  !3448275.86206897d0
-    lambda = 1.0d0  !31034482.7586207d0
+    ! lambda = 1.0d0  !31034482.7586207d0
     kappa_mesh = 0.0d0
 
     ! Get local solution arrays

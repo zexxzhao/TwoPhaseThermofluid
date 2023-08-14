@@ -25,7 +25,7 @@ end subroutine LocaltoGlobal_3D
 !======================================================================
 subroutine LocaltoGlobalNSVOF_3D(RHSGu, RHSGp, RHSGls, &
                                  NNODE, NSD, &
-                                 NSHL, &
+                                 NSHL, maxNSHL, &
                                  ix, &
                                  Rhsu, Rhsp, Rhsls)
 
@@ -33,10 +33,10 @@ subroutine LocaltoGlobalNSVOF_3D(RHSGu, RHSGp, RHSGls, &
   !use commonvars
   implicit none
 
-  integer, intent(in) :: NNODE, NSD, NSHL
+  integer, intent(in) :: NNODE, NSD, NSHL, maxNSHL
   real(8), intent(in) :: Rhsu(NSD, NSHL), Rhsp(NSHL), Rhsls(NSHL)
 
-  integer, intent(in) :: ix(NSHL)
+  integer, intent(in) :: ix(maxNSHL)
 
   real(8), intent(inout) :: RHSGu(NNODE, NSD), RHSGp(NNODE), RHSGls(NNODE)
   integer :: bb, gix

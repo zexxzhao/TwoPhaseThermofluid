@@ -67,20 +67,16 @@ subroutine assembleQuenching(config, assemble_tensor_flag, assemble_field_flag)
     call CPU_TIME(t1)
   endif
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF) > 0) then
-    ! write(*,*) myid, "ug-alpha", sum(ugAlpha(:, :) ** 2), assemble_tensor_flag 
     call IntElmAss_NSVOF_Quenching( &
       config, &
       dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
       acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
       TgAlpha, rTgAlpha, &
       assemble_tensor_flag)
-    ! write(*,*) myid, "RHSgu1", sum(RHSGu(:, :) ** 2), &
-    !       sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
-    call FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+    call FaceAssembly_NS_weak(config, &
+                              dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                               acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
                               assemble_tensor_flag)
-    ! write(*,*) myid, "RHSgu2", sum(RHSGu(:, :) ** 2), &
-    !      sum(LHSK11**2), sum(lhsG**2), sum(lhsD1**2), sum(lhsM**2)
   end if
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
     call IntElmAss_Tem_Quenching( &
@@ -181,6 +177,7 @@ subroutine IntElmAss_NSVOF_Quenching(&
   real(8) :: res_phic_tmp1, res_phic_tmp2
   real(8) :: Qi, Si(3, 3), Omegai(3, 3)
   logical :: is_fluid
+
   real(8) :: rhoi, mui, cpi, hki
   real(8) :: mdot, vdot
 
@@ -285,9 +282,9 @@ subroutine IntElmAss_NSVOF_Quenching(&
       shlu(:) = 0.0d0
       shgradgu(:, :) = 0.0d0
       shhessgu(:, :, :) = 0.0d0
-      hess_flag = NS_hess_flag
+      ! hess_flag = .false.
       call eval_shape(nshl, iel, gp(igauss, :), xl, dl, wl, shlu, &
-                      shgradgu, shhessgu, dxidx, Gij, Ginv, hess_flag)
+                      shgradgu, shhessgu, dxidx, Gij, Ginv, 0)
 
       !call e3int_fluid(nshl, xl, dl, ul, acl, uml, acml, &
       !                 pl, fl, phil, Tl, rTl, shlu, shgradgu, &
@@ -317,12 +314,14 @@ subroutine IntElmAss_NSVOF_Quenching(&
       call e3int_qr_grad(NSHL, NSD, 1, shgradgu, Tl, dTdxi)
 
       call e3int_qr_hess(NSHL, NSD, NSD, shhessgu, ul, duidxixj)
-      call e3int_qr_hess(NSHL, NSD, NSD, shhessgu, phil, dphidxidxj)
+      call e3int_qr_hess(NSHL, NSD, 1, shhessgu, phil, dphidxidxj)
 
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate on qr", igauss, NGAUSS
       if(Ti > Ts) then
-        mdot = c_evap * (1 - phii) * rhow * (Ti - Ts) / Ts
+        mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
       else
-        mdot = c_cond * phii * rhoa * (Ti - Ts) / Ts
+        mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
       endif
       vdot = mdot / rhoa - mdot / rhow
 
@@ -339,17 +338,27 @@ subroutine IntElmAss_NSVOF_Quenching(&
 
       ! ALE Advective Velocity
       uadvi(:) = ui(:) - umi(:)
+      fi(:) = gravvec(:) * rhoi
       ! call a function to get residual for NS and VOF
       call e3int_rLi(NSD, rhoi, mui, aci, duidxi, uadvi, dpridxi, fi, duidxixj, rLi)
-      call e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, duidxi, mdot, rhoa, res_phic_tmp1)
+      call e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, mdot, rhow, rhoa, res_phic_tmp1)
 
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate on RESIDUAL", igauss, NGAUSS
       call e3STAB_3D_NSVOF(NSD, Gij, Delt, uadvi, rhoi, mui, tauM, tauP, tauC, tauLS)
       uprime(:) = -tauM * rLi(:)
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate STAB", igauss, NGAUSS, &
+        !     config%vms%use_taubar
 
       tauBar = 0.0d0
-      if(config%vms%use_taubar) then
-        call e3STAB_3D_NSVOF_TAUBAR(NSD, Gij, uadvi, uprime, tauBar)
-      endif
+      ! if(config%vms%use_taubar) then
+      ! if(.false.) then
+      !   call e3STAB_3D_NSVOF_TAUBAR(NSD, Gij, uadvi, uprime, tauBar)
+      ! endif
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate TAUBAR", igauss, NGAUSS, &
+        !     config%vms%use_taubar, tauBar
 
       k_dc = 0.0d0
       if(abs(config%vms%NS_kdc_w) + abs(config%vms%NS_kdc_a)  > 0.0d0) then
@@ -359,20 +368,26 @@ subroutine IntElmAss_NSVOF_Quenching(&
 
       k_dc_phi = 0.0d0
       if(abs(config%vms%LSC_kdc) > 0.0d0) then
-        call e3DC_scalar(NSD, lsc_kdc, Gij, res_phic_tmp1, dphidxi, k_dc_phi)
+        call e3DC_scalar(NSD, config%vms%LSC_kdc, Gij, res_phic_tmp1, dphidxi, k_dc_phi)
       endif
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate KDC", igauss, NGAUSS
 
       if(config%calc_cfl) then
         call e3CFL(NSD, uadvi, Gij, Delt, cfl_loc)
         cfl = max(cfl, cfl_loc)
       endif
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate CFL", igauss, NGAUSS
 
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0 .and. is_fluid) then
 
+        !call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        !if(ismaster) write(*,*) "Assemble NSLS Jac"
         call e3LHS_3D_fluid_quenching(&
           nshl, ui, umi, aci, pri, duidxi, dpridxi, &
           dphidxi, dphidxidxj, rphii, phii, &
-          rLi, rhoi, mui, &
+          rLi, fi, rhoi, mui, Ti, &
           tauM, tauP, tauLS, tauC, tauBar, tauBar1, &
           k_dc, k_dc_phi, gw(igauss), shlu, shgradgu, &
           shhessgu, xKebe11, xGebe, xDebe1, xMebe, &
@@ -381,6 +396,8 @@ subroutine IntElmAss_NSVOF_Quenching(&
       end if
 
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0 .and. is_fluid) then
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) myid, "Before assemble NSLS RHS", iel, NELEM
         call e3RHS_3D_fluid_quenching(&
           nshl, ui, aci, umi, acmi, uadvi, &
           pri, rLi, fi, duidxi, ddidxi, &
@@ -388,9 +405,12 @@ subroutine IntElmAss_NSVOF_Quenching(&
           gw(igauss), shlu, shgradgu, uprime, &
           Rhsu, Rhsp, phii, &
           dpridxi, dphidxi, dphidxidxj, rphii, &
+          res_phic_tmp1, &
           Ti, rTi, dTdxi, rhoi, mui, &
           RHSphi)
 
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) myid, "After assemble NSLS RHS", iel, NELEM
       end if
 
     end do
@@ -399,14 +419,18 @@ subroutine IntElmAss_NSVOF_Quenching(&
     call BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, &
                   xMebe, Rhsu, Rhsp, &
                   xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
+    !    call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+    !if(ismaster) write(*,*) "Evaluate BC", NSHL
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
       call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
                             xLSebe, xLSUebe, xULSebe, xPLSebe)
     end if
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       call LocalToGlobalNSVOF_3D(RHSGu, RHSGp, RHSGls, &
-                                 NNODE, NSD, NSHL,&
+                                 NNODE, NSD, NSHL, maxNSHL, &
                                  IEN(iel, :), rhsu, rhsp, rhsphi)
+        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
+        ! if(ismaster) write(*,*) "Evaluate add_local"
     end if
 
   end do
@@ -424,6 +448,7 @@ subroutine IntElmAss_NSVOF_Quenching(&
   deallocate (phil, rphil)                         ! 25
   deallocate (Tl, rTl)                             ! 27
   deallocate (gp, gw)                              ! 29
+  ! write(*,*) "DEBUG, myid=", myid, config%calc_cfl
   if (config%calc_cfl) then
     ! Find largest CFL-number and output to screen
     if (numnodes > 1) then
@@ -488,7 +513,7 @@ subroutine IntElmAss_Tem_Quenching(&
              dphidxi(NSD), duidxi(NSD, NSD), dphidxidxj(NSD, NSD), &
              duidxixj(NSD, NSD, NSD), duiolddxi(NSD, NSD), &
              dxidx(NSD, NSD), dpridxi(NSD), rLi(NSD)
-
+  real(8) :: uadvi_full(NSD)
   real(8) :: Gij(NSD, NSD), Ginv(NSD, NSD)
   real(8) :: cfl(2), gcfl(2), cfl_loc(2)
   real(8) :: Ftens(NSD, NSD), Stens(NSD, NSD), Ctens(NSD, NSD, NSD, NSD)
@@ -501,9 +526,9 @@ subroutine IntElmAss_Tem_Quenching(&
   real(8) :: res_tem1, res_tem2, tau_tem
   logical :: is_fluid
   real(8) :: fact1, fact2
-  real(8), allocatable :: shconv(:), tmp(:)
+  real(8), allocatable :: shconv(:), shconv_full(:), tmp(:)
   real(8) :: Se, mdot, vdot
-  real(8) :: rhoi, mui, cpi, hki
+  real(8) :: rhoi, mui, cpi, hki, rhocpi
   real(8) :: k_dc_tem
 
   fact1 = almi
@@ -528,7 +553,7 @@ subroutine IntElmAss_Tem_Quenching(&
                     fl, dl, ul, wl, acl, uml, acml, pl, dlold, &
                     xl, dumb, phil, ulold, dphidtl)
         deallocate (rTl, Tl, RHStem, xTebe)
-        deallocate (shconv, tmp)
+        deallocate (shconv, shconv_full, tmp)
       end if
 
       NSHL = ELMNSHL(iel)
@@ -540,7 +565,7 @@ subroutine IntElmAss_Tem_Quenching(&
                 pl(NSHL), dlold(NSHL, NSD), xl(NSHL, NSD), &
                 dumb(NSHL, NSD), phil(NSHL), ulold(NSHL, NSD), dphidtl(NSHL))
       allocate (rTl(NSHL), Tl(NSHL), RHStem(NSHL), xTebe(NSHL, NSHL))
-      allocate (shconv(NSHL), tmp(NSHL))
+      allocate (shconv(NSHL), shconv_full(NSHL), tmp(NSHL))
 
       ! get Gaussian points and weights
       call genGPandGW(gp, gw, NGAUSS)
@@ -585,23 +610,27 @@ subroutine IntElmAss_Tem_Quenching(&
       shhessgu = 0.0d0
   
       call eval_shape(nshl, iel, gp(igauss, :), xl, dl, wl, shlu, &
-                      shgradgu, shhessgu, dxidx, Gij, Ginv, config%use_hessian)
+                      shgradgu, shhessgu, dxidx, Gij, Ginv, 0)
 
       ! Fluid
       call e3int_qr(NSHL, NSD, 1, shlu, phil, phii)
       call e3int_qr(NSHL, NSD, 1, shlu, rTl, rTi)
       call e3int_qr(NSHL, NSD, 1, shlu, Tl, Ti)
+      call e3int_qr(NSHL, NSD, NSD, shlu, acl, aci)
       call e3int_qr(NSHL, NSD, NSD, shlu, ul, ui)
       call e3int_qr(NSHL, NSD, NSD, shlu, uml, umi)
 
+      call e3int_qr_grad(NSHL, NSD, 1, shgradgu, pl, dpridxi)
       call e3int_qr_grad(NSHL, NSD, 1, shgradgu, Tl, dTdxi)
+      call e3int_qr_grad(NSHL, NSD, NSD, shgradgu, ul, duidxi)
 
       call e3int_qr_hess(NSHL, NSD, 1, shhessgu, Tl, dTdxixj)
+      call e3int_qr_hess(NSHL, NSD, NSD, shhessgu, ul, duidxixj)
 
       if(Ti > Ts) then
-        mdot = c_evap * (1 - phii) * rhow * (Ti - Ts) / Ts
+        mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
       else
-        mdot = c_cond * phii * rhoa * (Ti - Ts) / Ts
+        mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
       endif
       vdot = mdot / rhoa - mdot / rhow
 
@@ -610,40 +639,56 @@ subroutine IntElmAss_Tem_Quenching(&
         call prop_interp(muw, mua, phii, mui)
         call prop_interp(cpw, cpa, phii, cpi)
         call prop_interp(kappaw, kappaa, phii, hki)
+        call prop_interp(rhow * cpw, rhoa * cpa, phii, rhocpi)
       else ! solid
         rhoi = rhos
         mui = mus
         cpi = cps
         hki = kappas
+        rhocpi = rhos * cps
         if(.not. config%vms%use_sliding_velocity) then
           ui(:) = umi(:)
         endif
       endif
+      fi(:) = rhoi * gravvec(:)
 
       ! ALE Advective Velocity
       uadvi(:) = ui(:) - umi(:)
       ! call a function to get residual for Tem
       Se = ((cpw - cpa) * (Ti - Ts) - Lh) * mdot 
-      call e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhoi, cpi, hki, res_tem1)
+      call e3int_rLi(NSD, rhoi, mui, aci, duidxi, uadvi, dpridxi, fi, duidxixj, rLi)
 
+
+      call e3STAB_3D_NSVOF(NSD, Gij, Delt, uadvi, rhoi, mui, tauM, tauP, tauC, tauLS)
+      uprime(:) = -tauM * rLi(:)
+  
+      call e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhocpi, hki, res_tem1)
       call e3STAB_3D_TEM(NSD, Gij, uadvi, Delt, rhoi, cpi, hki, tau_tem)
 
       k_dc_tem = 0.0d0
       if(abs(config%vms%Tem_kdc) > 0d0) then
         call e3DC_scalar(NSD, config%vms%Tem_kdc, Gij, res_tem1, dTdxi, k_dc_tem)
+        hki = hki + k_dc_tem
       endif
 
+      !uadvi_full(:) = uadvi(:) + uprime(:)
       do aa = 1, NSHL
         shconv(aa) = sum(uadvi(:)*shgradgu(aa, :))
+        !shconv_full(aa) = sum((uadvi(:) + uprime(:))*shgradgu(aa, :))
       enddo
-      tmp(:)  = shlu(:) + tau_tem * rhoi * cpi * shconv(:)
+      shconv_full(:) = shconv(:)
+      tmp(:)  = shlu(:) + tau_tem * rhocpi * shconv(:)
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
         ! e3LHS_3D_tem()
         ! xTebe(:, :) = 0.0d0
         do aa = 1, NSHL
           do bb = 1,NSHL
-            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact1 * rhoi * cpi * shlu(bb) * gw(igauss) * DetJ
-            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * fact2 * rhoi * cpi * shconv(bb) * gw(igauss) * DetJ
+            !xTebe(aa, bb) = xTebe(aa, bb) + shlu(aa) * rhocpi * &
+            !                (fact1 * shlu(bb) + fact2 * shconv_full(bb)) * gw(igauss) * DetJ
+            !xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hki * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
+            !xTebe(aa, bb) = xTebe(aa, bb) + rhocpi * shconv_full(aa) * tau_tem * &
+            !                rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hki * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
           enddo
         enddo
@@ -651,10 +696,16 @@ subroutine IntElmAss_Tem_Quenching(&
 
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         ! e3RHS_3D_tem()
-        RHSTem(:) = RHStem(:) -  tmp(:) * res_tem1 * gw(igauss) * DetJ
+        !RHSTem(:) = RHSTem(:) - shlu(:) * (rhocpi * (rTi + sum(uadvi(:) * dTdxi(:))) - Se) * gw(igauss) * DetJ
+        !RHSTem(:) = RHSTem(:) - shconv(:) * rhocpi * tau_tem * res_tem1 * gw(igauss) * DetJ
+
+        RHSTem(:) = RHSTem(:) - tmp(:) * res_tem1 * gw(igauss) * DetJ
         RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
         RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
         RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
+        ! RHSTem(:) = RHSTem(:) + shlu(:) * (rhoi * cpi * vdot) * gw(igauss) * DetJ
+        ! RHSTem(:) = RHSTem(:) + shlu(:) * sum(uadvi(:) * dphidxi(:)) * (rhow * cpw - rhoa * cpa) * gw(igauss) * DetJ
+        if(isnan(sum(RHSTem))) write(*,*) "DEBUG", myid, tau_tem, rhoi, cpi, hki
       end if
     end do
 
@@ -677,6 +728,6 @@ subroutine IntElmAss_Tem_Quenching(&
               xl, dumb, phil, ulold, dphidtl, &
               gp, gw)
   deallocate (rTl, Tl, RHStem, xTebe)
-  deallocate(shconv, tmp)
+  deallocate(shconv, shconv_full, tmp)
 
 end subroutine IntElmAss_Tem_Quenching

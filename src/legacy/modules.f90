@@ -3,13 +3,13 @@
 !------------------------------------------------------------------------
 module class_def
 
-  type NURBSpatch
+  ! type NURBSpatch
 
-    integer :: P, Q, R
-    integer :: MCP, NCP, OCP
-    real(8), allocatable :: U_KNOT(:), V_KNOT(:), W_KNOT(:)
+  !   integer :: P, Q, R
+  !   integer :: MCP, NCP, OCP
+  !   real(8), allocatable :: U_KNOT(:), V_KNOT(:), W_KNOT(:)
 
-  end type NURBSpatch
+  ! end type NURBSpatch
 
   type bnd_class
 
@@ -203,7 +203,7 @@ end module defs_shell
 module aAdjKeep
 
   use class_def
-  use defs_shell
+  ! use defs_shell
 
   implicit none
   save
@@ -211,17 +211,18 @@ module aAdjKeep
   ! Mesh
   real(8), allocatable :: xg(:, :), wg(:)
 
-  integer, allocatable :: IEN(:, :), EPID(:), EIJK(:, :), NodeID(:)
+  integer, allocatable :: IEN(:, :), NodeID(:)
+  integer, allocatable :: EPID(:), EIJK(:, :)
   integer, allocatable :: ELM_ID(:)
 
   type(bnd_class), allocatable :: bound(:)
-  type(NURBSpatch), allocatable :: patch(:)
+  !type(NURBSpatch), allocatable :: patch(:)
 
   ! Contraint flags
   integer, allocatable :: IPER(:)
   integer, allocatable :: IBC(:, :)
-  logical :: IS_SOLID_NODE_ASSIGNED
-  integer, allocatable :: IS_SOLID_NODE(:)
+  ! logical :: IS_SOLID_NODE_ASSIGNED
+  ! integer, allocatable :: IS_SOLID_NODE(:)
 
   ! Type flags
   integer, allocatable :: EL_TYP(:), D_FLAG(:), P_FLAG(:)
@@ -261,21 +262,21 @@ module aAdjKeep
   real(8), allocatable :: uavg(:, :), pavg(:)
 
   ! Rigid body
-  real(8) :: vbn0(3), vbn1(3)
-  real(8) :: dbn0(3), dbn1(3)
-  real(8) :: wbn0(3), wbn1(3)
-  real(8) :: Rn0(3, 3), Rn1(3, 3)
+  ! real(8) :: vbn0(3), vbn1(3)
+  ! real(8) :: dbn0(3), dbn1(3)
+  ! real(8) :: wbn0(3), wbn1(3)
+  ! real(8) :: Rn0(3, 3), Rn1(3, 3)
 
   ! First P-K Stress
-  real(8), allocatable :: FPKS(:, :, :)
+  ! real(8), allocatable :: FPKS(:, :, :)
 
   ! Array for Prism
   integer, allocatable :: ELMNSHL(:), ELMNGAUSS(:)
 
   ! global information for individual blades
-  type(mesh) :: blade(3)
+  ! type(mesh) :: blade(3)
 
-  real(8) :: Center_Rot(3)
+  ! real(8) :: Center_Rot(3)
 
 end module aAdjKeep
 
@@ -311,8 +312,9 @@ module commonvars
 
   ! Time step
   real(8) :: Delt, Dtgl, rhoinf, beti, gami, alfi, almi, &
-             mgam, ogam, lambda, time, &
+             mgam, ogam, time, &
              conv_time, mono_time, move_time, shel_time
+  ! real(8) :: lambda
   integer :: Nstep, ifq, ifq_sh, ifq_tq, mono_iter
 
   ! Navier-Stokes solver
@@ -322,15 +324,23 @@ module commonvars
 
   real(8) :: NS_kdc_w, NS_kdc_a, fine_tau
 
+  real(8) :: NS_GMRES_atol, NS_NL_Uatol, NS_NL_Patol
   real(8) :: NS_GMRES_tol, NS_NL_Utol, NS_NL_Ptol
   integer :: NS_GMRES_itermin, NS_GMRES_itermax, NS_NL_itermax, &
              NS_hess_flag
 
   ! LevelSet Convection solver
   real(8) :: LSC_kdc
+  real(8) :: LSC_GMRES_atol, LSC_NL_atol
   real(8) :: LSC_GMRES_tol, LSC_NL_tol
   integer :: LSC_GMRES_itermin, LSC_GMRES_itermax, LSC_NL_itermax, &
              LSC_pred_step
+
+  ! Temperature Advection-diffusion solver
+  real(8) :: TEM_kdc
+  real(8) :: TEM_GMRES_atol, TEM_NL_atol
+  real(8) :: TEM_GMRES_tol, TEM_NL_tol
+  integer :: TEM_GMRES_itermin, TEM_GMRES_itermax, TEM_NL_itermax
 
   ! Rigid body solver
   real(8) :: RB_NL_Ftol, RB_NL_Mtol
@@ -472,11 +482,42 @@ module configuration
     real(8), allocatable :: atol(:), rtol(:)
   end type NewtonRaphsonConfigType
 
+  type TimeIntegralConfigType
+    integer :: Nstep
+    integer :: ifq
+    real(8) :: Delt
+    real(8) :: rhoinf
+  end type TimeIntegralConfigType
+
+  type PropertyType
+    real(8) :: rhoa, rhow, rhos
+    real(8) :: mua, muw
+    real(8) :: cpa, cpw, cps
+    real(8) :: kappaa, kappaw, kappas
+    real(8) :: Ts, lh, c_cond, c_evap
+  end type PropertyType
+
+  type BCConfigType
+    integer :: NBOUND, NSD
+    ! ug
+    integer, allocatable :: BCugType(:,:)
+    real(8), allocatable :: BCugValu(:,:)
+    ! phig
+    integer, allocatable :: BCphigType(:)
+    real(8), allocatable :: BCphigValu(:)
+    ! Tg
+    integer, allocatable :: BCTgType(:)
+    real(8), allocatable :: BCTgValu(:)
+  end type BCConfigType
+
   type ConfigType
     logical :: iga
     logical :: fem_flag
     logical :: use_hessian
     logical :: calc_cfl
+    type(TimeIntegralConfigType) :: time_integral
+    type(PropertyType) :: property
+    type(BCConfigType) :: bc
     type(VMSConfigType) :: vms
     type(KSPConfigType) :: ksp
     type(NewtonRaphsonConfigType) :: newton_raphson
@@ -494,25 +535,62 @@ module configuration
 
     config%iga = iga
     config%fem_flag = fem_flag /= 0
-    config%use_hessian = .false.
+    config%use_hessian = iga
+    config%calc_cfl = .true.
+
+    config%time_integral%Nstep = Nstep
+    config%time_integral%ifq = ifq
+    config%time_integral%Delt = Delt
+    config%time_integral%rhoinf = rhoinf
+
+    config%property%rhoa = rhoa
+    config%property%rhow = rhow
+    config%property%mua = mua
+    config%property%muw = muw
+    config%property%cpa = cpa
+    config%property%cpw = cpw
+    config%property%kappaa = kappaa
+    config%property%kappaw = kappaw
+    config%property%rhos = rhos
+    config%property%cps = cps
+    config%property%kappas = kappas
+    config%property%Ts = Ts
+    config%property%lh = lh
+    config%property%c_cond = c_cond
+    config%property%c_evap = c_evap
+
+    config%bc%NBOUND = NBOUND
+    config%bc%NSD = NSD
+    allocate (config%bc%BCugType(config%bc%NBOUND, config%bc%NSD), &
+              config%bc%BCugValu(config%bc%NBOUND, config%bc%NSD), &
+              config%bc%BCphigType(config%bc%NBOUND), &
+              config%bc%BCphigValu(config%bc%NBOUND), &
+              config%bc%BCTgType(config%bc%NBOUND), &
+              config%bc%BCTgValu(config%bc%NBOUND))
+    config%bc%BCugType = BCugType
+    config%bc%BCugValu = BCugValu
+    config%bc%BCphigType = BCphigType
+    config%bc%BCphigValu = BCphigValu
+    config%bc%BCTgType = BCTgType
+    config%bc%BCTgValu = BCTgValu
 
     config%vms%use_taubar = .false.
     config%vms%use_sliding_velocity = .false.
     config%vms%NS_kdc_w = NS_kdc_w
     config%vms%NS_kdc_a = NS_kdc_a
     config%vms%LSC_kdc = LSC_kdc
-    config%vms%Tem_kdc = 1d0
-
+    config%vms%Tem_kdc = TEM_kdc
+  
     config%ksp%NRES = NRES
     allocate(config%ksp%max_iter(NRES))
     allocate(config%ksp%min_iter(NRES))
     allocate(config%ksp%atol(NRES))
     allocate(config%ksp%rtol(NRES))
   
-    config%ksp%max_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, LSC_GMRES_itermax/)
-    config%ksp%min_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, LSC_GMRES_itermax/)
-    config%ksp%atol(:) = (/1d-12, 1d-12, 1d-12, 1d-12/)
-    config%ksp%rtol(:) = (/NS_GMRES_tol, NS_GMRES_tol, LSC_GMRES_tol, LSC_GMRES_tol/)
+    config%ksp%max_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, TEM_GMRES_itermax/)
+    config%ksp%min_iter(:) = (/NS_GMRES_itermin, NS_GMRES_itermin, LSC_GMRES_itermin, TEM_GMRES_itermin/)
+    config%ksp%atol(:) = (/NS_GMRES_atol, NS_GMRES_atol, LSC_GMRES_atol, TEM_GMRES_atol/)
+    config%ksp%rtol(:) = (/NS_GMRES_tol, NS_GMRES_tol, LSC_GMRES_tol, TEM_GMRES_tol/)
 
     config%newton_raphson%NRES = NRES
     allocate(config%newton_raphson%atol(NRES))
@@ -520,7 +598,7 @@ module configuration
 
     config%newton_raphson%max_iter = NS_NL_itermax
     config%newton_raphson%min_iter = 1
-    config%newton_raphson%atol(:) = (/1d-12, 1d-12, 1d-12, 1d-12/)
+    config%newton_raphson%atol(:) = (/NS_NL_Uatol, NS_NL_Patol, LSC_NL_atol, LSC_NL_atol/)
     config%newton_raphson%rtol(:) = (/NS_NL_Utol, NS_NL_Ptol, LSC_NL_tol, LSC_NL_tol/)
   end subroutine init_config
 
@@ -530,6 +608,13 @@ module configuration
   
     implicit none
     type(ConfigType), intent(inout) :: config
+
+    deallocate(config%bc%BCugType)
+    deallocate(config%bc%BCugValu)
+    deallocate(config%bc%BCphigType)
+    deallocate(config%bc%BCphigValu)
+    deallocate(config%bc%BCTgType)
+    deallocate(config%bc%BCTgValu)
 
     deallocate(config%ksp%max_iter)
     deallocate(config%ksp%min_iter)

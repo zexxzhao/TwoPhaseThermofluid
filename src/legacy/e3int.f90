@@ -5,7 +5,7 @@ subroutine prop_interp(prop_a, prop_b, phi, prop_out)
   real(8), intent(in) :: prop_a, prop_b, phi
   real(8), intent(out) :: prop_out
 
-  prop_out = prop_a * phi + prop_b * (1 - phi)
+  prop_out = prop_a * (1 - phi) + prop_b * phi
 end subroutine prop_interp
 
 !======================================================================
@@ -172,7 +172,7 @@ subroutine e3int_rLi(NSD, rhoi, mui, &
   integer, intent(in) :: NSD
   real(8), intent(in) :: rhoi, mui
   real(8), intent(in) :: aci(NSD), duidxi(NSD, NSD), uadvi(NSD)
-  real(8), intent(in) :: dpridxi(NSD), fi(:)
+  real(8), intent(in) :: dpridxi(NSD), fi(NSD)
   real(8), intent(in) :: duidxixj(NSD, NSD, NSD)
 
   real(8), intent(out) :: rLi(NSD)
@@ -188,33 +188,30 @@ end subroutine e3int_rLi
 !
 !======================================================================
 
-subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, duidxi, mdot, rhoa, resphi)
+subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, mdot, rhow, rhoa, resphi)
   implicit none
   integer, intent(in) :: NSD
   real(8), intent(in) :: rphii, phii, dphidxi(NSD)
-  real(8), intent(in) :: uadvi(NSD), duidxi(NSD, NSD)
-  real(8), intent(in) :: mdot, rhoa
+  real(8), intent(in) :: uadvi(NSD)
+  real(8), intent(in) :: mdot, rhow, rhoa
   
   real(8), intent(out) :: resphi
 
-  real(8) :: divu
-  integer :: i
+  real(8) :: vdot
+  vdot = mdot / rhoa - mdot / rhow
 
-  do i = 1, NSD
-    divu = divu + duidxi(i, i)
-  enddo
-  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * divu - mdot / rhoa
+  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * vdot - mdot / rhoa
 end subroutine e3int_resphi
 !======================================================================
 !
 !======================================================================
 
-subroutine e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhoi, cpi, hki, restem)
+subroutine e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhocpi, hki, restem)
   implicit none
   integer, intent(in) :: NSD
   real(8), intent(in) :: rTi, Ti, dTdxi(NSD), dTdxixj(NSD, NSD)
   real(8), intent(in) :: uadvi(NSD)
-  real(8), intent(in) :: Se, rhoi, cpi, hki
+  real(8), intent(in) :: Se, rhocpi, hki
   real(8), intent(out) :: restem
 
   real(8) :: lapT
@@ -225,7 +222,7 @@ subroutine e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhoi, cpi, hki,
     lapT = lapT + dTdxixj(i, i)
   enddo
 
-  restem = rhoi*cpi*(rTi + sum(uadvi(:)*dTdxi(:))) - Se - hki * lapT
+  restem = rhocpi*(rTi + sum(uadvi(:)*dTdxi(:))) - Se - hki * lapT
 end subroutine e3int_restem
 !======================================================================
 !

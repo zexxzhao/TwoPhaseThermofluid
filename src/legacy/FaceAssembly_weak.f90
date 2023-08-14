@@ -1,15 +1,17 @@
 !======================================================================
 !
 !======================================================================
-subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+subroutine FaceAssembly_NS_weak(config, dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
                                 acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
                                 assemble_tensor_flag)
   use aAdjKeep
   use mpi
   use commonvars
   use commonpars
+  use configuration
   implicit none
 
+  type(ConfigType), intent(in) :: config
   integer, intent(in) :: assemble_tensor_flag
   real(8), intent(in) :: dgAlpha(NNODE, NSD), ugAlpha(NNODE, NSD), &
                          acgAlpha(NNODE, NSD), ugmAlpha(NNODE, NSD), &
@@ -156,20 +158,24 @@ subroutine FaceAssembly_NS_weak(dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
 
 
         if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-          call e3bSTAB_weak(tauB, tauBLS, tauNor, ui - umi, nor, dxidx)
+          call e3bSTAB_weak(tauB, tauNor, ui - umi, nor, dxidx, rhoi, mui)
 
-          call e3bRHS_weak(nshl, nor, tauB, tauNor, gw(igauss), &
-                           shlu, shgradgu, ui, umi, pri, duidxi, &
-                           gi, Rhsu, Rhsp, ti, tmp1, tmp2)
+          ! call e3bRHS_weak( &
+          call e3bRHS_weak_CF( &
+            nshl, nor, tauB, tauNor, gw(igauss), &
+            shlu, shgradgu, ui, umi, pri, duidxi, &
+            gi, rhoi, mui, &
+            Rhsu, Rhsp, ti, tmp1, tmp2)
 
         end if
 
         if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
-          call e3bLHS_weak(nshl, ui, umi, duidxi, tauB, tauBLS, tauNor, &
-                           gw(igauss), shlu, shgradgu, xKebe11, &
-                           xGebe, xDebe1, nor, &
-                           xLSebe, xLSUebe, xULSebe, xPLSebe, &
-                           Rhsphi, phii, dphidxi)
+          ! call e3bLHS_weak( &
+          call e3bLHS_weak_CF( &
+            nshl, ui, umi, duidxi, rhoi, mui, &
+            tauB, tauNor, &
+            gw(igauss), shlu, shgradgu, xKebe11, &
+            xGebe, xDebe1, nor)
         end if
 
       end do

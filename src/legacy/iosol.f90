@@ -62,10 +62,10 @@ subroutine writeRB(istep)
     fname = 'force'//trim(cname(istep))//'.dat'
     open (ffile, file=fname, status='replace')
 
-    write (dfile, "(4ES14.6)") time, dbn1
-    write (vfile, "(7ES14.6)") time, vbn1, wbn1
-    write (rfile, "(10ES14.6)") time, Rn1
-    write (ffile, "(7ES14.6)") time, Fb, Mb
+    ! write (dfile, "(4ES14.6)") time, dbn1
+    ! write (vfile, "(7ES14.6)") time, vbn1, wbn1
+    ! write (rfile, "(10ES14.6)") time, Rn1
+    ! write (ffile, "(7ES14.6)") time, Fb, Mb
 
     close (mfile)
     close (dfile)
@@ -260,7 +260,7 @@ subroutine generateIC()
   acgold = 0.0d0
   pgold = 0.0d0
   rphigold = 0.0d0
-  elem_h = 0.0005d0
+  ! elem_h = 0.0005d0
   phigold(:) = 0d0
   phig(:) = 0d0
   ugold(:, :) = 0d0
@@ -277,6 +277,7 @@ subroutine generateIC()
       Tgold(n) = 5d2 + 273d0
     end do
   enddo
+
   ! call commu(ugold, 3, "out")
 
   !call getinflow(0,0)
