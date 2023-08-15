@@ -123,7 +123,7 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     !-----------------------------
     ! Solve Temperature
     !-----------------------------
-    if (istep > 10) then
+    if (istep > 0) then
       IBC(:, :) = 0
       call setBCs_Tem()
       IBC(:, 1:5) = 1

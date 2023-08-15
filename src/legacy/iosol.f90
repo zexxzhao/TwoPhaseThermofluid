@@ -263,11 +263,14 @@ subroutine generateIC()
   ! elem_h = 0.0005d0
   phigold(:) = 0d0
   phig(:) = 0d0
-  ugold(:, :) = 0d0
+  ugold(:, 1) = 0d0
+  ugold(:, 2) = 0d0
+  ugold(:, 3) = 1d0
   Tgold(:) = 75d0 + 273d0
   do i = 1, NNODE
     if(NODEID(i) == 101) then
       Tgold(i) = 5d2 + 273d0
+      ugold(i, 3) = 0
     end if
   end do
   do b = 1,NBOUND
@@ -275,6 +278,7 @@ subroutine generateIC()
     do i = 1,bound(b)%NNODE
       n = bound(b)%BNODES(i)
       Tgold(n) = 5d2 + 273d0
+      ugold(n, 3) = 0
     end do
   enddo
 

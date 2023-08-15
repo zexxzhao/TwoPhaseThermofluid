@@ -1292,9 +1292,6 @@ subroutine e3LHS_3D_fluid_quenching(&
     dmdTi = c_cond * (phic) * rhoa / Ts
   endif
   vdot = mdot / rhoa - mdot / rhow
-  ! debug
-  dmdphii = 0d0
-  dmdTi = 0d0
 !  write(*,*) "kappadc:", kappadc
   ! tmp1_ls = 0.0d0
   ! tmp2 = 0.0d0

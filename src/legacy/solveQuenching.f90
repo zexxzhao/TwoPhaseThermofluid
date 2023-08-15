@@ -353,13 +353,9 @@ subroutine IntElmAss_NSVOF_Quenching(&
         !     config%vms%use_taubar
 
       tauBar = 0.0d0
-      ! if(config%vms%use_taubar) then
-      ! if(.false.) then
-      !   call e3STAB_3D_NSVOF_TAUBAR(NSD, Gij, uadvi, uprime, tauBar)
-      ! endif
-        ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
-        ! if(ismaster) write(*,*) "Evaluate TAUBAR", igauss, NGAUSS, &
-        !     config%vms%use_taubar, tauBar
+      if(config%vms%use_taubar) then
+        call e3STAB_3D_NSVOF_TAUBAR(NSD, Gij, uadvi, uprime, tauBar)
+      endif
 
       k_dc = 0.0d0
       if(abs(config%vms%NS_kdc_w) + abs(config%vms%NS_kdc_a)  > 0.0d0) then
