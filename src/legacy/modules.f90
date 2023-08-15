@@ -533,9 +533,9 @@ module configuration
 
     integer :: NRES = 4
 
-    config%iga = iga
+    config%iga = .false.
     config%fem_flag = fem_flag /= 0
-    config%use_hessian = iga
+    config%use_hessian = .false.
     config%calc_cfl = .true.
 
     config%time_integral%Nstep = Nstep

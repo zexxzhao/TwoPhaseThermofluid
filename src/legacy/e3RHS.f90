@@ -638,16 +638,17 @@ subroutine e3Rhs_3D_fluid_quenching( &
 
   real(8) :: res_phi, phi1
   real(8) :: uadvi_ls(NSD)
-  real(8) :: vdot, mdot
+  real(8) :: vdot, mdot, phic
 
   divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
 
   tmp1 = 0.0d0; tmp2 = 0.0d0; tmp4 = 0.0d0; divu = 0.0d0
 
+  phic = max(min(phi, 1.0d0), 0.0d0)
   if(Ti > Ts) then
-    mdot = c_evap * (1-phi) * rhow * (Ti - Ts) / Ts
+    mdot = c_evap * (1-phic) * rhow * (Ti - Ts) / Ts
   else
-    mdot = c_cond * (phi) * rhoa * (Ti - Ts) / Ts
+    mdot = c_cond * (phic) * rhoa * (Ti - Ts) / Ts
   endif
   vdot = mdot / rhoa - mdot / rhow
   if(mdot < 0) then

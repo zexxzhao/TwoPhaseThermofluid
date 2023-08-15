@@ -354,6 +354,7 @@ subroutine e3CFL(NSD, uadvi, Gij, dt, cfl)
 
   integer :: i, j
 
+  cfl = 0.0d0
   do i = 1, NSD
     do j = 1, NSD
       cfl = cfl + uadvi(i)*Gij(i, j)*uadvi(j)

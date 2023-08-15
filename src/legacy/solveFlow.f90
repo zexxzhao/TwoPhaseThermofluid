@@ -61,19 +61,20 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     !---------------------------
     ! Solve NavStoVOF
     !---------------------------
-    !IBC(:, :) = 0
-    !call setBCs_NSVOF()
-    !IBC(:, 6:8) = 1
+    IBC(:, :) = 0
+    call setBCs_NSVOF()
+    !IBC(:, 5) = 1
+    IBC(:, 6:8) = 1
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
     !                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
     call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
-    call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
-    call check_convergence(converged, residual, residual0, utol, &
-                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
-    call print_residual(residual, residual0, utol, &
-                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
-                        inewt)
+    !call calculate_residual(residual, RHSGu, RHSGp, RHSGls, RHSGtem, NNODE, NSD)
+    !call check_convergence(converged, residual, residual0, utol, &
+    !                      ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+    !call print_residual(residual, residual0, utol, &
+    !                    ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
+    !                    inewt)
 
     if (myid .eq. 0) then
       call CPU_TIME(t1)
@@ -96,17 +97,37 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     ug = ug + gami*Delt*sol(:, 1:3)
     pg = pg + alfi*gami*Delt*sol(:, 4)
 
+    ! IBC(:, :) = 0
+    ! call setBCs_NSVOF()
+    ! IBC(:, 1:4) = 1
+    ! IBC(:, 6:8) = 1
+
+    ! call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
+    !                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
+    ! sol(:, 1:5) = 0d0
+    ! call SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
+    !                     rhsGu, rhsGp, sol(:, 1:3), sol(:, 4), &
+    !                     lhsK11, lhsG, lhsD1, lhsM, icnt, &
+    !                     NS_GMRES_tol, config%ksp%max_iter(1), &
+    !                     config%ksp%min_iter(1), &
+    !                     NNODE, maxNSHL, NSD, &
+    !                     sol(:, 5), lhsLS, &
+    !                     lhsLSu, lhsUls, lhsPls, rhsGls)
+
+    ! if(sum(sol(:, 1:4)**2) > 0) then
+    !   write(*,*) "BC NS not satisfied", myid, "WWWWWW"
+    ! endif
     rphig = rphig + sol(:, 5)
     phig = phig + gami*Delt*sol(:, 5)
 
     !-----------------------------
     ! Solve Temperature
     !-----------------------------
-    if (istep > -10) then
-      !IBC(:, :) = 0
-      !call setBCs_Tem()
-      !IBC(:, 1:5) = 1
-      !IBC(:, 7:8) = 1
+    if (istep > 10) then
+      IBC(:, :) = 0
+      call setBCs_Tem()
+      IBC(:, 1:5) = 1
+      IBC(:, 7:8) = 1
       ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
       !                           ASSEMBLE_FIELD_TEM)
       call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
@@ -136,9 +157,9 @@ subroutine solmultiphasethermofluid_stag(config, istep)
       Tg = Tg + gami*Delt*sol(:, 6)
 
     end if
-    !IBC(:, :) = 0
-    !call setBCs_NSVOF()
-    !call setBCs_Tem()
+    IBC(:, :) = 0
+    call setBCs_NSVOF()
+    call setBCs_Tem()
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
     !                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
     call assembleQuenching(config, ASSEMBLE_TENSOR_VEC, &

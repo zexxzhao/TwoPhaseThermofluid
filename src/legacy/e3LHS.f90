@@ -1267,7 +1267,7 @@ subroutine e3LHS_3D_fluid_quenching(&
   ! real(8) :: advu_ls(3)
   real(8) :: shconv(NSHL), shconv_full(NSHL), divu, drmdu(NSHL)
   real(8) :: drhodphi, dmudphi, tmp, tmp1, mdot, vdot, rm(NSD), dmdphii, dmdTi
-  real(8) :: diag(NSHL, NSHL)
+  real(8) :: diag(NSHL, NSHL), phic
   ! loop over local shape functions in each direction
   fact1 = almi
   fact2 = alfi*gami*Delt
@@ -1281,17 +1281,20 @@ subroutine e3LHS_3D_fluid_quenching(&
   mupkdc = mui + kap_dc
   kappadc = kappa + kap_dc_phi
 
+  phic = max(min(phii, 1.0d0), 0.0d0)
   if(Ti > Ts) then
-    mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
+    mdot = c_evap * (1-phic) * rhow * (Ti - Ts) / Ts
     dmdphii = -c_evap * rhow * (Ti - Ts) / Ts
-    dmdTi = c_evap * (1-phii) * rhow / Ts
+    dmdTi = c_evap * (1-phic) * rhow / Ts
   else
-    mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
+    mdot = c_cond * (phic) * rhoa * (Ti - Ts) / Ts
     dmdphii = c_cond * rhoa * (Ti - Ts) / Ts
-    dmdTi = c_cond * (phii) * rhoa / Ts
+    dmdTi = c_cond * (phic) * rhoa / Ts
   endif
   vdot = mdot / rhoa - mdot / rhow
-
+  ! debug
+  dmdphii = 0d0
+  dmdTi = 0d0
 !  write(*,*) "kappadc:", kappadc
   ! tmp1_ls = 0.0d0
   ! tmp2 = 0.0d0
@@ -1299,12 +1302,13 @@ subroutine e3LHS_3D_fluid_quenching(&
 
   advci(:) = ui(:) - umi(:)
   uprime(:) = -tauM*rLi(:)
-  advfi(:) = advci(:) + uprime(:)
+  advfi(:) = advci(:) !+ uprime(:)
 
   do aa = 1, NSHL
-    shconv_full(aa) = sum(shgradgu(aa, :)*advfi(:))
+    !shconv_full(aa) = sum(shgradgu(aa, :)*advfi(:))
     shconv(aa) = sum(shgradgu(aa, :)*advci(:))
   enddo
+  shconv_full(:) = shconv(:)
   divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
 
   ! tmp1_ls(:) = rhoi*(advu_ls(1)*shgradgu(:, 1) + &! Na,_j (u_j-um_j)
@@ -1323,14 +1327,14 @@ subroutine e3LHS_3D_fluid_quenching(&
     !shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
   end do
 
-  ! res_phic = dphidti + sum(advci(:)*dphidxi(:)) + phii * vdot - mdot / rhoa 
-  res_phic = dphidti + sum(advci(:)*dphidxi(:)) - mdot / rhoa 
+  res_phic = dphidti + sum(advci(:)*dphidxi(:)) + phii * vdot - mdot / rhoa 
+  ! res_phic = dphidti + sum(advci(:)*dphidxi(:)) - mdot / rhoa 
 
   ! res_phic = res_phic - (kappa*dphidxidxj(1, 1) + &
   !                       kappa*dphidxidxj(2, 2) + &
   !                       kappa*dphidxidxj(3, 3))
 
-  tmp1 = rhoi * vdot + sum(advfi(:) * dphidxi(:)) * drhodphi
+  tmp1 = rhoi * vdot + sum(advci(:) * dphidxi(:)) * drhodphi
   do bb = 1, NSHL      ! Diagonal blocks of K11
     do aa = 1, NSHL
 
@@ -1531,8 +1535,8 @@ subroutine e3LHS_3D_fluid_quenching(&
     do aa = 1, NSHL
       tmp = 0d0
       tmp = tmp + fact1 * shgu(bb) + fact2 * shconv(bb)
-      ! tmp = tmp + fact2 * shgu(bb) * vdot 
-      ! tmp = tmp + fact2 * shgu(bb) * dmdphii * phii * (1.0d0/rhoa - 1.0d0/rhow)
+      tmp = tmp + fact2 * shgu(bb) * vdot 
+      tmp = tmp + fact2 * shgu(bb) * dmdphii * phii * (1.0d0/rhoa - 1.0d0/rhow)
       tmp = tmp - fact2 * shgu(bb) * dmdphii / rhoa
       xLSebe(aa, bb) = (shgu(aa) + tauls * shconv(aa)) * tmp * DetJ * gwt
       xLSebe(aa, bb) = xLSebe(aa, bb) + &
@@ -1579,9 +1583,12 @@ subroutine e3LHS_3D_fluid_quenching(&
   do aa = 1, NSHL
     do bb = 1, NSHL
       xPLSebe(aa, bb) = xPLSebe(aa, bb) + &
-        fact2 * tauM * drhodphi / rhoi * shgu(bb) * sum(rm(:) * shgradgu(aa, :)) * DetJ * gwt
+        fact2 * tauM * drhodphi / rhoi * shgu(bb) * sum(rm(:) * shgradgu(aa, :)) * DetJ * gwt + &
+        shgu(aa) * fact2 * dmdphii * (1/rhoa - 1/rhow) * shgu(bb) * DetJ * gwt
     enddo
   enddo
-
+  !xULSebe = 0
+  !xLSUebe = 0
+  !xPLSebe = 0
 
 end subroutine e3LHS_3D_fluid_quenching

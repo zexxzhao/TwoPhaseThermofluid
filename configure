@@ -25,7 +25,7 @@ GCC_VERSION=$(${CC} --version | awk '/gcc/ {print $3+0}')
 
 if [ $(echo "${GCC_VERSION} >= 10.0" | bc -l) -eq 1 ];
 then
-    echo "FFLAGS:=-O2 -g -fPIC -fbounds-check -fcheck=mem -fallow-argument-mismatch" >> ${CONFIGFILE}
+    echo "FFLAGS:=-O3 -g -fPIC -fbounds-check -fcheck=mem -fallow-argument-mismatch" >> ${CONFIGFILE}
 else
     echo "FFLAGS:=-O2 -g -fPIC -fbounds-check -fcheck=mem" >> ${CONFIGFILE}
 fi

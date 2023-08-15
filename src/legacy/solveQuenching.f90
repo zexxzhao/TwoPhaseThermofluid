@@ -179,7 +179,7 @@ subroutine IntElmAss_NSVOF_Quenching(&
   logical :: is_fluid
 
   real(8) :: rhoi, mui, cpi, hki
-  real(8) :: mdot, vdot
+  real(8) :: mdot, vdot, phic
 
   volm = 0.0d0
   vol_ex = 0.0d0
@@ -318,10 +318,11 @@ subroutine IntElmAss_NSVOF_Quenching(&
 
         ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
         ! if(ismaster) write(*,*) "Evaluate on qr", igauss, NGAUSS
+      phic = max(min(phii, 1.0d0), 0.0d0)
       if(Ti > Ts) then
-        mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
+        mdot = c_evap * (1-phic) * rhow * (Ti - Ts) / Ts
       else
-        mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
+        mdot = c_cond * (phic) * rhoa * (Ti - Ts) / Ts
       endif
       vdot = mdot / rhoa - mdot / rhow
 
@@ -531,7 +532,7 @@ subroutine IntElmAss_Tem_Quenching(&
   real(8) :: Se, mdot, vdot
   real(8) :: rhoi, mui, cpi, hki, rhocpi
   real(8) :: k_dc_tem
-  real(8) :: dmdTi
+  real(8) :: dmdTi, phic
   fact1 = almi
   fact2 = alfi * gami * Delt
 
@@ -628,12 +629,13 @@ subroutine IntElmAss_Tem_Quenching(&
       call e3int_qr_hess(NSHL, NSD, 1, shhessgu, Tl, dTdxixj)
       call e3int_qr_hess(NSHL, NSD, NSD, shhessgu, ul, duidxixj)
 
+      phic = max(min(phii, 1.0d0), 0.0d0)
       if(Ti > Ts) then
-        mdot = c_evap * (1-phii) * rhow * (Ti - Ts) / Ts
-        dmdTi = c_evap * (1-phii) * rhow / Ts
+        mdot = c_evap * (1-phic) * rhow * (Ti - Ts) / Ts
+        dmdTi = c_evap * (1-phic) * rhow / Ts
       else
-        mdot = c_cond * (phii) * rhoa * (Ti - Ts) / Ts
-        dmdTi = c_cond * (phii) * rhoa / Ts
+        mdot = c_cond * (phic) * rhoa * (Ti - Ts) / Ts
+        dmdTi = c_cond * (phic) * rhoa / Ts
       endif
       vdot = mdot / rhoa - mdot / rhow
 
@@ -693,7 +695,7 @@ subroutine IntElmAss_Tem_Quenching(&
             !                rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) + tmp(aa) * rhocpi * (fact1 * shlu(bb) + fact2 * shconv(bb)) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) - tmp(aa) * fact2 * shlu(bb) * (cpw - cpa) * mdot * gw(igauss) * DetJ
-            xTebe(aa, bb) = xTebe(aa, bb) - tmp(aa) * fact2 * Se / mdot * dmdTi * shlu(bb) * gw(igauss) * DetJ
+            xTebe(aa, bb) = xTebe(aa, bb) - tmp(aa) * fact2 * ((cpw-cpa)*(Ti-Ts)-lh) * dmdTi * shlu(bb) * gw(igauss) * DetJ
             xTebe(aa, bb) = xTebe(aa, bb) + fact2 * hki * sum(shgradgu(aa, :) * shgradgu(bb, :)) * gw(igauss) * DetJ
           enddo
         enddo
@@ -710,7 +712,7 @@ subroutine IntElmAss_Tem_Quenching(&
         RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
         ! RHSTem(:) = RHSTem(:) + shlu(:) * (rhoi * cpi * vdot) * gw(igauss) * DetJ
         ! RHSTem(:) = RHSTem(:) + shlu(:) * sum(uadvi(:) * dphidxi(:)) * (rhow * cpw - rhoa * cpa) * gw(igauss) * DetJ
-        if(isnan(sum(RHSTem))) write(*,*) "DEBUG", myid, tau_tem, rhoi, cpi, hki
+        if(isnan(sum(RHSTem))) write(*,*) "DEBUG", myid, tau_tem, rhoi, cpi, hki, res_tem1, dTdxi
       end if
     end do
 
