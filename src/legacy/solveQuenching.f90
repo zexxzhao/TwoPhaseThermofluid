@@ -1229,7 +1229,6 @@ subroutine IntElmAss_Tem_Quenching_VMS(&
       k_dc_tem = 0.0d0
       if(abs(config%vms%Tem_kdc) > 0d0) then
         call e3DC_scalar(NSD, config%vms%Tem_kdc, Gij, res_tem1, dTdxi, k_dc_tem)
-        hki = hki + k_dc_tem
       endif
 
       uadvi_full(:) = uadvi(:) + uprime(:)
@@ -1284,9 +1283,9 @@ subroutine IntElmAss_Tem_Quenching_VMS(&
         if(is_fluid) then
           RHSTem(:) = RHSTem(:) - shlu(:) * (rhocpi * (rTi + sum(uadvi_full(:) * dTdxi(:))) - Se) * gw(igauss) * DetJ
           RHSTem(:) = RHSTem(:) - rhocpi * shconv_full(:) * tau_tem * res_tem1 * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki+k_dc_tem) * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki+k_dc_tem) * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki+k_dc_tem) * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
           RHSTem(:) = RHSTem(:) - shlu(:) * tau_tem * res_tem1 * tmp1 * gw(igauss) * DetJ
         else
           RHSTem(:) = RHSTem(:) - shlu(:) * rhocpi * rTi * gw(igauss) * DetJ
@@ -1535,7 +1534,6 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
       k_dc_tem = 0.0d0
       if(abs(config%vms%Tem_kdc) > 0d0) then
         call e3DC_scalar(NSD, config%vms%Tem_kdc, Gij, res_tem1, dTdxi, k_dc_tem)
-        hki = hki + k_dc_tem
       endif
 
       ! uadvi_full(:) = uadvi(:) + uprime(:)
@@ -1575,11 +1573,11 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
       if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         if(is_fluid) then
           RHSTem(:) = RHSTem(:) - tmp(:) * res_tem1 * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
-          RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki + k_dc_tem) * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki + k_dc_tem) * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - (hki + k_dc_tem) * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
         else
-          RHSTem(:) = RHSTem(:) - shlu(aa) * rhocpi * rTi * gw(igauss) * DetJ
+          RHSTem(:) = RHSTem(:) - shlu(:) * rhocpi * rTi * gw(igauss) * DetJ
           RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 1) * dTdxi(1) * gw(igauss) * DetJ
           RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 2) * dTdxi(2) * gw(igauss) * DetJ
           RHSTem(:) = RHSTem(:) - hki * shgradgu(:, 3) * dTdxi(3) * gw(igauss) * DetJ
