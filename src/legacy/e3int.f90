@@ -190,19 +190,18 @@ end subroutine e3int_rLi
 !
 !======================================================================
 
-subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, mdot, rhow, rhoa, resphi)
+subroutine e3int_resphi(NSD, rphii, phii, dphidxi, uadvi, mdot, divu, rhoa, resphi)
   implicit none
   integer, intent(in) :: NSD
   real(8), intent(in) :: rphii, phii, dphidxi(NSD)
   real(8), intent(in) :: uadvi(NSD)
-  real(8), intent(in) :: mdot, rhow, rhoa
+  real(8), intent(in) :: mdot, divu, rhoa
   
   real(8), intent(out) :: resphi
 
-  real(8) :: vdot
-  vdot = mdot / rhoa - mdot / rhow
+  !real(8) :: vdot
 
-  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * vdot - mdot / rhoa
+  resphi = rphii + sum(uadvi(:) * dphidxi(:)) + phii * divu - mdot / rhoa
   ! resphi = rphii + sum(uadvi(:) * dphidxi(:)) - mdot / rhoa
 end subroutine e3int_resphi
 !======================================================================

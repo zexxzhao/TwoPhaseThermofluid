@@ -754,9 +754,12 @@ subroutine e3Rhs_3D_fluid_quenching( &
 
   end do
 
+  res_phi = rphi + sum(advu(:) * dphidxi(:)) + phi * vdot - mdot / rhoa
   do aa = 1, NSHL
-    RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phic * DetJ * gwt
+    ! RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phic * DetJ * gwt
+    RHSphi(aa) = RHSphi(aa) - (shgu(aa) + tauls * shconv(aa)) * res_phi * DetJ * gwt
     RHSphi(aa) = RHSphi(aa) - kappadc * sum(shgradgu(aa, :) * dphidxi(:)) * DetJ * gwt
   end do
 
 end subroutine e3Rhs_3D_fluid_quenching
+

@@ -308,6 +308,7 @@ module commonvars
   integer :: NSD, NNODE, NELEM, NBOUND, NPATCH, NSHLBmax, icnt, &
              NBlade, maxNSHL
   logical :: iga
+  integer :: use_vms
   real(8) :: DetJ, DetJb, DetJinv, hglob
 
   ! Time step
@@ -460,6 +461,7 @@ module configuration
   use iso_c_binding
 
   type VMSConfigType
+    logical :: use_vms
     logical :: use_taubar
     logical :: use_sliding_velocity
     real(8) :: NS_kdc_w, NS_kdc_a
@@ -574,6 +576,7 @@ module configuration
     config%bc%BCTgType = BCTgType
     config%bc%BCTgValu = BCTgValu
 
+    config%vms%use_vms = USE_VMS /= 0
     config%vms%use_taubar = .false.
     config%vms%use_sliding_velocity = .false.
     config%vms%NS_kdc_w = NS_kdc_w

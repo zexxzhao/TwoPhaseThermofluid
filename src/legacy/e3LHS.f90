@@ -1302,10 +1302,10 @@ subroutine e3LHS_3D_fluid_quenching(&
   advfi(:) = advci(:) !+ uprime(:)
 
   do aa = 1, NSHL
-    !shconv_full(aa) = sum(shgradgu(aa, :)*advfi(:))
+    shconv_full(aa) = sum(shgradgu(aa, :)*advfi(:))
     shconv(aa) = sum(shgradgu(aa, :)*advci(:))
   enddo
-  shconv_full(:) = shconv(:)
+  ! shconv_full(:) = shconv(:)
   divu = duidxi(1, 1) + duidxi(2, 2) + duidxi(3, 3)
 
   ! tmp1_ls(:) = rhoi*(advu_ls(1)*shgradgu(:, 1) + &! Na,_j (u_j-um_j)
@@ -1319,10 +1319,10 @@ subroutine e3LHS_3D_fluid_quenching(&
             gravvec(2)*duidxi(:, 2) + &
             gravvec(3)*duidxi(:, 3)
   drmdu(:) = rhoi * (fact1*shgu(:)+fact2*shconv(:))
-  do aa = 1, NSHL
+  !do aa = 1, NSHL
     !shconvggu(aa) = sum(shgradgu(aa, :)*advu1)
     !shconvggls(aa) = sum(shgradgu(aa, :)*advu_ls)
-  end do
+  !end do
 
   res_phic = dphidti + sum(advci(:)*dphidxi(:)) + phii * vdot - mdot / rhoa 
   ! res_phic = dphidti + sum(advci(:)*dphidxi(:)) - mdot / rhoa 
@@ -1535,7 +1535,7 @@ subroutine e3LHS_3D_fluid_quenching(&
       tmp = tmp + fact2 * shgu(bb) * vdot 
       tmp = tmp + fact2 * shgu(bb) * dmdphii * phii * (1.0d0/rhoa - 1.0d0/rhow)
       tmp = tmp - fact2 * shgu(bb) * dmdphii / rhoa
-      xLSebe(aa, bb) = (shgu(aa) + tauls * shconv(aa)) * tmp * DetJ * gwt
+      xLSebe(aa, bb) = xLSebe(aa, bb) + (shgu(aa) + tauls * shconv(aa)) * tmp * DetJ * gwt
       xLSebe(aa, bb) = xLSebe(aa, bb) + &
               fact2 * kappadc * sum(shgradgu(aa, :)*shgradgu(bb, :)) * DetJ * gwt
 

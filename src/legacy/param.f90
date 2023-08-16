@@ -370,6 +370,7 @@ subroutine getparam()
   move_time = 99.0d9
 
   call iread("fem_flag", fem_flag)
+  call iread("USE_VMS", USE_VMS)
   !call iread("IGA", iga)
   iga = .false.
 
