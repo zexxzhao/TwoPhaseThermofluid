@@ -166,6 +166,7 @@ subroutine e3DC_scalar(NSD, c_kdc, Gij, res, gradc, kdc)
   enddo
 
   kdc = c_kdc * abs(res) / sqrt(tmp + 1d-12)
+  ! kdc = c_kdc * abs(res) / sqrt(sum(Gij(:,:) * Gij(:, :)))
 
 end subroutine e3DC_scalar
 

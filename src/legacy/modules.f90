@@ -386,6 +386,7 @@ module commonvars
   real(8) :: kappa
   !real(8) :: cp, hk
   real(8) :: Ts, c_cond, c_evap, lh
+  real(8) :: C_DMDOT
   ! Setup
   real(8) :: Froude, Uin
   integer :: BCtype(99)
@@ -467,6 +468,7 @@ module configuration
     real(8) :: NS_kdc_w, NS_kdc_a
     real(8) :: LSC_kdc
     real(8) :: Tem_kdc
+    real(8) :: c_dmdot
 
   end type VMSConfigType
 
@@ -583,6 +585,7 @@ module configuration
     config%vms%NS_kdc_a = NS_kdc_a
     config%vms%LSC_kdc = LSC_kdc
     config%vms%Tem_kdc = TEM_kdc
+    config%vms%c_dmdot = C_DMDOT
   
     config%ksp%NRES = NRES
     allocate(config%ksp%max_iter(NRES))

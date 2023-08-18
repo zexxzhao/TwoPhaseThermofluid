@@ -51,7 +51,7 @@ subroutine solmultiphasethermofluid_stag(config, istep)
                       ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                       inewt)
 
-  if(istep <= 1) then 
+  if(istep <= -1) then 
     NL_max = 1
   else 
     NL_max = NS_NL_itermax
@@ -61,10 +61,10 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     !---------------------------
     ! Solve NavStoVOF
     !---------------------------
-    IBC(:, :) = 0
-    call setBCs_NSVOF()
-    !IBC(:, 5) = 1
-    IBC(:, 6:8) = 1
+    ! IBC(:, :) = 0
+    ! call setBCs_NSVOF()
+    ! IBC(:, 5) = 1
+    ! IBC(:, 6:8) = 1
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
     !                           ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF)
     call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
@@ -124,10 +124,10 @@ subroutine solmultiphasethermofluid_stag(config, istep)
     ! Solve Temperature
     !-----------------------------
     if (istep > 0) then
-      IBC(:, :) = 0
-      call setBCs_Tem()
-      IBC(:, 1:5) = 1
-      IBC(:, 7:8) = 1
+      ! IBC(:, :) = 0
+      ! call setBCs_Tem()
+      ! IBC(:, 1:5) = 1
+      ! IBC(:, 7:8) = 1
       ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
       !                           ASSEMBLE_FIELD_TEM)
       call assembleQuenching(config, ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
@@ -157,9 +157,9 @@ subroutine solmultiphasethermofluid_stag(config, istep)
       Tg = Tg + gami*Delt*sol(:, 6)
 
     end if
-    IBC(:, :) = 0
-    call setBCs_NSVOF()
-    call setBCs_Tem()
+    ! IBC(:, :) = 0
+    ! call setBCs_NSVOF()
+    ! call setBCs_Tem()
     ! call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
     !                        ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
     call assembleQuenching(config, ASSEMBLE_TENSOR_VEC, &

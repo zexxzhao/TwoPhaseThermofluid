@@ -859,9 +859,9 @@ end subroutine e3bLHS_weak
 !======================================================================
 ! LHS of weak BC for compressible flow
 !======================================================================
-subroutine e3bLHS_weak_CF(nshl, ui, umi, duidxi, rhoi, mui, &
+subroutine e3bLHS_weak_CF(nshl, ui, umi, duidxi, rhoi, mui, phii, &
                           tauB, tauNor, gwt, &
-                          shlu, shgradgu, xKebe, xGebe, xDebe, nor)
+                          shlu, shgradgu, xKebe, xGebe, xDebe, xULSebe, nor)
 
   use aAdjKeep
   use commonvars
@@ -870,17 +870,18 @@ subroutine e3bLHS_weak_CF(nshl, ui, umi, duidxi, rhoi, mui, &
   integer, intent(inout) :: nshl
 
   real(8), intent(in) :: ui(NSD), umi(NSD), duidxi(NSD, NSD), &
-                         rhoi, mui, &
+                         rhoi, mui, phii, &
                          tauB, tauNor, gwt, nor(NSD), &
                          shlu(NSHL), shgradgu(NSHL, NSD)
   real(8), intent(inout) :: xKebe(NSD*NSD, NSHL, NSHL), &
                             xGebe(NSD, NSHL, NSHL), &
-                            xDebe(NSD, NSHL, NSHL)
+                            xDebe(NSD, NSHL, NSHL), &
+                            xULSebe(NSD, NSHL, NSHL)
 
   integer :: aa, bb, ii, jj
   real(8) :: fact1, fact2, tmp1(NSHL), tmp2(NSHL, NSHL), &
              unor, umul, munor, gmul, uneg, nu
-  real(8) :: lambda
+  real(8) :: lambda, drhodphi, dmudphii
 
   ! loop over local shape functions in each direction
 
@@ -899,6 +900,13 @@ subroutine e3bLHS_weak_CF(nshl, ui, umi, duidxi, rhoi, mui, &
 
   nu = mui/rhoi
   lambda = -2d0/3d0 * mui
+
+  ! drhodphii = rhoa - rhow
+  ! dmudphii = mua - muw
+  ! if(phii < 0d0 .or. phii > 1.0d0) then
+  !   drhodphii = 0d0
+  !   dmudphii = 0d0
+  ! endif
 
   ! gmul =  1d0 => sym
   ! gmul = -1d0 => skew

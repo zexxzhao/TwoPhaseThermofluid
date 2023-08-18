@@ -475,7 +475,7 @@ subroutine e3bRHS_weak_CF(nshl, nor, tauB, tauNor, gwt, &
       tmp2(aa, bb) = -gmul*mui*((ui(aa) - gi(aa))*nor(bb) &
                                + (ui(bb) - gi(bb))*nor(aa))
     end do
-      tmp2(aa, aa) = tmp2(aa, aa) -gmul * lambda * nor(aa)
+      tmp2(aa, aa) = tmp2(aa, aa) -gmul * lambda * (unor - gnor)
   end do
 
   ! gnor = 0.0d0

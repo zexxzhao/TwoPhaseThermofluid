@@ -7,7 +7,7 @@ subroutine prop_interp(prop_a, prop_b, phi, prop_out)
 
   real(8) :: phi_clipped
   phi_clipped = max(0.0d0, min(1.0d0, phi))
-  prop_out = prop_a * (1 - phi_clipped) + prop_b * phi_clipped
+  prop_out = prop_a * (1d0 - phi_clipped) + prop_b * phi_clipped
 end subroutine prop_interp
 
 !======================================================================

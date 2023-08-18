@@ -379,6 +379,7 @@ subroutine getparam()
   call rread("NS_kdc_a", NS_kdc_a)
   call rread("LSC_kdc", LSC_kdc)
   call rread("TEM_kdc", TEM_kdc)
+  call rread("C_DMDOT", C_DMDOT)
 
   call rread("NS_GMRES_rtol", NS_GMRES_tol)
   call rread("NS_GMRES_atol", NS_GMRES_atol)
