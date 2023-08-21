@@ -1,22 +1,25 @@
 !======================================================================
 ! subroutine to evaluate shape or basis functions for volume
 !======================================================================
-subroutine eval_shape(nshl, iel, gp, xl, dl, wl, shlu, shgradgu, shhessg, &
-                      dxidx, Gij, Ginv, hess_flag)
-  use aAdjKeep
-  use commonvars
+subroutine eval_shape(NSD, nshl, iel, gp, xl, dl, &
+                      shlu, shgradgu, shhessg, &
+                      dxidx, Gij, Ginv, DetJ, hess_flag)
+  ! use aAdjKeep
+  ! use commonvars
   implicit none
 
   integer, intent(in) :: nshl
 
-  integer, intent(in)  :: iel, hess_flag
-  real(8), intent(in)  :: gp(NSD), xl(NSHL, NSD), dl(NSHL, NSD), wl(NSHL)
+  integer, intent(in)  :: NSD, iel, hess_flag
+  real(8), intent(in)  :: gp(NSD), xl(NSHL, NSD), dl(NSHL, NSD)
   real(8), intent(out) :: shlu(NSHL), shgradgu(NSHL, NSD), &
                           shhessg(NSHL, NSD, NSD), dxidx(NSD, NSD), &
                           Gij(NSD, NSD), Ginv(NSD, NSD)
+  real(8), intent(out) :: DetJ
   integer :: pn, ni, nj, nk
 
-  if (iga) then
+
+  if (.false.) then
     ! pn = EPID(iel)
     ! ni = EIJK(iel, 1)
     ! nj = EIJK(iel, 2)
@@ -28,9 +31,9 @@ subroutine eval_shape(nshl, iel, gp, xl, dl, wl, shlu, shgradgu, shhessg, &
   else
 
     if (nshl == 4 .or. nshl == 6) then
-      call eval_shape_fem(nshl, gp, xl, dl, shlu, shgradgu, dxidx, Gij, &
-                          Ginv)
-
+      call eval_shape_fem(NSD, nshl, gp, xl, dl, shlu, shgradgu, dxidx, Gij, &
+                          Ginv, DetJ)
+      shhessg(:, :, :) = 0d0
     else
       write (*, *) "ERROR: Undefined NSHL"
       stop

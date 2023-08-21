@@ -1,6 +1,7 @@
 #pragma once
 
-typedef int FEMIndexType;
+#include <stdint.h>
+typedef uint32_t FEMIndexType;
 typedef double FEMScalarType;
 
 typedef FEMIndexType IndexType;
@@ -52,3 +53,11 @@ typedef enum {
         exit(err);\
     }\
 } while (0)
+
+#ifdef PETSC_VERSION_MAJOR
+#define HAVE_PETSC
+#endif
+
+#ifdef MPI_VERSION
+#define HAVE_MPI
+#endif

@@ -197,7 +197,7 @@ subroutine getparam()
 
   use aAdjKeep
   use commonvars
-  use commonpars
+  ! use commonpars
   use mpi
   implicit none
 

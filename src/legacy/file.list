@@ -12,14 +12,12 @@ F90SRCFILES =\
   e3int.f90\
   eval_shape.f90\
   eval_shape_FEM.f90\
-  driver.f90\
   FaceAssembly_weak.f90\
   FillSparseMat.f90\
   genGP_GW.f90\
   genSparStruc.f90\
   input.f90\
   iosol.f90\
-  IntElmAss_NS.f90\
   IntElmAss_NSVOFTem.f90\
   LocaltoGlobal.f90\
   param.f90\
@@ -28,8 +26,6 @@ F90SRCFILES =\
   SparseGMRES_tem.f90\
   SparseProd.f90\
   solveFlow.f90\
-  solveNavSto.f90\
-  solveNavStoVOFTem.f90\
   solveQuenching.f90\
   # solveMesh.f90
 

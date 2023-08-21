@@ -1,16 +1,17 @@
 !======================================================================
 !
 !======================================================================
-subroutine eval_shape_fem(nshl, gp, xl, dl, shlu, shgradgu, dxidx, &
-                          Gij, Ginv)
-  use aAdjKeep
-  use commonvars
+subroutine eval_shape_fem(NSD, nshl, gp, xl, dl, shlu, shgradgu, dxidx, &
+                          Gij, Ginv, DetJ)
+  ! use aAdjKeep
+  ! use commonvars
   implicit none
 
-  integer, intent(in)  :: nshl
+  integer, intent(in)  :: NSD, nshl
   real(8), intent(in)  :: gp(NSD), dl(NSHL, NSD), xl(NSHL, NSD)
   real(8), intent(out) :: shlu(NSHL), shgradgu(NSHL, NSD), dxidx(NSD, NSD), &
                           Gij(NSD, NSD), Ginv(NSD, NSD)
+  real(8), intent(out) :: DetJ
   integer :: i, j
   real(8) :: dxdxi(NSD, NSD), shgradlu(NSHL, NSD), tmp
 

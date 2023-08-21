@@ -6,7 +6,7 @@ program NURBScode
   use aAdjKeep
   use mpi
   use commonvars
-  use defs_shell
+  use class_def
   use configuration
 
   implicit none
@@ -21,6 +21,12 @@ program NURBScode
 
   character(len=30) :: fname, iname, cname
   type(ConfigType) :: config
+  type(MeshData) :: mesh
+  type(SparsityPattern) :: sp
+  type(RHSData) :: vec
+  type(LHSData) :: mat
+  type(FieldData) :: solution
+  type(DirichletBCData) :: bc
 
   ! Initialize MPI
   call MPI_INIT(mpi_err)
@@ -39,16 +45,22 @@ program NURBScode
   call getparam()
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
-  call input(myid + 1)
+  ! call input(myid + 1)
   if (numnodes > 1) call ctypes()
 
   ! Generate Sparse Structures
   if (ismaster) write (*, *) "Generating sparse structure"
-  call genSparStruc()
+  call genSparsityPattern(&
+    mesh%NNODE, mesh%maxNSHL, mesh%NELEM, mesh%ELMNSHL, mesh%IEN, &
+    sp%index, sp%indptr, sp%nnz)
+
 
   ! Allocate Matrices and Vectors
   if (ismaster) write (*, *) "Allocating matrices and vectors"
-  call allocMatVec()
+  ! call allocMatVec()
+  call allocField(mesh, solution)
+  call allocRHS(mesh, vec)
+  call allocLHS(sp, mesh, mat)
 
   ! Read in restart files
   call readStep(Rstep)
@@ -60,6 +72,9 @@ program NURBScode
     call readSol(Rstep)
   end if
   call init_config(config)
+
+  call setBCs_NSVOF(bc)
+  call setBCs_Tem(bc)
 
   !------------------------------------------
   ! Loop over time steps
@@ -81,33 +96,33 @@ program NURBScode
     ! Prediction
     !--------------------------------------------
 
-    ug = ugold
-    acg = (gami - 1.0d0)/gami*acgold
+    solution%ug(:, :) = solution%ugold(:, :)
+    solution%acg(:, :) = ((gami - 1.0d0)/gami)*solution%acgold(:, :) 
     pg = pgold
 
-    phig = phigold
-    rphig = (gami - 1.0d0)/gami*rphigold
+    solution%phig(:) = solution%phigold(:)
+    solution%rphig(:) = (gami - 1.0d0)/gami*solution%rphigold(:)
 
-    Tg = Tgold
-    rTg = (gami - 1.0d0)/gami*rTgold
+    solution%Tg = solution%Tgold
+    solution%rTg = (gami - 1.0d0)/gami*solution%rTgold
 
     !--------------------------------------------
     ! Solve Flow
     !--------------------------------------------
-    call solmultiphasethermofluid_stag(config, istep)
+    call solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, solution, vec, mat)
     !--------------------------------------------
     ! Update Old Quantities
     !--------------------------------------------
-    dgold = dg
-    ugold = ug
-    acgold = acg
-    ugmold = ugm
-    acgmold = acgm
-    pgold = pg
-    rphigold = rphig
-    phigold = phig
-    rTgold = rTg
-    Tgold = Tg
+    solution%dgold = solution%dg
+    solution%ugold = solution%ug
+    solution%acgold = solution%acg
+    solution%ugmold = solution%ugm
+    solution%acgmold = solution%acgm
+    solution%pgold = solution%pg
+    solution%rphigold = solution%rphig
+    solution%phigold = solution%phig
+    solution%rTgold = solution%rTg
+    solution%Tgold = solution%Tg
 
 
     if (mod(istep, ifq) == 0) then
@@ -120,8 +135,11 @@ program NURBScode
   ! Deallocate Matrices and Vectors
   !--------------------------------------------
   if (ismaster) write (*, *) "Deallocating matrices and vectors"
-  call deallocMatVec()
+  ! call deallocMatVec()
   call finalize_config(config)
+  call freeField(solution)
+  call freeRHS(vec)
+  call freeLHS(mat)
   ! Finalize MPI
   call MPI_FINALIZE(mpi_err)
 

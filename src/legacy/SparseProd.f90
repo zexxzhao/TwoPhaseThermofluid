@@ -3,15 +3,13 @@
 !======================================================================
 subroutine SparseProdUP_3D(col, row, lhsK11, lhsG, lhsD1, lhsM, &
                            rhstmpu, rhstmpp, prodtmpu, prodtmpp, &
-                           D_FLAG, P_FLAG, &
                            NNODZu, NSHLu, icntu, NSD, &
                            lhsLS, lhsLSu, lhsUls, lhsPls, &
                            rhstmpls, prodtmpls)
   implicit none
 
   integer, intent(in) :: col(NNODZu + 1), row(NNODZu*27*NSHLu), &
-                         NNODZu, NSHLu, icntu, NSD, &
-                         D_FLAG(NNODZu), P_FLAG(NNODZu)
+                         NNODZu, NSHLu, icntu, NSD
 
   real(8), intent(in) :: lhsK11(NSD*NSD, icntu), lhsG(NSD, icntu), &
                          lhsD1(NSD, icntu), lhsM(icntu), &

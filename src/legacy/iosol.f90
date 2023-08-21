@@ -201,7 +201,7 @@ subroutine generateIC()
   use aAdjKeep
   use commonvars
   use mpi
-  use defs_shell
+  ! use defs_shell
 
   implicit none
 
@@ -456,350 +456,350 @@ end subroutine writeSol
 !======================================================================
 ! Read shell solution
 !======================================================================
-subroutine readShellSol(istep, SH)
-  use mpi
-  use defs_shell
-
-  implicit none
-
-  type(shell_bld), intent(inout) :: SH
-  integer, intent(in)    :: istep
-
-  integer :: solf, i, j
-  character(len=30) :: fname, iname(2)
-
-  solf = 97
-
-  ! T-Spline
-!  write(iname(1),'(I30)') istep
-!  write(iname(2),'(I30)') myid + 21
-
-!  fname = 'sh.rest.tsp.'//trim(adjustl(iname(1)))//'.'&
-!                        //trim(adjustl(iname(2)))
-!  open(solf, file=fname, status='old')
-
-!  do i = 1, SH%TSP%NNODE
-!    read(solf,*) (SH%TSP%dshOld(i,j), j = 1, 3)
-!  end do
-!  do i = 1, SH%TSP%NNODE
-!    read(solf,*) (SH%TSP%ushOld(i,j), j = 1, 3)
-!  end do
-!  do i = 1, SH%TSP%NNODE
-!    read(solf,*) (SH%TSP%ashOld(i,j), j = 1, 3)
-!  end do
-
-!  close(solf)
-
-  ! NURBS
-  write (iname(1), '(I30)') istep
-  write (iname(2), '(I30)') myid + 21
-
-  fname = 'sh.rest.nrb.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (solf, file=fname, status='old')
-
-  do i = 1, SH%NRB%NNODE
-    read (solf, *) (SH%NRB%dshOld(i, j), j=1, 3)
-  end do
-  do i = 1, SH%NRB%NNODE
-    read (solf, *) (SH%NRB%ushOld(i, j), j=1, 3)
-  end do
-  do i = 1, SH%NRB%NNODE
-    read (solf, *) (SH%NRB%ashOld(i, j), j=1, 3)
-  end do
-
-  close (solf)
-
-  ! FEM
-  fname = 'sh.rest.fem.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (solf, file=fname, status='old')
-
-  do i = 1, SH%FEM%NNODE
-    read (solf, *) (SH%FEM%dshOld(i, j), j=1, 3)
-  end do
-  do i = 1, SH%FEM%NNODE
-    read (solf, *) (SH%FEM%ushOld(i, j), j=1, 3)
-  end do
-  do i = 1, SH%FEM%NNODE
-    read (solf, *) (SH%FEM%ashOld(i, j), j=1, 3)
-  end do
-
-  close (solf)
-
-end subroutine readShellSol
+! subroutine readShellSol(istep, SH)
+!   use mpi
+!   ! use defs_shell
+! 
+!   implicit none
+! 
+!   type(shell_bld), intent(inout) :: SH
+!   integer, intent(in)    :: istep
+! 
+!   integer :: solf, i, j
+!   character(len=30) :: fname, iname(2)
+! 
+!   solf = 97
+! 
+!   ! T-Spline
+! !  write(iname(1),'(I30)') istep
+! !  write(iname(2),'(I30)') myid + 21
+! 
+! !  fname = 'sh.rest.tsp.'//trim(adjustl(iname(1)))//'.'&
+! !                        //trim(adjustl(iname(2)))
+! !  open(solf, file=fname, status='old')
+! 
+! !  do i = 1, SH%TSP%NNODE
+! !    read(solf,*) (SH%TSP%dshOld(i,j), j = 1, 3)
+! !  end do
+! !  do i = 1, SH%TSP%NNODE
+! !    read(solf,*) (SH%TSP%ushOld(i,j), j = 1, 3)
+! !  end do
+! !  do i = 1, SH%TSP%NNODE
+! !    read(solf,*) (SH%TSP%ashOld(i,j), j = 1, 3)
+! !  end do
+! 
+! !  close(solf)
+! 
+!   ! NURBS
+!   write (iname(1), '(I30)') istep
+!   write (iname(2), '(I30)') myid + 21
+! 
+!   fname = 'sh.rest.nrb.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (solf, file=fname, status='old')
+! 
+!   do i = 1, SH%NRB%NNODE
+!     read (solf, *) (SH%NRB%dshOld(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%NRB%NNODE
+!     read (solf, *) (SH%NRB%ushOld(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%NRB%NNODE
+!     read (solf, *) (SH%NRB%ashOld(i, j), j=1, 3)
+!   end do
+! 
+!   close (solf)
+! 
+!   ! FEM
+!   fname = 'sh.rest.fem.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (solf, file=fname, status='old')
+! 
+!   do i = 1, SH%FEM%NNODE
+!     read (solf, *) (SH%FEM%dshOld(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%FEM%NNODE
+!     read (solf, *) (SH%FEM%ushOld(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%FEM%NNODE
+!     read (solf, *) (SH%FEM%ashOld(i, j), j=1, 3)
+!   end do
+! 
+!   close (solf)
+! 
+! end subroutine readShellSol
 
 !======================================================================
 ! Output shell solution
 !======================================================================
-subroutine writeShellSol(istep, SH)
-  use commonvars
-  use mpi
-  use defs_shell
-
-  implicit none
-
-  type(shell_bld), intent(in) :: SH
-  integer, intent(in) :: istep
-
-  integer :: solf, i, j
-  character(len=30) :: fname, iname(2)
-
-!!!  if (ismaster) then
-
-  solf = 98
-
-  ! T-Spline
-!    write(iname(1),'(I30)') istep
-!    write(iname(2),'(I30)') myid + 21
-
-!    fname = 'sh.rest.tsp.'//trim(adjustl(iname(1)))//'.'&
-!                          //trim(adjustl(iname(2)))
-!    open(solf, file=fname, status='replace')
-
-!    do i = 1, SH%TSP%NNODE
-!      write(solf,*) (SH%TSP%dsh(i,j), j = 1, 3)
-!    end do
-!    do i = 1, SH%TSP%NNODE
-!      write(solf,*) (SH%TSP%ush(i,j), j = 1, 3)
-!    end do
-!    do i = 1, SH%TSP%NNODE
-!      write(solf,*) (SH%TSP%ash(i,j), j = 1, 3)
-!    end do
-
-!    write(solf,'(60("="))')
-  !   write(solf,*) istep, time, Delt
-  !   write(solf,*) theta, thetd, thedd
-  !   write(solf,*) SH%TSP%dsh(SH%TSP%TipLoc,3), SH%Tq2
-  !   close(solf)
-
-  ! NURBS
-  write (iname(1), '(I30)') istep
-  write (iname(2), '(I30)') myid + 21
-
-  fname = 'sh.rest.nrb.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (solf, file=fname, status='replace')
-
-  do i = 1, SH%NRB%NNODE
-    write (solf, *) (SH%NRB%dsh(i, j), j=1, 3)
-  end do
-  do i = 1, SH%NRB%NNODE
-    write (solf, *) (SH%NRB%ush(i, j), j=1, 3)
-  end do
-  do i = 1, SH%NRB%NNODE
-    write (solf, *) (SH%NRB%ash(i, j), j=1, 3)
-  end do
-
-  write (solf, '(60("="))')
-  write (solf, *) istep, time, Delt
-  write (solf, *) theta, thetd, thedd
-  write (solf, *) SH%NRB%dsh(SH%NRB%TipLoc, 3), SH%Tq2
-  close (solf)
-  ! FEM
-  fname = 'sh.rest.fem.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (solf, file=fname, status='replace')
-
-  do i = 1, SH%FEM%NNODE
-    write (solf, *) (SH%FEM%dsh(i, j), j=1, 3)
-  end do
-  do i = 1, SH%FEM%NNODE
-    write (solf, *) (SH%FEM%ush(i, j), j=1, 3)
-  end do
-  do i = 1, SH%FEM%NNODE
-    write (solf, *) (SH%FEM%ash(i, j), j=1, 3)
-  end do
-
-  write (solf, '(60("="))')
-  write (solf, *) istep, time, Delt
-  write (solf, *) theta, thetd, thedd
-  write (solf, *) SH%FEM%dsh(SH%FEM%TipLoc, 3), SH%Tq1
-  close (solf)
-
-!!!  end if
-
-end subroutine writeShellSol
+! subroutine writeShellSol(istep, SH)
+!   use commonvars
+!   use mpi
+!   use defs_shell
+! 
+!   implicit none
+! 
+!   type(shell_bld), intent(in) :: SH
+!   integer, intent(in) :: istep
+! 
+!   integer :: solf, i, j
+!   character(len=30) :: fname, iname(2)
+! 
+! !!!  if (ismaster) then
+! 
+!   solf = 98
+! 
+!   ! T-Spline
+! !    write(iname(1),'(I30)') istep
+! !    write(iname(2),'(I30)') myid + 21
+! 
+! !    fname = 'sh.rest.tsp.'//trim(adjustl(iname(1)))//'.'&
+! !                          //trim(adjustl(iname(2)))
+! !    open(solf, file=fname, status='replace')
+! 
+! !    do i = 1, SH%TSP%NNODE
+! !      write(solf,*) (SH%TSP%dsh(i,j), j = 1, 3)
+! !    end do
+! !    do i = 1, SH%TSP%NNODE
+! !      write(solf,*) (SH%TSP%ush(i,j), j = 1, 3)
+! !    end do
+! !    do i = 1, SH%TSP%NNODE
+! !      write(solf,*) (SH%TSP%ash(i,j), j = 1, 3)
+! !    end do
+! 
+! !    write(solf,'(60("="))')
+!   !   write(solf,*) istep, time, Delt
+!   !   write(solf,*) theta, thetd, thedd
+!   !   write(solf,*) SH%TSP%dsh(SH%TSP%TipLoc,3), SH%Tq2
+!   !   close(solf)
+! 
+!   ! NURBS
+!   write (iname(1), '(I30)') istep
+!   write (iname(2), '(I30)') myid + 21
+! 
+!   fname = 'sh.rest.nrb.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (solf, file=fname, status='replace')
+! 
+!   do i = 1, SH%NRB%NNODE
+!     write (solf, *) (SH%NRB%dsh(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%NRB%NNODE
+!     write (solf, *) (SH%NRB%ush(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%NRB%NNODE
+!     write (solf, *) (SH%NRB%ash(i, j), j=1, 3)
+!   end do
+! 
+!   write (solf, '(60("="))')
+!   write (solf, *) istep, time, Delt
+!   write (solf, *) theta, thetd, thedd
+!   write (solf, *) SH%NRB%dsh(SH%NRB%TipLoc, 3), SH%Tq2
+!   close (solf)
+!   ! FEM
+!   fname = 'sh.rest.fem.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (solf, file=fname, status='replace')
+! 
+!   do i = 1, SH%FEM%NNODE
+!     write (solf, *) (SH%FEM%dsh(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%FEM%NNODE
+!     write (solf, *) (SH%FEM%ush(i, j), j=1, 3)
+!   end do
+!   do i = 1, SH%FEM%NNODE
+!     write (solf, *) (SH%FEM%ash(i, j), j=1, 3)
+!   end do
+! 
+!   write (solf, '(60("="))')
+!   write (solf, *) istep, time, Delt
+!   write (solf, *) theta, thetd, thedd
+!   write (solf, *) SH%FEM%dsh(SH%FEM%TipLoc, 3), SH%Tq1
+!   close (solf)
+! 
+! !!!  end if
+! 
+! end subroutine writeShellSol
 
 !======================================================================
 ! Output tip displacement
 !======================================================================
-subroutine writeTip(istep, SH)
-  use commonvars
-  use mpi
-  use defs_shell
-  implicit none
-
-  type(shell_bld), intent(in) :: SH
-  integer, intent(in) :: istep
-  integer :: ifile
-
-  character(len=30) :: fname, iname(2)
-
-  write (iname(1), '(I30)') istep
-  write (iname(2), '(I30)') myid + 21
-
-  ifile = 15
-  fname = 'tipdispLeading.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (ifile, file=fname, status='replace')
-  write (ifile, "(4ES17.8)") time, theta, SH%NRB%dsh(SH%NRB%TipLoc, 3), SH%Tq2
-  write (ifile, "(4ES17.8)") time, theta, SH%FEM%dsh(SH%FEM%TipLoc, 3), SH%Tq1
-  close (ifile)
-
-  ifile = 15
-  fname = 'tipdispTrailing.'//trim(adjustl(iname(1)))//'.' &
-          //trim(adjustl(iname(2)))
-  open (ifile, file=fname, status='replace')
-  write (ifile, "(4ES17.8)") time, theta, SH%NRB%dsh(SH%NRB%TipLocTr, 3), SH%Tq2
-  write (ifile, "(4ES17.8)") time, theta, SH%FEM%dsh(SH%FEM%TipLocTr, 3), SH%Tq1
-  close (ifile)
-end subroutine writeTip
+! subroutine writeTip(istep, SH)
+!   use commonvars
+!   use mpi
+!   use defs_shell
+!   implicit none
+! 
+!   type(shell_bld), intent(in) :: SH
+!   integer, intent(in) :: istep
+!   integer :: ifile
+! 
+!   character(len=30) :: fname, iname(2)
+! 
+!   write (iname(1), '(I30)') istep
+!   write (iname(2), '(I30)') myid + 21
+! 
+!   ifile = 15
+!   fname = 'tipdispLeading.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (ifile, file=fname, status='replace')
+!   write (ifile, "(4ES17.8)") time, theta, SH%NRB%dsh(SH%NRB%TipLoc, 3), SH%Tq2
+!   write (ifile, "(4ES17.8)") time, theta, SH%FEM%dsh(SH%FEM%TipLoc, 3), SH%Tq1
+!   close (ifile)
+! 
+!   ifile = 15
+!   fname = 'tipdispTrailing.'//trim(adjustl(iname(1)))//'.' &
+!           //trim(adjustl(iname(2)))
+!   open (ifile, file=fname, status='replace')
+!   write (ifile, "(4ES17.8)") time, theta, SH%NRB%dsh(SH%NRB%TipLocTr, 3), SH%Tq2
+!   write (ifile, "(4ES17.8)") time, theta, SH%FEM%dsh(SH%FEM%TipLocTr, 3), SH%Tq1
+!   close (ifile)
+! end subroutine writeTip
 
 !======================================================================
 ! Read shell solution
 !======================================================================
-subroutine readShellSol_NM(istep, NM)
-  use defs_shell
-  implicit none
-
-  type(shell_nmb), intent(inout) :: NM
-  integer, intent(in)    :: istep
-
-  integer :: solf, i, j, bb
-  character(len=30) :: fname, iname
-
-  solf = 97
-
-  write (iname, '(I30)') istep
-
-  fname = 'nm.rest.fem.'//trim(adjustl(iname))
-  open (solf, file=fname, status='old')
-
-  do bb = 1, 2
-    do i = 1, NM%FEM(bb)%NNODE
-      read (solf, *) (NM%FEM(bb)%dshOld(i, j), j=1, 3)
-    end do
-    do i = 1, NM%FEM(bb)%NNODE
-      read (solf, *) (NM%FEM(bb)%ushOld(i, j), j=1, 3)
-    end do
-    do i = 1, NM%FEM(bb)%NNODE
-      read (solf, *) (NM%FEM(bb)%ashOld(i, j), j=1, 3)
-    end do
-  end do
-
-  close (solf)
-end subroutine readShellSol_NM
+! subroutine readShellSol_NM(istep, NM)
+!   use defs_shell
+!   implicit none
+! 
+!   type(shell_nmb), intent(inout) :: NM
+!   integer, intent(in)    :: istep
+! 
+!   integer :: solf, i, j, bb
+!   character(len=30) :: fname, iname
+! 
+!   solf = 97
+! 
+!   write (iname, '(I30)') istep
+! 
+!   fname = 'nm.rest.fem.'//trim(adjustl(iname))
+!   open (solf, file=fname, status='old')
+! 
+!   do bb = 1, 2
+!     do i = 1, NM%FEM(bb)%NNODE
+!       read (solf, *) (NM%FEM(bb)%dshOld(i, j), j=1, 3)
+!     end do
+!     do i = 1, NM%FEM(bb)%NNODE
+!       read (solf, *) (NM%FEM(bb)%ushOld(i, j), j=1, 3)
+!     end do
+!     do i = 1, NM%FEM(bb)%NNODE
+!       read (solf, *) (NM%FEM(bb)%ashOld(i, j), j=1, 3)
+!     end do
+!   end do
+! 
+!   close (solf)
+! end subroutine readShellSol_NM
 
 !======================================================================
 ! Output shell solution
 !======================================================================
-subroutine writeShellSol_NM(istep, NM)
-  use commonvars
-  use defs_shell
-  implicit none
-
-  type(shell_nmb), intent(in) :: NM
-  integer, intent(in) :: istep
-
-  integer :: solf, i, j, bb
-  character(len=30) :: fname, iname
-
-  solf = 98
-
-  write (iname, '(I30)') istep
-
-  fname = 'nm.rest.fem.'//trim(adjustl(iname))
-  open (solf, file=fname, status='replace')
-
-  do bb = 1, 2
-    do i = 1, NM%FEM(bb)%NNODE
-      write (solf, *) (NM%FEM(bb)%dsh(i, j), j=1, 3)
-    end do
-    do i = 1, NM%FEM(bb)%NNODE
-      write (solf, *) (NM%FEM(bb)%ush(i, j), j=1, 3)
-    end do
-    do i = 1, NM%FEM(bb)%NNODE
-      write (solf, *) (NM%FEM(bb)%ash(i, j), j=1, 3)
-    end do
-  end do
-
-  write (solf, '(60("="))')
-  write (solf, *) istep, time, Delt
-  write (solf, *) theta, thetd, thedd
-
-  close (solf)
-end subroutine writeShellSol_NM
+! subroutine writeShellSol_NM(istep, NM)
+!   use commonvars
+!   use defs_shell
+!   implicit none
+! 
+!   type(shell_nmb), intent(in) :: NM
+!   integer, intent(in) :: istep
+! 
+!   integer :: solf, i, j, bb
+!   character(len=30) :: fname, iname
+! 
+!   solf = 98
+! 
+!   write (iname, '(I30)') istep
+! 
+!   fname = 'nm.rest.fem.'//trim(adjustl(iname))
+!   open (solf, file=fname, status='replace')
+! 
+!   do bb = 1, 2
+!     do i = 1, NM%FEM(bb)%NNODE
+!       write (solf, *) (NM%FEM(bb)%dsh(i, j), j=1, 3)
+!     end do
+!     do i = 1, NM%FEM(bb)%NNODE
+!       write (solf, *) (NM%FEM(bb)%ush(i, j), j=1, 3)
+!     end do
+!     do i = 1, NM%FEM(bb)%NNODE
+!       write (solf, *) (NM%FEM(bb)%ash(i, j), j=1, 3)
+!     end do
+!   end do
+! 
+!   write (solf, '(60("="))')
+!   write (solf, *) istep, time, Delt
+!   write (solf, *) theta, thetd, thedd
+! 
+!   close (solf)
+! end subroutine writeShellSol_NM
 
 !======================================================================
 ! Output averaged solution
 !======================================================================
-subroutine writeAvgSol(istep)
-  use aAdjKeep
-  use commonvars
-  use mpi
-  implicit none
-
-  integer, intent(in) :: istep
-  integer :: solf, i, j
-  character(len=30) :: fname
-  character(len=10) :: cname
-
-  ! Output results
-  solf = 98
-  fname = "avgsol"//cname(myid + 1)
-  open (solf, file=fname, status='replace')
-
-  write (solf, *) istep, Delt
-
-  do i = 1, NNODE
-    write (solf, *) (uavg(i, j)/dble(istep), j=1, 3)
-  end do
-  do i = 1, NNODE
-    write (solf, *) pavg(i)/dble(istep)
-  end do
-
-  close (solf)
-end subroutine writeAvgSol
+! subroutine writeAvgSol(istep)
+!   use aAdjKeep
+!   use commonvars
+!   use mpi
+!   implicit none
+! 
+!   integer, intent(in) :: istep
+!   integer :: solf, i, j
+!   character(len=30) :: fname
+!   character(len=10) :: cname
+! 
+!   ! Output results
+!   solf = 98
+!   fname = "avgsol"//cname(myid + 1)
+!   open (solf, file=fname, status='replace')
+! 
+!   write (solf, *) istep, Delt
+! 
+!   do i = 1, NNODE
+!     write (solf, *) (uavg(i, j)/dble(istep), j=1, 3)
+!   end do
+!   do i = 1, NNODE
+!     write (solf, *) pavg(i)/dble(istep)
+!   end do
+! 
+!   close (solf)
+! end subroutine writeAvgSol
 
 !======================================================================
 ! Read in averaged solution
 ! istep: number of steps that have been averaged
 !======================================================================
-subroutine readAvgSol(istep)
-  use aAdjKeep
-  use commonvars
-  use mpi
-  implicit none
-
-  integer, intent(out) :: istep
-  integer :: solf, i, j, exts
-  character(len=30) :: fname
-  character(len=10) :: cname
-
-  solf = 98
-  fname = "avgsol"//cname(myid + 1)
-  open (solf, file=fname, status='old', iostat=exts)
-
-  if (exts == 0) then
-    read (solf, *) istep
-    do i = 1, NNODE
-      read (solf, *) (uavg(i, j), j=1, 3)
-    end do
-    do i = 1, NNODE
-      read (solf, *) pavg(i)
-    end do
-  else
-    istep = 0
-    uavg = 0.0d0
-    pavg = 0.0d0
-  end if
-
-  close (solf)
-
-  uavg = uavg*dble(istep)
-  pavg = pavg*dble(istep)
-end subroutine readAvgSol
+! subroutine readAvgSol(istep)
+!   use aAdjKeep
+!   use commonvars
+!   use mpi
+!   implicit none
+! 
+!   integer, intent(out) :: istep
+!   integer :: solf, i, j, exts
+!   character(len=30) :: fname
+!   character(len=10) :: cname
+! 
+!   solf = 98
+!   fname = "avgsol"//cname(myid + 1)
+!   open (solf, file=fname, status='old', iostat=exts)
+! 
+!   if (exts == 0) then
+!     read (solf, *) istep
+!     do i = 1, NNODE
+!       read (solf, *) (uavg(i, j), j=1, 3)
+!     end do
+!     do i = 1, NNODE
+!       read (solf, *) pavg(i)
+!     end do
+!   else
+!     istep = 0
+!     uavg = 0.0d0
+!     pavg = 0.0d0
+!   end if
+! 
+!   close (solf)
+! 
+!   uavg = uavg*dble(istep)
+!   pavg = pavg*dble(istep)
+! end subroutine readAvgSol
 
 !!$!======================================================================
 !!$!

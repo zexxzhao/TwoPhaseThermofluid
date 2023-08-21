@@ -25,6 +25,7 @@ ${OBJFILES}: ${MODOBJFILES}
 
 clean:
 	rm -f ${OBJFILES} 
+	rm -f *.mod
 
 
 include ../make.rules

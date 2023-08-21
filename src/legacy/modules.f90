@@ -2,6 +2,7 @@
 !
 !------------------------------------------------------------------------
 module class_def
+  implicit none
 
   ! type NURBSpatch
 
@@ -10,7 +11,6 @@ module class_def
   !   real(8), allocatable :: U_KNOT(:), V_KNOT(:), W_KNOT(:)
 
   ! end type NURBSpatch
-
   type bnd_class
 
     integer :: FACE_ID
@@ -33,169 +33,333 @@ module class_def
 
   end type bnd_class
 
+  type MeshData
+    integer :: NSD, NNODE, NELEM, NBOUND
+    integer :: NPATCH, NSHLBmax, maxNSHL
+    real(8), allocatable :: xg(:, :)
+  
+    integer, allocatable :: IEN(:, :), NodeID(:)
+    integer, allocatable :: ELM_ID(:)
+
+    type(bnd_class), allocatable :: bound(:)
+    integer, allocatable :: ELMNSHL(:), ELMNGAUSS(:)
+  end type MeshData
+
+  type SparsityPattern
+    integer :: NNODE
+    integer :: nnz ! number of non-zero entries
+    integer, allocatable :: index(:) ! size(index) = nnz
+    integer, allocatable :: indptr(:) ! size(indptr) = NNODE+1
+  end type SparsityPattern
+
+  type FieldData
+    real(8), allocatable :: dg(:, :), dgold(:, :)
+    real(8), allocatable :: ugm(:, :), ugmold(:, :)
+    real(8), allocatable :: acgm(:, :), acgmold(:, :)
+
+    real(8), allocatable :: ug(:, :), ugold(:, :)
+    real(8), allocatable :: acg(:, :), acgold(:, :)
+    real(8), allocatable :: pg(:), pgold(:)
+
+    real(8), allocatable :: phig(:), phigold(:)
+    real(8), allocatable :: rphig(:), rphigold(:)
+
+    real(8), allocatable :: rTg(:), rTgold(:)
+    real(8), allocatable :: Tg(:), Tgold(:)
+
+  end type FieldData
+
+  type RHSData
+    real(8), allocatable :: RHSGU(:, :)
+    real(8), allocatable :: RHSGP(:)
+    real(8), allocatable :: RHSGLS(:)
+    real(8), allocatable :: RHSGTEM(:)
+  end type RHSData
+
+  type LHSData
+    real(8), allocatable :: LHSK11(:, :)
+    real(8), allocatable :: LHSG(:, :)
+    real(8), allocatable :: LHSD1(:, :)
+    real(8), allocatable :: LHSM(:)
+    real(8), allocatable :: LHSLS(:)
+    real(8), allocatable :: LHSLSU(:, :)
+    real(8), allocatable :: LHSPLS(:)
+    real(8), allocatable :: LHSULS(:, :)
+    real(8), allocatable :: LHSTEM(:)
+  end type LHSData
+
+  type DirichletBCData
+    integer :: NBOUND, NSD
+    integer, allocatable :: BCugType(:,:)
+    real(8), allocatable :: BCugValu(:,:)
+    integer, allocatable :: BCphigType(:)
+    real(8), allocatable :: BCphigValu(:)
+    integer, allocatable :: BCTgType(:)
+    real(8), allocatable :: BCTgValu(:)
+
+    integer, allocatable :: IBC(:, :)
+  end type DirichletBCData
+
 end module class_def
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
+module class_def_c
+  use iso_c_binding
+  use class_def
+  implicit none
+
+  type, bind(C) :: bnd_class_C
+    integer(C_INT) :: FACE_ID
+
+    integer(C_INT) :: NFACE
+
+    type(C_PTR) :: FACE_IEN
+
+    type(C_PTR) :: F2E
+    type(C_PTR) :: FACE_OR
+    type(C_PTR) :: NSHLB
+    type(C_PTR) :: NGAUSSB
+
+    integer(C_INT) :: NNODE
+    type(C_PTR) :: BNODES
+
+    ! mapping between partitioned (local) boundary node/element
+    ! and unpartitioned boundary (shell) node/element
+    type(C_PTR) :: L2SNODE, L2SELEM
+  end type bnd_class_C
+
+  type, bind(C) :: MeshData_C
+    integer(C_INT) :: NSD, NNODE, NELEM, NBOUND
+    integer(C_INT) :: NPATCH, NSHLBmax, maxNSHL
+    type(C_PTR) :: xg
+  
+    type(C_PTR) :: IEN, NodeID
+    type(C_PTR) :: ELM_ID
+
+    type(C_PTR) :: bound
+    type(C_PTR) :: ELMNSHL, ELMNGAUSS
+
+    type(C_PTR) :: mesh_data_f
+  end type MeshData_C
+
+  type, bind(C) :: SparsityPattern_C
+    integer(C_INT) :: NNODE
+    integer(C_INT) :: nnz ! number of non-zero entries
+    type(C_PTR) :: index ! size(index) = nnz
+    type(C_PTR) :: indptr ! size(indptr) = NNODE+1
+  end type SparsityPattern_C
+
+  type, bind(C) :: FieldData_C
+    type(C_PTR) :: dg, dgold
+    type(C_PTR) :: ugm, ugmold
+    type(C_PTR) :: acgm, acgmold
+
+    type(C_PTR) :: ug, ugold
+    type(C_PTR) :: acg, acgold
+    type(C_PTR) :: pg, pgold
+
+    type(C_PTR) :: phig, phigold
+    type(C_PTR) :: rphig, rphigold
+
+    type(C_PTR) :: rTg, rTgold
+    type(C_PTR) :: Tg, Tgold
+  end type FieldData_C
+
+  type, bind(C) :: RHSData_C
+    type(C_PTR) :: RHSGU
+    type(C_PTR) :: RHSGP
+    type(C_PTR) :: RHSGLS
+    type(C_PTR) :: RHSGTEM
+  end type RHSData_C
+
+  type, bind(C) :: LHSData_C
+    type(C_PTR) :: LHSK11
+    type(C_PTR) :: LHSG
+    type(C_PTR) :: LHSD1
+    type(C_PTR) :: LHSM
+    type(C_PTR) :: LHSLS
+    type(C_PTR) :: LHSLSU
+    type(C_PTR) :: LHSPLS
+    type(C_PTR) :: LHSULS
+    type(C_PTR) :: LHSTEM
+  end type LHSData_C
+
+  type, bind(C) :: DirichletBCData_C
+    integer(C_INT) :: NBOUND, NSD
+    type(C_PTR) :: BCugType
+    type(C_PTR) :: BCugValu
+    type(C_PTR) :: BCphigType
+    type(C_PTR) :: BCphigValu
+    type(C_PTR) :: BCTgType
+    type(C_PTR) :: BCTgValu
+
+    type(C_PTR) :: IBC
+  end type DirichletBCData_C
+
+end module class_def_c
 
 !------------------------------------------------------------------------
 ! Module for defining shell types and variables
 !------------------------------------------------------------------------
-module defs_shell
-
-  implicit none
-
-  ! Declare type mesh
-  type :: mesh
-    ! degree in U and V for each patch
-    integer, allocatable :: P(:), Q(:)
-
-    ! patch type
-    ! 1-blade; 0-bending strips; 2-shear web; ...
-    integer, allocatable :: PTYPE(:)
-
-    ! Knot vectors in u and v directions for each element
-    real(8), allocatable :: U_KNOT(:, :), V_KNOT(:, :)
-
-    ! Size of the knot vector for each elements (e.g. NUK=P+MCP+1)
-    integer, allocatable :: NUK(:), NVK(:)
-
-    ! Control Net
-    ! B_NET is reference config, B_NET_D is current config.
-    ! For the pre-bend case, reference config. could change, so
-    ! we created B_NET_U for undeformed, original config.
-    real(8), allocatable :: B_NET(:, :), B_NET_U(:, :), B_NET_D(:, :)
-
-    ! Boundary condition indicator for global nodes and edges
-    ! respectively
-    integer, allocatable :: IBC(:, :)
-
-    ! array to store force vectors on the wind turbine blade
-    real(8), allocatable :: FORCE(:, :)
-
-    ! Global connectivity array
-    integer, allocatable :: IEN(:, :), INN(:, :)
-
-    ! number of shape functions for every element
-    integer, allocatable :: NSHL(:)
-
-    ! Bezier extraction operator
-    real(8), allocatable :: Ext(:, :, :)
-
-    ! Array for closest points (and the corresponding element)
-    integer, allocatable :: CLE(:, :)
-    real(8), allocatable :: CLP(:, :, :)
-
-    ! Array for element list
-    integer, allocatable :: Elm_Close(:, :, :)
-    integer :: NEL_Close, NEL_Close_t
-
-    ! Array for element gauss point location and for buiding the
-    ! element list based on radial location
-    real(8) :: Elm_Size
-    real(8), allocatable :: Elm_Loc(:, :, :)
-    integer, allocatable :: RAD_ELM_LIST(:, :, :), RAD_ELM_NUM(:, :)
-
-    integer :: NGAUSS, NNODE, NEL, maxNSHL
-
-    ! Store node number of the tip
-    integer :: TipLoc, TipLocTr
-
-    ! array for Solution vectors
-    real(8), allocatable :: dsh(:, :), dshold(:, :), &
-                            ush(:, :), ushold(:, :), &
-                            ash(:, :), ashold(:, :)
-
-    ! Surface ID and Boundary number
-    integer :: FaceID, iBound
-  end type mesh
-
-  ! Declare type mesh for multi-patch
-  type :: mesh_mp
-    ! degree in U and V for each patch
-    integer, allocatable :: P(:), Q(:)
-
-    ! number of control points in U and V for each patch
-    ! (no need for T-spline)
-    integer, allocatable :: MCP(:), NCP(:)
-
-    ! Total number of control points and elements for each patch
-    integer, allocatable :: NNODE(:), NEL(:)
-
-    ! patch type
-    ! 1-blade surface; 0-bending strips; 2-shear web; ...
-    integer, allocatable :: PTYPE(:)
-
-    ! Knot vectors in u and v directions for each patch
-    real(8), allocatable :: U_KNOT(:, :), V_KNOT(:, :)
-
-    ! Control Net
-    real(8), allocatable :: B_NET(:, :, :)
-
-    ! Boundary condition indicator for global nodes and edges
-    ! respectively
-    integer, allocatable :: IBC(:, :, :)
-
-    ! array to store force vectors on the wind turbine blade
-    real(8), allocatable :: FORCE(:, :, :)
-
-    ! Mapping between patches and global reduced numbering
-    ! e.g., MAP(1,2) = 3 means 1st patch, 2nd node points to
-    !   global reduced node number 3
-    integer, allocatable :: MAP(:, :)
-  end type mesh_mp
-
-  ! Declare type shell (for wind turbine blade)
-  type :: shell_bld
-
-    type(mesh_mp) :: mNRB
-    type(mesh)    :: NRB
-
-    type(mesh)    :: TSP, BEZ
-
-    type(mesh)    :: FEM
-
-    ! number of patches for Blade Surface (S). Matches the fluid mesh
-    ! number of patches for blade structure (B). May include shear webs
-    ! number of total patches including bending strips (T)
-    integer :: NPS, NPB, NPT
-
-    integer :: M_Flag, T_Flag
-    real(8) :: RHSGtol, G_fact(3), RHSGNorm
-
-    ! row, col, and total of nonzero entries for sparse structure
-    integer, allocatable :: row(:), col(:)
-    integer :: icnt
-
-    ! The right hand side load vector G and left hand stiffness matrix K
-    real(8), allocatable :: RHSG(:, :), LHSK(:, :), &
-                            RHSG_EXT(:, :), RHSG_GRA(:, :)
-
-!    ! Solution vectors
-!    real(8), allocatable :: yg(:,:), dg(:,:), tg(:), &
-!                            mg(:), dl(:,:)
-
-    ! material matrix for composite
-    integer :: NMat
-!    real(8), allocatable :: matA(:,:,:), matB(:,:,:), matD(:,:,:)
-    real(8), allocatable :: matA(:, :, :, :), matB(:, :, :, :), matD(:, :, :, :), Density(:, :), Thickness(:, :)
-
-    ! number of newton iterations for shell
-    integer, allocatable :: Nnewt(:)
-
-    ! Torque computed on shell mesh
-    real(8) :: Tq1, Tq2
-
-    ! Blade rotation. 0 degree is the straight-up position
-    real(8) :: BldRot
-
-    integer :: bmap
-  end type shell_bld
-
-  ! Declare type shell (for non-matching boundaries)
-  type :: shell_nmb
-
-    type(mesh), allocatable :: FEM(:)
-
-  end type shell_nmb
-end module defs_shell
+! module defs_shell
+! 
+!   implicit none
+! 
+!   ! Declare type mesh
+!   type :: mesh
+!     ! degree in U and V for each patch
+!     integer, allocatable :: P(:), Q(:)
+! 
+!     ! patch type
+!     ! 1-blade; 0-bending strips; 2-shear web; ...
+!     integer, allocatable :: PTYPE(:)
+! 
+!     ! Knot vectors in u and v directions for each element
+!     real(8), allocatable :: U_KNOT(:, :), V_KNOT(:, :)
+! 
+!     ! Size of the knot vector for each elements (e.g. NUK=P+MCP+1)
+!     integer, allocatable :: NUK(:), NVK(:)
+! 
+!     ! Control Net
+!     ! B_NET is reference config, B_NET_D is current config.
+!     ! For the pre-bend case, reference config. could change, so
+!     ! we created B_NET_U for undeformed, original config.
+!     real(8), allocatable :: B_NET(:, :), B_NET_U(:, :), B_NET_D(:, :)
+! 
+!     ! Boundary condition indicator for global nodes and edges
+!     ! respectively
+!     integer, allocatable :: IBC(:, :)
+! 
+!     ! array to store force vectors on the wind turbine blade
+!     real(8), allocatable :: FORCE(:, :)
+! 
+!     ! Global connectivity array
+!     integer, allocatable :: IEN(:, :), INN(:, :)
+! 
+!     ! number of shape functions for every element
+!     integer, allocatable :: NSHL(:)
+! 
+!     ! Bezier extraction operator
+!     real(8), allocatable :: Ext(:, :, :)
+! 
+!     ! Array for closest points (and the corresponding element)
+!     integer, allocatable :: CLE(:, :)
+!     real(8), allocatable :: CLP(:, :, :)
+! 
+!     ! Array for element list
+!     integer, allocatable :: Elm_Close(:, :, :)
+!     integer :: NEL_Close, NEL_Close_t
+! 
+!     ! Array for element gauss point location and for buiding the
+!     ! element list based on radial location
+!     real(8) :: Elm_Size
+!     real(8), allocatable :: Elm_Loc(:, :, :)
+!     integer, allocatable :: RAD_ELM_LIST(:, :, :), RAD_ELM_NUM(:, :)
+! 
+!     integer :: NGAUSS, NNODE, NEL, maxNSHL
+! 
+!     ! Store node number of the tip
+!     integer :: TipLoc, TipLocTr
+! 
+!     ! array for Solution vectors
+!     real(8), allocatable :: dsh(:, :), dshold(:, :), &
+!                             ush(:, :), ushold(:, :), &
+!                             ash(:, :), ashold(:, :)
+! 
+!     ! Surface ID and Boundary number
+!     integer :: FaceID, iBound
+!   end type mesh
+! 
+!   ! Declare type mesh for multi-patch
+!   type :: mesh_mp
+!     ! degree in U and V for each patch
+!     integer, allocatable :: P(:), Q(:)
+! 
+!     ! number of control points in U and V for each patch
+!     ! (no need for T-spline)
+!     integer, allocatable :: MCP(:), NCP(:)
+! 
+!     ! Total number of control points and elements for each patch
+!     integer, allocatable :: NNODE(:), NEL(:)
+! 
+!     ! patch type
+!     ! 1-blade surface; 0-bending strips; 2-shear web; ...
+!     integer, allocatable :: PTYPE(:)
+! 
+!     ! Knot vectors in u and v directions for each patch
+!     real(8), allocatable :: U_KNOT(:, :), V_KNOT(:, :)
+! 
+!     ! Control Net
+!     real(8), allocatable :: B_NET(:, :, :)
+! 
+!     ! Boundary condition indicator for global nodes and edges
+!     ! respectively
+!     integer, allocatable :: IBC(:, :, :)
+! 
+!     ! array to store force vectors on the wind turbine blade
+!     real(8), allocatable :: FORCE(:, :, :)
+! 
+!     ! Mapping between patches and global reduced numbering
+!     ! e.g., MAP(1,2) = 3 means 1st patch, 2nd node points to
+!     !   global reduced node number 3
+!     integer, allocatable :: MAP(:, :)
+!   end type mesh_mp
+! 
+!   ! Declare type shell (for wind turbine blade)
+!   type :: shell_bld
+! 
+!     type(mesh_mp) :: mNRB
+!     type(mesh)    :: NRB
+! 
+!     type(mesh)    :: TSP, BEZ
+! 
+!     type(mesh)    :: FEM
+! 
+!     ! number of patches for Blade Surface (S). Matches the fluid mesh
+!     ! number of patches for blade structure (B). May include shear webs
+!     ! number of total patches including bending strips (T)
+!     integer :: NPS, NPB, NPT
+! 
+!     integer :: M_Flag, T_Flag
+!     real(8) :: RHSGtol, G_fact(3), RHSGNorm
+! 
+!     ! row, col, and total of nonzero entries for sparse structure
+!     integer, allocatable :: row(:), col(:)
+!     integer :: icnt
+! 
+!     ! The right hand side load vector G and left hand stiffness matrix K
+!     real(8), allocatable :: RHSG(:, :), LHSK(:, :), &
+!                             RHSG_EXT(:, :), RHSG_GRA(:, :)
+! 
+! !    ! Solution vectors
+! !    real(8), allocatable :: yg(:,:), dg(:,:), tg(:), &
+! !                            mg(:), dl(:,:)
+! 
+!     ! material matrix for composite
+!     integer :: NMat
+! !    real(8), allocatable :: matA(:,:,:), matB(:,:,:), matD(:,:,:)
+!     real(8), allocatable :: matA(:, :, :, :), matB(:, :, :, :), matD(:, :, :, :), Density(:, :), Thickness(:, :)
+! 
+!     ! number of newton iterations for shell
+!     integer, allocatable :: Nnewt(:)
+! 
+!     ! Torque computed on shell mesh
+!     real(8) :: Tq1, Tq2
+! 
+!     ! Blade rotation. 0 degree is the straight-up position
+!     real(8) :: BldRot
+! 
+!     integer :: bmap
+!   end type shell_bld
+! 
+!   ! Declare type shell (for non-matching boundaries)
+!   type :: shell_nmb
+! 
+!     type(mesh), allocatable :: FEM(:)
+! 
+!   end type shell_nmb
+! end module defs_shell
 
 !------------------------------------------------------------------------
 !     Module for storing arrays and allocation routines
@@ -217,6 +381,8 @@ module aAdjKeep
 
   type(bnd_class), allocatable :: bound(:)
   !type(NURBSpatch), allocatable :: patch(:)
+  ! Array for Prism
+  integer, allocatable :: ELMNSHL(:), ELMNGAUSS(:)
 
   ! Contraint flags
   integer, allocatable :: IPER(:)
@@ -228,7 +394,7 @@ module aAdjKeep
   integer, allocatable :: EL_TYP(:), D_FLAG(:), P_FLAG(:)
 
   ! Spars Struc
-  integer, allocatable :: row(:), col(:)
+  ! integer, allocatable :: row(:), col(:)
 
   integer :: InNNODE1, InCELL
   integer, allocatable :: ien_inlet(:, :)
@@ -259,7 +425,7 @@ module aAdjKeep
                           rTg(:), rTgold(:), &
                           Tg(:), Tgold(:)
 
-  real(8), allocatable :: uavg(:, :), pavg(:)
+  ! real(8), allocatable :: uavg(:, :), pavg(:)
 
   ! Rigid body
   ! real(8) :: vbn0(3), vbn1(3)
@@ -270,8 +436,6 @@ module aAdjKeep
   ! First P-K Stress
   ! real(8), allocatable :: FPKS(:, :, :)
 
-  ! Array for Prism
-  integer, allocatable :: ELMNSHL(:), ELMNGAUSS(:)
 
   ! global information for individual blades
   ! type(mesh) :: blade(3)
@@ -305,7 +469,7 @@ module commonvars
   real(8)::interpolation_factor, inflow_pressure_p, inflow_pressure_n, inflow_rho_p, inflow_rho_n
   real(8)::top_flag
   ! Mesh
-  integer :: NSD, NNODE, NELEM, NBOUND, NPATCH, NSHLBmax, icnt, &
+  integer :: NSD, NNODE, NELEM, NBOUND, NPATCH, NSHLBmax, &
              NBlade, maxNSHL
   logical :: iga
   integer :: use_vms
@@ -416,6 +580,7 @@ module commonpars
   save
 
   real(8), parameter :: pi = 3.14159265358979323846264338328d0
+  real(8), parameter :: gravvec(3) = (/0.d0, 0.d0, -9.81d0/)
 
   ! Assemble field
   integer, parameter :: ASSEMBLE_FIELD_NONE = 0
@@ -495,7 +660,7 @@ module configuration
 
   type PropertyType
     real(8) :: rhoa, rhow, rhos
-    real(8) :: mua, muw
+    real(8) :: mua, muw, mus
     real(8) :: cpa, cpw, cps
     real(8) :: kappaa, kappaw, kappas
     real(8) :: Ts, lh, c_cond, c_evap
@@ -514,6 +679,11 @@ module configuration
     real(8), allocatable :: BCTgValu(:)
   end type BCConfigType
 
+  type MPIConfigType
+    integer :: numnodes, myid
+    logical :: ismaster
+  end type MPIConfigType
+
   type ConfigType
     logical :: iga
     logical :: fem_flag
@@ -525,6 +695,7 @@ module configuration
     type(VMSConfigType) :: vms
     type(KSPConfigType) :: ksp
     type(NewtonRaphsonConfigType) :: newton_raphson
+    type(MPIConfigType) :: mpi
   end type ConfigType
 
   contains
@@ -533,9 +704,12 @@ module configuration
     use commonvars
   
     implicit none
+  
+    include "mpif.h"
     type(ConfigType), intent(out) :: config
 
     integer :: NRES = 4
+    integer :: mpi_err
 
     config%iga = .false.
     config%fem_flag = fem_flag /= 0
@@ -606,6 +780,10 @@ module configuration
     config%newton_raphson%min_iter = 1
     config%newton_raphson%atol(:) = (/NS_NL_Uatol, NS_NL_Patol, LSC_NL_atol, LSC_NL_atol/)
     config%newton_raphson%rtol(:) = (/NS_NL_Utol, NS_NL_Ptol, LSC_NL_tol, LSC_NL_tol/)
+
+    call MPI_Comm_size(MPI_COMM_WORLD, config%mpi%numnodes, mpi_err)
+    call MPI_Comm_rank(MPI_COMM_WORLD, config%mpi%myid, mpi_err)
+    config%mpi%ismaster = config%mpi%myid == 0
   end subroutine init_config
 
   subroutine finalize_config(config)

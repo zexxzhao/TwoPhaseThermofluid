@@ -7,6 +7,23 @@
 #include <mpi.h>
 
 #define NRES (4)
+
+void init(int *argv, char ***argc) {
+#if defined(HAVE_PETSC)
+    PetscInitialize(argv, argc, NULL, NULL);
+#elif defined(HAVE_MPI)
+    MPI_Init(argv, argc);
+#endif
+}
+
+void finalize() {
+#if defined(HAVE_PETSC)
+    PetscFinalize();
+#elif defined(HAVE_MPI)
+    MPI_Finalize();
+#endif
+}
+
 void calculate_residual(ScalarType *pResidual, 
                         const ScalarType *pRHSGU,
                         const ScalarType *pRHSGP,

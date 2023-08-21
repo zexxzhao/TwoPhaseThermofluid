@@ -102,7 +102,9 @@ subroutine input(id)
     end do
   else
     iga = .false.
-    wg = 1.0d0
+    if(allocated(wg)) then
+      wg = 1.0d0
+    endif
   end if
 
   ! read patches

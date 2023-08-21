@@ -2,6 +2,9 @@
 
 #include "../sys/defines.h"
 
+void init(int *argv, char ***argc);
+void finalize();
+
 void calculate_residual(ScalarType *pResidual, 
                         const ScalarType *pRHSGU,
                         const ScalarType *pRHSGP,
@@ -23,6 +26,8 @@ void print_residual(const ScalarType *pResidual,
                     const ScalarType *pResidualTol,
                     IndexType assembleFieldFlag,
                     IndexType iter);
+
+
 
 /* Fortran function prototypes*/
 

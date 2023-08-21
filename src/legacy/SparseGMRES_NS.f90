@@ -1,7 +1,8 @@
 !======================================================================
 !
 !======================================================================
-subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
+subroutine SparseGMRES_up(col, row, &
+                          ! IBC, IPER, D_FLAG, P_FLAG, &
                           rhsGu, rhsGp, solu, solp, &
                           lhsK11, lhsG, lhsD1, lhsM, &
                           icntu, Utol, Kspaceu, Kspaceu_mn, &
@@ -11,11 +12,11 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
   use mpi
   implicit none
 
-  integer, intent(in) :: icntu, NNODZu, NSHLu, NSD, &
-                         col(NNODZu + 1), row(icntu), &
-                         IBC(NNODZu, 2*NSD + 1), IPER(NNODZu), &
-                         D_FLAG(NNODZu), P_FLAG(NNODZu), &
-                         Kspaceu, Kspaceu_mn
+  integer, intent(in) :: icntu, NNODZu, NSHLu, NSD
+  integer, intent(in) :: col(NNODZu + 1), row(icntu)
+                         ! IBC(NNODZu, 2*NSD + 1), IPER(NNODZu), &
+                         ! D_FLAG(NNODZu), P_FLAG(NNODZu), &
+  integer, intent(in) :: Kspaceu, Kspaceu_mn
 
   real(8), intent(in) :: rhsGu(NNODZu, NSD), rhsGp(NNODZu), &
                          lhsK11(NSD*NSD, icntu), lhsG(NSD, icntu), &
@@ -225,38 +226,13 @@ subroutine SparseGMRES_up(col, row, IBC, IPER, D_FLAG, P_FLAG, &
       call commu(temp1ls, 1, 'out')
     end if
 
-!!!    do i = 1, NNODZu
-!!!      if ((IBC(i,1)==3).or.(IBC(i,2)==3).or.(IBC(i,3)==3)) then
-!!!        temp1u(i,:) = temp1u(IPER(i),:) ! Slave = Master
-!!!      end if
-!!!
-!!!      if (IBC(i,7)==3) then
-!!!        temp1p(i)   = temp1p(IPER(i)) ! Slave = Master
-!!!      end if
-!!!    end do
-
     ! Product
     call SparseProdUP_3D(col, row, lhsK11, lhsG, lhsD1, lhsM, &
                          temp1u, temp1p, uBrgu(:, :, iKs + 1), &
-                         uBrgp(:, iKs + 1), D_FLAG, P_FLAG, &
+                         uBrgp(:, iKs + 1), &
                          NNODZu, NSHLu, icntu, NSD, &
                          lhsLS, lhsLSu, lhsUls, lhsPls, &
                          temp1ls, uBrgls(:, iKs + 1))
-
-!!!    ! Communicate to Masters, Zero out Slaves - LG
-!!!    do i = 1, NNODZu
-!!!      if ((IBC(i,1)==3).or.(IBC(i,2)==3).or.(IBC(i,3)==3)) then
-!!!    uBrgu(IPER(i),:,iKs+1) = uBrgu(IPER(i),:,iKs+1) +
-!!!     &           uBrgu(i,:,iKs+1) ! Master = Master+Slave
-!!!    uBrgu(i,:,iKs+1) = 0.0d0 ! Slave = zero
-!!!      end if
-!!!
-!!!      if (IBC(i,7)==3) then
-!!!    uBrgp(IPER(i),iKs+1) = uBrgp(IPER(i),iKs+1) +
-!!!     &             uBrgp(i,iKs+1) ! Master = Master+Slave
-!!!    uBrgp(i,iKs+1) = 0d+0 ! Slave = zero
-!!!      end if
-!!!    end do
 
     if (numnodes > 1) then
       call commu(uBrgu(:, :, iKs + 1), NSD, 'in ')

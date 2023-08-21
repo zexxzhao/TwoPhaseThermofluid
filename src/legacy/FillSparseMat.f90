@@ -30,15 +30,19 @@ end subroutine SparseMatLoc_3D
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
-                            xLSebe, xLSUebe, xULSebe, xPLSebe)
-  use aAdjKeep
-  use commonvars
+subroutine FillSparseMat_3D(NNODE, NSD, icnt, row, col, nshl, ix, &
+                            xKebe11, xGebe, xDebe1, xMebe, &
+                            xLSebe, xLSUebe, xULSebe, xPLSebe, &
+                            LHSK11, LHSG, LHSD1, LHSM, &
+                            LHSLS, LHSUls, LHSLSu, LHSPLS)
+  !use aAdjKeep
+  !use commonvars
   implicit none
 
-  integer, intent(in) :: nshl
+  integer, intent(in) :: nnode, NSD, icnt, nshl
+  integer, intent(in) :: col(NNODE+1), row(icnt)
 
-  integer, intent(in) :: iel
+  integer, intent(in) :: ix(NSHL)
   real(8), intent(in) :: xKebe11(NSD*NSD, NSHL, NSHL), &
                          xGebe(NSD, NSHL, NSHL), &
                          xDebe1(NSD, NSHL, NSHL), &
@@ -48,15 +52,24 @@ subroutine FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
                          xULSebe(NSD, NSHL, NSHL), &
                          xPLSebe(NSHL, NSHL)
 
+  real(8), intent(inout) :: LHSK11(NSD*NSD, icnt), &
+                            LHSG(NSD, icnt), &
+                            LHSD1(NSD, icnt), &
+                            LHSM(icnt)
+  real(8), intent(inout) :: LHSLS(icnt), &
+                            LHSUls(NSD, icnt), &
+                            LHSLSu(NSD, icnt), &
+                            LHSPLS(icnt)
+
   integer :: a, b, c, d, ee, n, k, locn, i
 
   do a = 1, NSHL
-    i = IEN(iel, a)
+    i = ix(a)
     c = col(i)
     n = col(i + 1) - c
     do b = 1, NSHL
 
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+      call SparseMatLoc_3D(row(c:c + n - 1), n, ix(b), locn)
 
       k = locn + c - 1
 
@@ -82,129 +95,133 @@ end subroutine FillSparseMat_3D
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMesh_3D(nshl, iel, xKebe22)
-
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer, intent(in) :: iel
-  real(8), intent(in) :: xKebe22(NSD*NSD, NSHL, NSHL)
-
-  integer :: a, b, c, d, ee, n, k, locn, i
-
-  do a = 1, NSHL
-    i = IEN(iel, a)
-    c = col(i)
-    n = col(i + 1) - c
-    do b = 1, NSHL
-
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
-
-      k = locn + c - 1
-
-      LHSK22(1:NSD*NSD, k) = LHSK22(1:NSD*NSD, k) + xKebe22(1:NSD*NSD, a, b)
-
-    end do
-
-  end do
-
-end subroutine FillSparseMesh_3D
-
-!======================================================================
-!
-!======================================================================
-subroutine GetSparseMat_3D(nshl, iel, xKebe, xGebe, xDebet, xMebe)
-
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer :: iel
-  integer :: a, b, c, d, ee, n, k, locn, i
-
-  real(8) :: xKebe(NSD*NSD, NSHL, NSHL), xGebe(NSD, NSHL, NSHL), &
-             xDebet(NSD, NSHL, NSHL), xMebe(NSHL, NSHL)
-
-  do a = 1, NSHL
-    i = IEN(iel, a)
-    c = col(i)
-    n = col(i + 1) - c
-    do b = 1, NSHL
-
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
-
-      k = locn + c - 1
-
-      xKebe(:, a, b) = LHSK11(:, k)
-      xGebe(:, a, b) = LHSG(:, k)
-      xDebet(:, a, b) = LHSD1(:, k)
-
-      xMebe(a, b) = LHSM(k)
-
-    end do
-  end do
-
-end subroutine GetSparseMat_3D
+! subroutine FillSparseMesh_3D(nshl, iel, xKebe22)
+! 
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer, intent(in) :: iel
+!   real(8), intent(in) :: xKebe22(NSD*NSD, NSHL, NSHL)
+! 
+!   integer :: a, b, c, d, ee, n, k, locn, i
+! 
+!   do a = 1, NSHL
+!     i = IEN(iel, a)
+!     c = col(i)
+!     n = col(i + 1) - c
+!     do b = 1, NSHL
+! 
+!       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+! 
+!       k = locn + c - 1
+! 
+!       LHSK22(1:NSD*NSD, k) = LHSK22(1:NSD*NSD, k) + xKebe22(1:NSD*NSD, a, b)
+! 
+!     end do
+! 
+!   end do
+! 
+! end subroutine FillSparseMesh_3D
 
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMat_ls(nshl, iel, xMebe)
-
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer, intent(in) :: iel
-  real(8), intent(in) :: xMebe(NSHL, NSHL)
-
-  integer :: a, b, c, d, ee, n, k, locn, i
-
-  do a = 1, NSHL
-    i = IEN(iel, a)
-    c = col(i)
-    n = col(i + 1) - c
-    do b = 1, NSHL
-
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
-
-      k = locn + c - 1
-      LHSls(k) = LHSls(k) + xMebe(a, b)
-    end do
-  end do
-
-end subroutine FillSparseMat_ls
+! subroutine GetSparseMat_3D(nshl, iel, xKebe, xGebe, xDebet, xMebe)
+! 
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer :: iel
+!   integer :: a, b, c, d, ee, n, k, locn, i
+! 
+!   real(8) :: xKebe(NSD*NSD, NSHL, NSHL), xGebe(NSD, NSHL, NSHL), &
+!              xDebet(NSD, NSHL, NSHL), xMebe(NSHL, NSHL)
+! 
+!   do a = 1, NSHL
+!     i = IEN(iel, a)
+!     c = col(i)
+!     n = col(i + 1) - c
+!     do b = 1, NSHL
+! 
+!       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+! 
+!       k = locn + c - 1
+! 
+!       xKebe(:, a, b) = LHSK11(:, k)
+!       xGebe(:, a, b) = LHSG(:, k)
+!       xDebet(:, a, b) = LHSD1(:, k)
+! 
+!       xMebe(a, b) = LHSM(k)
+! 
+!     end do
+!   end do
+! 
+! end subroutine GetSparseMat_3D
 
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMat_tem(nshl, iel, xTebe)
+! subroutine FillSparseMat_ls(nshl, iel, xMebe)
+! 
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer, intent(in) :: iel
+!   real(8), intent(in) :: xMebe(NSHL, NSHL)
+! 
+!   integer :: a, b, c, d, ee, n, k, locn, i
+! 
+!   do a = 1, NSHL
+!     i = IEN(iel, a)
+!     c = col(i)
+!     n = col(i + 1) - c
+!     do b = 1, NSHL
+! 
+!       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+! 
+!       k = locn + c - 1
+!       LHSls(k) = LHSls(k) + xMebe(a, b)
+!     end do
+!   end do
+! 
+! end subroutine FillSparseMat_ls
 
-  use aAdjKeep
-  use commonvars
+!======================================================================
+!
+!======================================================================
+subroutine FillSparseMat_tem(NNODE, NSD, icnt, row, col, nshl, ix, xTebe, &
+                             LHStem)
+
+  !use aAdjKeep
+  !use commonvars
   implicit none
 
-  integer, intent(in) :: nshl
+  integer, intent(in) :: NSD, NNODE, icnt, nshl
+  integer, intent(in) :: col(NNODE+1), row(icnt)
 
-  integer, intent(in) :: iel
+  integer, intent(in) :: ix(NSHL)
   real(8), intent(in) :: xTebe(NSHL, NSHL)
 
+  real(8), intent(inout) :: LHStem(icnt)
+
   integer :: a, b, c, d, ee, n, k, locn, i
 
   do a = 1, NSHL
-    i = IEN(iel, a)
+    i = ix(a)
     c = col(i)
     n = col(i + 1) - c
     do b = 1, NSHL
 
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+      call SparseMatLoc_3D(row(c:c + n - 1), n, ix(b), locn)
 
       k = locn + c - 1
       LHStem(k) = LHStem(k) + xTebe(a, b)
@@ -215,87 +232,87 @@ end subroutine FillSparseMat_tem
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMat_fm(nshl, iel, xMebe)
-
-  use aAdjKeep
-  use commonvars
-
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer, intent(in) :: iel
-  real(8), intent(in) :: xMebe(NSHL, NSHL)
-
-  integer :: a, b, c, d, ee, n, k, locn, i
-
-  do a = 1, NSHL
-    i = IEN(iel, a)
-    c = col(i)
-    n = col(i + 1) - c
-    do b = 1, NSHL
-
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
-
-      k = locn + c - 1
-      LHSMass(k) = LHSMass(k) + xMebe(a, b)
-    end do
-
-  end do
-end subroutine FillSparseMat_fm
+! subroutine FillSparseMat_fm(nshl, iel, xMebe)
+! 
+!   use aAdjKeep
+!   use commonvars
+! 
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer, intent(in) :: iel
+!   real(8), intent(in) :: xMebe(NSHL, NSHL)
+! 
+!   integer :: a, b, c, d, ee, n, k, locn, i
+! 
+!   do a = 1, NSHL
+!     i = IEN(iel, a)
+!     c = col(i)
+!     n = col(i + 1) - c
+!     do b = 1, NSHL
+! 
+!       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+! 
+!       k = locn + c - 1
+!       LHSMass(k) = LHSMass(k) + xMebe(a, b)
+!     end do
+! 
+!   end do
+! end subroutine FillSparseMat_fm
 
 !======================================================================
 !
 !======================================================================
-subroutine FillSparseMat_NS_conv(nshl, iel, xKebe11, xGebe, xDebe1, &
-                                 xDebe2, xMebe, xMebels, xLSUebe, &
-                                 xPLSebe, xULSebe)
-  use aAdjKeep
-  use commonvars
-  implicit none
-
-  integer, intent(in) :: nshl
-
-  integer, intent(in) :: iel
-  real(8), intent(in) :: xKebe11(NSD*NSD, NSHL, NSHL), &
-                         xGebe(NSD, NSHL, NSHL), &
-                         xDebe1(NSD, NSHL, NSHL), &
-                         xDebe2(NSD, NSHL, NSHL), &
-                         xMebe(NSHL, NSHL), xMebels(NSHL, NSHL), &
-                         xLSUebe(NSD, NSHL, NSHL), xPLSebe(NSHL, NSHL), &
-                         xULSebe(NSD, NSHL, NSHL)
-
-  integer :: a, b, c, d, ee, n, k, locn, i
-
-  do a = 1, NSHL
-    i = IEN(iel, a)
-    c = col(i)
-    n = col(i + 1) - c
-    do b = 1, NSHL
-
-      call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
-
-      k = locn + c - 1
-
-      LHSK11(1:NSD*NSD, k) = LHSK11(1:NSD*NSD, k) + xKebe11(1:NSD*NSD, a, b)
-
-      LHSG(1:NSD, k) = LHSG(1:NSD, k) + xGebe(1:NSD, a, b)
-
-      LHSD1(1:NSD, k) = LHSD1(1:NSD, k) + xDebe1(1:NSD, a, b)
-
-      LHSD2(1:NSD, k) = LHSD2(1:NSD, k) + xDebe2(1:NSD, a, b)
-
-      LHSM(k) = LHSM(k) + xMebe(a, b)
-
-      LHSls(k) = LHSls(k) + xMebels(a, b)
-
-      LHSlsu(1:NSD, k) = LHSlsu(1:NSD, k) + xLSUebe(1:NSD, a, b)
-
-      LHSPls(k) = LHSPls(k) + xPLSebe(a, b)
-
-      LHSUls(1:NSD, k) = LHSUls(1:NSD, k) + xULSebe(1:NSD, a, b)
-
-    end do
-  end do
-
-end subroutine FillSparseMat_NS_conv
+! subroutine FillSparseMat_NS_conv(nshl, iel, xKebe11, xGebe, xDebe1, &
+!                                  xDebe2, xMebe, xMebels, xLSUebe, &
+!                                  xPLSebe, xULSebe)
+!   use aAdjKeep
+!   use commonvars
+!   implicit none
+! 
+!   integer, intent(in) :: nshl
+! 
+!   integer, intent(in) :: iel
+!   real(8), intent(in) :: xKebe11(NSD*NSD, NSHL, NSHL), &
+!                          xGebe(NSD, NSHL, NSHL), &
+!                          xDebe1(NSD, NSHL, NSHL), &
+!                          xDebe2(NSD, NSHL, NSHL), &
+!                          xMebe(NSHL, NSHL), xMebels(NSHL, NSHL), &
+!                          xLSUebe(NSD, NSHL, NSHL), xPLSebe(NSHL, NSHL), &
+!                          xULSebe(NSD, NSHL, NSHL)
+! 
+!   integer :: a, b, c, d, ee, n, k, locn, i
+! 
+!   do a = 1, NSHL
+!     i = IEN(iel, a)
+!     c = col(i)
+!     n = col(i + 1) - c
+!     do b = 1, NSHL
+! 
+!       call SparseMatLoc_3D(row(c:c + n - 1), n, IEN(iel, b), locn)
+! 
+!       k = locn + c - 1
+! 
+!       LHSK11(1:NSD*NSD, k) = LHSK11(1:NSD*NSD, k) + xKebe11(1:NSD*NSD, a, b)
+! 
+!       LHSG(1:NSD, k) = LHSG(1:NSD, k) + xGebe(1:NSD, a, b)
+! 
+!       LHSD1(1:NSD, k) = LHSD1(1:NSD, k) + xDebe1(1:NSD, a, b)
+! 
+!       LHSD2(1:NSD, k) = LHSD2(1:NSD, k) + xDebe2(1:NSD, a, b)
+! 
+!       LHSM(k) = LHSM(k) + xMebe(a, b)
+! 
+!       LHSls(k) = LHSls(k) + xMebels(a, b)
+! 
+!       LHSlsu(1:NSD, k) = LHSlsu(1:NSD, k) + xLSUebe(1:NSD, a, b)
+! 
+!       LHSPls(k) = LHSPls(k) + xPLSebe(a, b)
+! 
+!       LHSUls(1:NSD, k) = LHSUls(1:NSD, k) + xULSebe(1:NSD, a, b)
+! 
+!     end do
+!   end do
+! 
+! end subroutine FillSparseMat_NS_conv
