@@ -23,10 +23,10 @@ subroutine input(id, mesh)
   fname = 'part'//trim(cname(id))//'.dat'
   open (mfid, file=fname, status='old')
 
-  read (mfid, *) mesh%NSD, NSHL, mesh%NSHLBmax
+  read (mfid, *) mesh%NSD, mesh%maxNSHL, mesh%NSHLBmax
   read (mfid, *) mesh%NNODE, mesh%NELEM, mesh%NBOUND, NPATCH
   NSD = mesh%NSD
-  NSHLmax = mesh%NSHLBmax
+  NSHLmax = mesh%maxNSHL
   NNODE = mesh%NNODE
   NELEM = mesh%NELEM
   NBOUND = mesh%NBOUND
@@ -51,7 +51,7 @@ subroutine input(id, mesh)
   call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
   ! read elements
-  allocate (mesh%ELMNSHL(NELEM), mesh%IEN(NELEM, NSHL))
+  allocate (mesh%ELMNSHL(NELEM), mesh%IEN(NELEM, NSHLmax))
   allocate (mesh%ELM_ID(NELEM))
   do i = 1, NELEM
     read (mfid, *) mesh%ELMNSHL(i), (mesh%IEN(i, j), j=1, mesh%ELMNSHL(i)), mesh%ELM_ID(i)

@@ -119,19 +119,27 @@ end subroutine readStep
 !======================================================================
 ! Read the solution
 !======================================================================
-subroutine readSol(Rstep)
-  use aAdjKeep
-  use commonvars
+subroutine readSol(Rstep, mesh, sol, time)
+  ! use aAdjKeep
+  ! use commonvars
+  use class_def
   use mpi
   implicit none
 
-  integer :: solf, i, j, n, ierr, Rstep
+  type(MeshData), intent(in) :: mesh
+  integer, intent(inout) :: Rstep
+  type(FieldData), intent(out) :: sol
+  real(8), intent(out) :: time
+
+  integer :: solf, i, j, n, ierr
   real(8) :: xi(3), xi1, xi3, rr
+  integer :: NNODE
 
   character(len=30) :: fname
   character(len=10) :: cname
 
   logical :: exists
+  NNODE = mesh%NNODE
 
   solf = 15
   if (ismaster) write (*, *) "Reading step:", Rstep
@@ -145,34 +153,34 @@ subroutine readSol(Rstep)
   ! read(solf,*) (wbn0(j), j=1,3)
 
   do i = 1, NNODE
-    read (solf, *) (dgold(i, j), j=1, 3)
+    read (solf, *) (sol%dgold(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    read (solf, *) (ugold(i, j), j=1, 3)
+    read (solf, *) (sol%ugold(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    read (solf, *) (ugmold(i, j), j=1, 3)
+    read (solf, *) (sol%ugmold(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    read (solf, *) (acgold(i, j), j=1, 3)
+    read (solf, *) (sol%acgold(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    read (solf, *) (acgmold(i, j), j=1, 3)
+    read (solf, *) (sol%acgmold(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    read (solf, *) phigold(i)
+    read (solf, *) sol%phigold(i)
   end do
   do i = 1, NNODE
-    read (solf, *) rphigold(i)
+    read (solf, *) sol%rphigold(i)
   end do
   do i = 1, NNODE
-    read (solf, *) pgold(i)
+    read (solf, *) sol%pgold(i)
   end do
   do i = 1, NNODE
-    read (solf, *) Tgold(i)
+    read (solf, *) sol%Tgold(i)
   end do
   do i = 1, NNODE
-    read (solf, *) rTgold(i)
+    read (solf, *) sol%rTgold(i)
   end do
 
 !  read(solf,*) (vbn0(j),  j=1,3)
@@ -196,26 +204,29 @@ end subroutine readSol
 !======================================================================
 ! Generate initial condition
 !======================================================================
-subroutine generateIC()
+subroutine generateIC(mesh, sol)
 
-  use aAdjKeep
-  use commonvars
+  ! use aAdjKeep
+  ! use commonvars
+  use class_def
   use mpi
   ! use defs_shell
 
   implicit none
+  type(MeshData), intent(in) :: mesh
+  type(FieldData), intent(inout) :: sol
 
   integer :: i, j, k, n, iel, b
   real(8) :: xi(3), xi1, xi3, rr
   real(8) :: utmp(3), ptmp, rhotmp
   real(8) :: elem_h, rtmp
-  real(8) :: ug_rand(NNODE, 3)
+  real(8) :: ug_rand(mesh%NNODE, 3)
   if (ismaster) write (*, *) "Generating initial condition"
 
-!  call init_random_seed()
-  call random_number(ug_rand)
-  time = 0.0d0
-  Mass_init = -1.0d0
+  ! call init_random_seed()
+  ! call random_number(ug_rand)
+  ! time = 0.0d0
+  ! Mass_init = -1.0d0
 
   ! vbn0(1) = 0.0d0
   ! vbn0(2) = 0.0d0
@@ -242,7 +253,7 @@ subroutine generateIC()
 !!$    end if
 !!$  end do
 
-  ugold = 0.0d0
+  sol%ugold = 0.0d0
 !  call getinflow(0,0)
 !  ugold(:,1) = BCugValu(1,1)
 !  call getinflow(0)
@@ -257,28 +268,28 @@ subroutine generateIC()
   !   end if
   ! end do
 
-  acgold = 0.0d0
-  pgold = 0.0d0
-  rphigold = 0.0d0
+  sol%acgold = 0.0d0
+  sol%pgold = 0.0d0
+  sol%rphigold = 0.0d0
   ! elem_h = 0.0005d0
-  phigold(:) = 0d0
-  phig(:) = 0d0
-  ugold(:, 1) = 0d0
-  ugold(:, 2) = 0d0
-  ugold(:, 3) = 1d0
-  Tgold(:) = 75d0 + 273d0
-  do i = 1, NNODE
-    if(NODEID(i) == 101) then
-      Tgold(i) = 5d2 + 273d0
-      ugold(i, 3) = 0
+  sol%phigold(:) = 0d0
+  sol%phig(:) = 0d0
+  sol%ugold(:, 1) = 0d0
+  sol%ugold(:, 2) = 0d0
+  sol%ugold(:, 3) = 1d0
+  sol%Tgold(:) = 75d0 + 273d0
+  do i = 1, mesh%NNODE
+    if(mesh%NODEID(i) == 101) then
+      sol%Tgold(i) = 5d2 + 273d0
+      sol%ugold(i, 3) = 0
     end if
   end do
-  do b = 1,NBOUND
-    if(bound(b)%FACE_ID /= 5) cycle
-    do i = 1,bound(b)%NNODE
-      n = bound(b)%BNODES(i)
-      Tgold(n) = 5d2 + 273d0
-      ugold(n, 3) = 0
+  do b = 1,mesh%NBOUND
+    if(mesh%bound(b)%FACE_ID /= 5) cycle
+    do i = 1,mesh%bound(b)%NNODE
+      n = mesh%bound(b)%BNODES(i)
+      sol%Tgold(n) = 5d2 + 273d0
+      sol%ugold(n, 3) = 0
     end do
   enddo
 
@@ -286,11 +297,11 @@ subroutine generateIC()
 
   !call getinflow(0,0)
   !call setBCs_CFD_init1(0)
-  rTgold(:) = 0d0
+  sol%rTgold(:) = 0d0
 
-  dgold = 0.0d0
-  ugmold = 0.0d0
-  acgmold = 0.0d0
+  sol%dgold = 0.0d0
+  sol%ugmold = 0.0d0
+  sol%acgmold = 0.0d0
 
   ! thetaOld = 0.0d0
   ! thetdOld = 0.0d0
@@ -301,22 +312,22 @@ subroutine generateIC()
   ! wbn1 = wbn0
   ! Rn1 = Rn0
 
-  ug = ugold
-  acg = acgold
-  pg = pgold
+  sol%ug = sol%ugold
+  sol%acg = sol%acgold
+  sol%pg = sol%pgold
 
-  phig = phigold
-  rphig = rphigold
-  Tg = Tgold
-  rTg = rTgold
+  sol%phig = sol%phigold
+  sol%rphig = sol%rphigold
+  sol%Tg = sol%Tgold
+  sol%rTg = sol%rTgold
 
-  dg = dgold
-  ugm = ugmold
-  acgm = acgmold
+  sol%dg = sol%dgold
+  sol%ugm = sol%ugmold
+  sol%acgm = sol%acgmold
 
-  theta = thetaOld
-  thetd = thetdOld
-  thedd = theddOld
+  !sol%theta = sol%thetaOld
+  !sol%thetd = sol%thetdOld
+  !sol%thedd = sol%theddOld
 
   ! if (solshell) then
 ! !    SH%TSP%dshOld = 0.0d0
@@ -374,17 +385,26 @@ end subroutine writeVelocity
 !======================================================================
 ! Output solution
 !======================================================================
-subroutine writeSol(istep)
+subroutine writeSol(istep, mesh, sol, time)
 
-  use aAdjKeep
-  use commonvars
+  ! use aAdjKeep
+  ! use commonvars
+  use class_def
   use mpi
 
   implicit none
 
-  integer :: solf, i, j, istep
+  type(MeshData), intent(in) :: mesh
+  integer, intent(in) :: istep
+  type(FieldData), intent(in) :: sol
+  real(8), intent(in) :: time
+
+  integer :: solf, i, j
   character(len=30) :: fname
   character(len=10) :: cname
+  integer :: NNODE
+
+  NNODE = mesh%NNODE
 
   ! Output results
   solf = 98
@@ -398,34 +418,34 @@ subroutine writeSol(istep)
 !  write(solf,*) (wbn1(j), j=1,3)
 
   do i = 1, NNODE
-    write (solf, *) (dg(i, j), j=1, 3)
+    write (solf, *) (sol%dg(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    write (solf, *) (ug(i, j), j=1, 3)
+    write (solf, *) (sol%ug(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    write (solf, *) (ugm(i, j), j=1, 3)
+    write (solf, *) (sol%ugm(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    write (solf, *) (acg(i, j), j=1, 3)
+    write (solf, *) (sol%acg(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    write (solf, *) (acgm(i, j), j=1, 3)
+    write (solf, *) (sol%acgm(i, j), j=1, 3)
   end do
   do i = 1, NNODE
-    write (solf, *) phig(i)
+    write (solf, *) sol%phig(i)
   end do
   do i = 1, NNODE
-    write (solf, *) rphig(i)
+    write (solf, *) sol%rphig(i)
   end do
   do i = 1, NNODE
-    write (solf, *) pg(i)
+    write (solf, *) sol%pg(i)
   end do
   do i = 1, NNODE
-    write (solf, *) Tgold(i)
+    write (solf, *) sol%Tgold(i)
   end do
   do i = 1, NNODE
-    write (solf, *) rTgold(i)
+    write (solf, *) sol%rTgold(i)
   end do
 
   ! write (solf, *) (vbn1(j), j=1, 3)
@@ -444,12 +464,12 @@ subroutine writeSol(istep)
 
   if (numnodes > 1) call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
-  if (ismaster) then
-    solf = 88
-    open (solf, file='step.dat', status='replace')
-    write (solf, *) istep, x_inflow
-    close (solf)
-  end if
+  ! if (ismaster) then
+  !   solf = 88
+  !   open (solf, file='step.dat', status='replace')
+  !   write (solf, *) istep, x_inflow
+  !   close (solf)
+  ! end if
 
 end subroutine writeSol
 

@@ -8,7 +8,7 @@ subroutine genSparsityPattern( &
 
   !use aAdjKeep
   !use commonvars
-
+  use mpi
   implicit none
 
   integer, intent(in) :: NNODE, maxNSHL, NELEM
@@ -32,8 +32,8 @@ subroutine genSparsityPattern( &
   ! allocate
   icnt = sum(adjcnt)
 
+  write(*,*) myid, "icnt = ", icnt
   allocate (col(NNODE + 1), row(icnt))
-
   ! build the colm array
   col(1) = 1
   do i = 1, NNODE

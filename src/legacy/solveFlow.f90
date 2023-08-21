@@ -16,7 +16,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   integer, intent(in) :: istep
   type(MeshData), intent(in) :: mesh
   type(SparsityPattern), intent(in) :: sp
-  type(DirichletBCData), intent(in) :: bc
+  type(DirichletBCData), intent(out) :: bc
 
   type(FieldData), intent(inout) :: field
   type(RHSData), intent(inout) :: vec
@@ -56,7 +56,10 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   residual0(:) = 0d0
   converged(:) = 0
 
-  ! IBC(:, :) = 0
+  bc%IBC(:, :) = 0
+  call setBCs_NSVOF(config, mesh, bc, field)
+  call setBCs_Tem(config, mesh, bc, field)
+
   !call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
   !                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
   call assembleQuenching(ASSEMBLE_TENSOR_VEC, &

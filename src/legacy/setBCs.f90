@@ -156,25 +156,41 @@ subroutine setBCs_CFD()
 end subroutine setBCs_CFD
 
 !======================================================================
-subroutine setBCs_NSVOF()
-  use commonvars
-  use aAdjkeep
-  use mpi
+subroutine setBCs_NSVOF(config, mesh, bc, sol)
+  ! use commonvars
+  ! use aAdjkeep
+  ! use mpi
+  use class_def
+  use configuration
 
   implicit none
 
+  type(ConfigType), intent(in) :: config
+  type(MeshData), intent(in) :: mesh
+  type(DirichletBCData), intent(out) :: bc
+  type(FieldData), intent(inout) :: sol
   integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
 
-  real(8) :: u(NSD), phi
+  real(8) :: u(mesh%NSD), phi
+  real(8) :: gami, Delt, alfi, almi, beti, rhoinf
+  real(8) :: ogam, mgam, Dtgl
 
+  Delt = config%time_integral%delt
+  rhoinf = config%time_integral%rhoinf
+
+  almi = (3d0 - rhoinf) / (1d0 + rhoinf) * 0.5d0
+  alfi = 1.0d0 / (1d0 + rhoinf)
+
+  gami = 0.5d0 + almi - alfi
   !-----------------
   ! IBC(:, 1:3) - velocity
   ! IBC(:, 4) - pressure
   ! IBC(:, 5) - VOF
   ! IBC(:, 6) - Tem
-  IBC = 0
+  bc%IBC = 0
   ogam = 1.0d0/gami
   mgam = gami - 1.0d0
+  Dtgl = 1.d0 / Delt
 
   ! if (.not. is_solid_node_assigned) then
   !   if(ismaster) write(*,*) "Generating BCs"
@@ -186,46 +202,46 @@ subroutine setBCs_NSVOF()
   ! IBC(:, 3) = IS_SOLID_NODE(:)
   ! IBC(:, 4) = IS_SOLID_NODE(:)
   ! IBC(:, 5) = IS_SOLID_NODE(:)
-  do i = 1, NNODE
-    if(NodeID(i) == 101) then
-      IBC(i, 1:5) = 1
+  do i = 1, mesh%NNODE
+    if(mesh%NodeID(i) == 101) then
+      bc%IBC(i, 1:5) = 1
     else
-      IBC(i, 1:5) = 0
+      bc%IBC(i, 1:5) = 0
     endif
   enddo
   ! IBC(:, 6:8) = 1
 
-  do b = 1, NBOUND
+  do b = 1, mesh%NBOUND
 
-    do d = 1, NSD
-      if (BCugType(bound(b)%FACE_ID, d) == 1) then
-        do j = 1, bound(b)%NNODE
-          k = bound(b)%BNODES(j)
-          IBC(k, d) = 1
-          ug(k, d) = BCugValu(b, d)
-          acg(k, d) = ((ug(k, d) - ugold(k, d))*Dtgl &
-                       + (gami - 1.0d0)*acgold(k, d))/gami
+    do d = 1, mesh%NSD
+      if (bc%BCugType(mesh%bound(b)%FACE_ID, d) == 1) then
+        do j = 1, mesh%bound(b)%NNODE
+          k = mesh%bound(b)%BNODES(j)
+          bc%IBC(k, d) = 1
+          sol%ug(k, d) = bc%BCugValu(b, d)
+          sol%acg(k, d) = ((sol%ug(k, d) - sol%ugold(k, d))*Dtgl &
+                       + (gami - 1.0d0)*sol%acgold(k, d))/gami
 
         end do
 
-      else if (BCugType(bound(b)%FACE_ID, d) == 3) then
-        do j = 1, bound(b)%NNODE
-          k = bound(b)%BNODES(j)
-          IBC(k, d) = 1
-          ug(k, d) = ugm(k, d)
-          acg(k, d) = ((ug(k, d) - ugold(k, d))*Dtgl &
-                       + (gami - 1.0d0)*acgold(k, d))/gami
+      else if (bc%BCugType(mesh%bound(b)%FACE_ID, d) == 3) then
+        do j = 1, mesh%bound(b)%NNODE
+          k = mesh%bound(b)%BNODES(j)
+          bc%IBC(k, d) = 1
+          sol%ug(k, d) = sol%ugm(k, d)
+          sol%acg(k, d) = ((sol%ug(k, d) - sol%ugold(k, d))*Dtgl &
+                       + (gami - 1.0d0)*sol%acgold(k, d))/gami
         end do
       end if
     end do
 
-    if (BCphigType(bound(b)%FACE_ID) == 1) then
-      do j = 1, bound(b)%NNODE
-        k = bound(b)%BNODES(j)
-        IBC(k, 5) = 1
-        phig(k) = BCphigValu(b) ! further dev
-        rphig(k) = ((phig(k) - phigold(k))*Dtgl &
-                    + (gami - 1.0d0)*rphigold(k))/gami
+    if (bc%BCphigType(mesh%bound(b)%FACE_ID) == 1) then
+      do j = 1, mesh%bound(b)%NNODE
+        k = mesh%bound(b)%BNODES(j)
+        bc%IBC(k, 5) = 1
+        sol%phig(k) = bc%BCphigValu(b) ! further dev
+        sol%rphig(k) = ((sol%phig(k) - sol%phigold(k))*Dtgl &
+                    + (gami - 1.0d0)*sol%rphigold(k))/gami
       end do
     end if
   end do  ! end loop: all faces
@@ -234,16 +250,33 @@ end subroutine setBCs_NSVOF
 !======================================================================
 !
 !======================================================================
-subroutine setBCs_Tem()
-  use commonvars
-  use aAdjkeep
+subroutine setBCs_Tem(config, mesh, bc, sol)
+  ! use commonvars
+  ! use aAdjkeep
+  use class_def
+  use configuration
   use mpi
 
   implicit none
 
+  type(ConfigType), intent(in) :: config
+  type(MeshData), intent(in) :: mesh
+  type(DirichletBCData), intent(out) :: bc
+  type(FieldData), intent(inout) :: sol
   integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
 
-  real(8) :: u(NSD), phi
+  real(8) :: u(mesh%NSD), phi
+  real(8) :: gami, Delt, alfi, almi, beti, rhoinf
+  real(8) :: ogam, mgam, Dtgl
+
+  Delt = config%time_integral%delt
+  rhoinf = config%time_integral%rhoinf
+
+  almi = (3d0 - rhoinf) / (1d0 + rhoinf) * 0.5d0
+  alfi = 1.0d0 / (1d0 + rhoinf)
+
+  gami = 0.5d0 + almi - alfi
+  Dtgl = 1.d0 / Delt
 
   !-----------------
   ! IBC(:, 1:3) - velocity
@@ -251,15 +284,15 @@ subroutine setBCs_Tem()
   ! IBC(:, 5) - VOF
   ! IBC(:, 6) - Tem
   ! IBC(:, :) = 1
-  IBC(:, 6) = 0
-  do b = 1, NBOUND
-    if (BCTgType(bound(b)%FACE_ID) == 1) then
-      do j = 1, bound(b)%NNODE
-        k = bound(b)%BNODES(j)
-        IBC(k, 6) = 1
-        Tg(k) = BCTgValu(b)
-        rTg(k) = ((Tg(k) - Tgold(k))*Dtgl &
-                  + (gami - 1.0d0)*rTgold(k))/gami
+  bc%IBC(:, 6) = 0
+  do b = 1, mesh%NBOUND
+    if (bc%BCTgType(mesh%bound(b)%FACE_ID) == 1) then
+      do j = 1, mesh%bound(b)%NNODE
+        k = mesh%bound(b)%BNODES(j)
+        bc%IBC(k, 6) = 1
+        sol%Tg(k) = bc%BCTgValu(b)
+        sol%rTg(k) = ((sol%Tg(k) - sol%Tgold(k))*Dtgl &
+                  + (gami - 1.0d0)*sol%rTgold(k))/gami
       end do
     end if
   end do  ! end loop: all faces

@@ -3,9 +3,11 @@ MODSRCFILES = modules.f90
 F90SRCFILES =\
   alloc.f90\
   BCLhs_3D.f90\
+  c_interface.f90\
   ctypes.f90\
   cname.f90\
   commu.f90\
+  driver.f90\
   e3LHS.f90\
   e3RHS.f90\
   e3STAB.f90\

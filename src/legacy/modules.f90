@@ -127,6 +127,8 @@ module class_def_c
     ! mapping between partitioned (local) boundary node/element
     ! and unpartitioned boundary (shell) node/element
     type(C_PTR) :: L2SNODE, L2SELEM
+
+    type(C_PTR) :: data_f
   end type bnd_class_C
 
   type, bind(C) :: MeshData_C
@@ -140,7 +142,7 @@ module class_def_c
     type(C_PTR) :: bound
     type(C_PTR) :: ELMNSHL, ELMNGAUSS
 
-    type(C_PTR) :: mesh_data_f
+    type(C_PTR) :: data_f
   end type MeshData_C
 
   type, bind(C) :: SparsityPattern_C
@@ -148,6 +150,7 @@ module class_def_c
     integer(C_INT) :: nnz ! number of non-zero entries
     type(C_PTR) :: index ! size(index) = nnz
     type(C_PTR) :: indptr ! size(indptr) = NNODE+1
+    type(C_PTR) :: data_f
   end type SparsityPattern_C
 
   type, bind(C) :: FieldData_C
@@ -164,6 +167,7 @@ module class_def_c
 
     type(C_PTR) :: rTg, rTgold
     type(C_PTR) :: Tg, Tgold
+    type(C_PTR) :: data_f
   end type FieldData_C
 
   type, bind(C) :: RHSData_C
@@ -171,6 +175,7 @@ module class_def_c
     type(C_PTR) :: RHSGP
     type(C_PTR) :: RHSGLS
     type(C_PTR) :: RHSGTEM
+    type(C_PTR) :: data_f
   end type RHSData_C
 
   type, bind(C) :: LHSData_C
@@ -183,6 +188,7 @@ module class_def_c
     type(C_PTR) :: LHSPLS
     type(C_PTR) :: LHSULS
     type(C_PTR) :: LHSTEM
+    type(C_PTR) :: data_f
   end type LHSData_C
 
   type, bind(C) :: DirichletBCData_C
@@ -195,6 +201,7 @@ module class_def_c
     type(C_PTR) :: BCTgValu
 
     type(C_PTR) :: IBC
+    type(C_PTR) :: data_f
   end type DirichletBCData_C
 
 end module class_def_c

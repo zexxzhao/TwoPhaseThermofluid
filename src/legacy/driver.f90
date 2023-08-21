@@ -47,6 +47,7 @@ program NURBScode
   if (ismaster) write (*, *) "Read mesh and communication data"
   ! call input(myid + 1)
   call input(myid + 1, mesh)
+  write(*,*) myid, mesh%NSD, mesh%NSHLBmax, mesh%NNODE, mesh%NELEM, mesh%NBOUND, size(mesh%IEN) / mesh%NELEM
   if (numnodes > 1) call ctypes()
 
   ! Generate Sparse Structures
