@@ -46,6 +46,7 @@ program NURBScode
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
   ! call input(myid + 1)
+  call input(myid + 1, mesh)
   if (numnodes > 1) call ctypes()
 
   ! Generate Sparse Structures

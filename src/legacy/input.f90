@@ -1,18 +1,21 @@
 !======================================================================
 !
 !======================================================================
-subroutine input(id)
-  use aAdjKeep
-  use commonvars
+subroutine input(id, mesh)
+  ! use aAdjKeep
+  ! use commonvars
   use mpi
+  use class_def
   implicit none
 
   integer, intent(in) :: id
+  type(MeshData), intent(out) :: mesh
 
   character(len=30) :: fname, iname
   character(len=10) :: cname
 
   integer :: mfid, i, j, k, itmp1, itmp2, itmp3, nshl, counter
+  integer :: NSD, NNODE, NSHLmax, NELEM, NBOUND, NPATCH
 
   counter = 1
   ! open mesh files
@@ -20,8 +23,14 @@ subroutine input(id)
   fname = 'part'//trim(cname(id))//'.dat'
   open (mfid, file=fname, status='old')
 
-  read (mfid, *) NSD, NSHL, NSHLBmax
-  read (mfid, *) NNODE, NELEM, NBOUND, NPATCH
+  read (mfid, *) mesh%NSD, NSHL, mesh%NSHLBmax
+  read (mfid, *) mesh%NNODE, mesh%NELEM, mesh%NBOUND, NPATCH
+  NSD = mesh%NSD
+  NSHLmax = mesh%NSHLBmax
+  NNODE = mesh%NNODE
+  NELEM = mesh%NELEM
+  NBOUND = mesh%NBOUND
+
 
 !  if (myid + 1 == 11) then
   !       write(*,*) counter, NSD, NSHL, NSHLBmax
@@ -31,81 +40,69 @@ subroutine input(id)
 !endif
 
   ! read nodes
-  allocate (xg(NNODE, NSD), NodeID(NNODE))
+  allocate (mesh%xg(NNODE, NSD), mesh%NodeID(NNODE))
   do i = 1, NNODE
-    if (fem_flag == 1) then
-      read (mfid, *) (xg(i, j), j=1, NSD), NodeID(i)
-      ! if (myid + 1 == 1) then
-      !   write (*, *) counter, xg(i, :)
-      !   counter = counter + 1
-      ! end if
-    else
-      read (mfid, *) (xg(i, j), j=1, NSD)
-    end if
+    read (mfid, *) (mesh%xg(i, j), j=1, NSD), mesh%NodeID(i)
+    ! if (myid + 1 == 1) then
+    !   write (*, *) counter, xg(i, :)
+    !   counter = counter + 1
+    ! end if
   end do
   call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
   ! read elements
-  allocate (ELMNSHL(NELEM), IEN(NELEM, NSHL))
-  allocate (ELM_ID(NELEM))
+  allocate (mesh%ELMNSHL(NELEM), mesh%IEN(NELEM, NSHL))
+  allocate (mesh%ELM_ID(NELEM))
   do i = 1, NELEM
-    if (fem_flag == 1) then
-      read (mfid, *) ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i)), ELM_ID(i)
-    else
-      read (mfid, *) ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i))
-    end if
+    read (mfid, *) mesh%ELMNSHL(i), (mesh%IEN(i, j), j=1, mesh%ELMNSHL(i)), mesh%ELM_ID(i)
     ! if ((id == 120) .and. (i == NELEM)) then
     !   write (*, *), ELMNSHL(i), (IEN(i, j), j=1, ELMNSHL(i))
     ! end if
   end do
-  maxNSHL = maxval(ELMNSHL)
+  ! maxNSHL = maxval(mesh%ELMNSHL)
   ! read faces
-  allocate (bound(NBOUND))
+  allocate (mesh%bound(NBOUND))
   do i = 1, NBOUND
 
-    read (mfid, *) bound(i)%FACE_ID, bound(i)%NFACE, bound(i)%NNODE
+    read (mfid, *) mesh%bound(i)%FACE_ID, mesh%bound(i)%NFACE, mesh%bound(i)%NNODE
 
-    allocate (bound(i)%FACE_IEN(bound(i)%NFACE, NSHLBmax))
-    allocate (bound(i)%F2E(bound(i)%NFACE))
-    allocate (bound(i)%FACE_OR(bound(i)%NFACE))
-    allocate (bound(i)%NSHLB(bound(i)%NFACE))
-    do j = 1, bound(i)%NFACE
-      bound(i)%NSHLB(j) = NSHLBmax
-      if (fem_flag == 1) then
-        read (mfid, *) (bound(i)%FACE_IEN(j, k), k=1, NSHLBmax)
-      else
-        read (mfid, *) bound(i)%NSHLB(j), (bound(i)%FACE_IEN(j, k), k=1, NSHLBmax)
-      end if
+    allocate (mesh%bound(i)%FACE_IEN(mesh%bound(i)%NFACE, mesh%NSHLBmax))
+    allocate (mesh%bound(i)%F2E(mesh%bound(i)%NFACE))
+    allocate (mesh%bound(i)%FACE_OR(mesh%bound(i)%NFACE))
+    allocate (mesh%bound(i)%NSHLB(mesh%bound(i)%NFACE))
+    do j = 1, mesh%bound(i)%NFACE
+      mesh%bound(i)%NSHLB(j) = mesh%NSHLBmax
+      read (mfid, *) (mesh%bound(i)%FACE_IEN(j, k), k=1, mesh%NSHLBmax)
     end do
-    do j = 1, bound(i)%NFACE
-      read (mfid, *) bound(i)%F2E(j), bound(i)%FACE_OR(j)
+    do j = 1, mesh%bound(i)%NFACE
+      read (mfid, *) mesh%bound(i)%F2E(j), mesh%bound(i)%FACE_OR(j)
     end do
 
-    allocate (bound(i)%BNODES(bound(i)%NNODE))
-    do j = 1, bound(i)%NNODE
-      read (mfid, *) bound(i)%BNODES(j)
+    allocate (mesh%bound(i)%BNODES(mesh%bound(i)%NNODE))
+    do j = 1, mesh%bound(i)%NNODE
+      read (mfid, *) mesh%bound(i)%BNODES(j)
     end do
   end do
   ! read nurbs data
-  allocate (wg(NNODE))
+  ! allocate (wg(NNODE))
 
-  if (NPATCH > 0) then
-    iga = .true.
-    do i = 1, NNODE
-      read (mfid, *) wg(i)
-    end do
+  ! if (NPATCH > 0) then
+  !   iga = .true.
+  !   do i = 1, NNODE
+  !     read (mfid, *) wg(i)
+  !   end do
 
-    allocate (EPID(NELEM), EIJK(NELEM, NSD))
+  !   allocate (EPID(NELEM), EIJK(NELEM, NSD))
 
-    do i = 1, NELEM
-      read (mfid, *) EPID(i), (EIJK(i, j), j=1, NSD)
-    end do
-  else
-    iga = .false.
-    if(allocated(wg)) then
-      wg = 1.0d0
-    endif
-  end if
+  !   do i = 1, NELEM
+  !     read (mfid, *) EPID(i), (EIJK(i, j), j=1, NSD)
+  !   end do
+  ! else
+  !   iga = .false.
+  !   if(allocated(wg)) then
+  !     wg = 1.0d0
+  !   endif
+  ! end if
 
   ! read patches
   ! allocate (patch(NPATCH))
@@ -126,30 +123,30 @@ subroutine input(id)
   close (mfid)
 
   ! Init Flags
-  allocate (IPER(NNODE))
-  do i = 1, NNODE
-    IPER(i) = i
-  end do
+  ! allocate (IPER(NNODE))
+  ! do i = 1, NNODE
+  !   IPER(i) = i
+  ! end do
 
-  allocate (IBC(NNODE, 2*NSD + 2))
-  IBC = 0
+  ! allocate (IBC(NNODE, 2*NSD + 2))
+  ! IBC = 0
   ! allocate (IS_SOLID_NODE(NNODE))
   ! IS_SOLID_NODE_ASSIGNED = .false.
 
-  allocate (EL_TYP(NELEM))
-  EL_TYP = 0
+  ! allocate (EL_TYP(NELEM))
+  ! EL_TYP = 0
 
-  allocate (P_Flag(NNODE))
-  P_Flag = 1
+  ! allocate (P_Flag(NNODE))
+  ! P_Flag = 1
 
-  allocate (D_Flag(NNODE))
-  D_Flag = 0
+  ! allocate (D_Flag(NNODE))
+  ! D_Flag = 0
 
-  allocate (ELMNGAUSS(NELEM))
-  ELMNGAUSS = ELMNSHL
+  ! allocate (ELMNGAUSS(NELEM))
+  ! ELMNGAUSS = ELMNSHL
   do i = 1, NBOUND
-    allocate (bound(i)%NGAUSSB(bound(i)%NFACE))
-    bound(i)%NGAUSSB = bound(i)%NSHLB
+    allocate (mesh%bound(i)%NGAUSSB(mesh%bound(i)%NFACE))
+    mesh%bound(i)%NGAUSSB = mesh%bound(i)%NSHLB
 !     if(ismaster) write(*,*) i, bound(i)%NNODE
   end do
 
@@ -163,17 +160,17 @@ subroutine input(id)
 
   do i = 1, NBOUND
 
-    if (bound(i)%NNODE > 0) then
-      allocate (bound(i)%L2SNODE(bound(i)%NNODE))
-      do j = 1, bound(i)%NNODE
-        read (mfid, *) itmp1, bound(i)%L2SNODE(j)
+    if (mesh%bound(i)%NNODE > 0) then
+      allocate (mesh%bound(i)%L2SNODE(mesh%bound(i)%NNODE))
+      do j = 1, mesh%bound(i)%NNODE
+        read (mfid, *) itmp1, mesh%bound(i)%L2SNODE(j)
       end do
     end if
 
-    if (bound(i)%NFACE > 0) then
-      allocate (bound(i)%L2SELEM(bound(i)%NFACE))
+    if (mesh%bound(i)%NFACE > 0) then
+      allocate (mesh%bound(i)%L2SELEM(mesh%bound(i)%NFACE))
 
-      do j = 1, bound(i)%NFACE
+      do j = 1, mesh%bound(i)%NFACE
         ! read partitioned boundary element number and the corresponding
         ! shell mesh element number
 !        read(mfid,*) itmp1, bound(i)%L2SELEM(j)
