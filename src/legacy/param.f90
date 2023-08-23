@@ -464,6 +464,211 @@ subroutine getparam()
   Dtgl = 1.0d0/Delt
 
 end subroutine getparam
+!======================================================================
+! subroutine to read in the parameters defined in 'param.dat'
+!======================================================================
+subroutine getConfig(config)
+
+  ! use aAdjKeep
+  ! use commonvars
+  ! use commonpars
+  use class_def
+  use configuration
+  ! use mpi
+  implicit none
+
+  type(ConfigType), intent(inout) :: config
+
+  integer, parameter :: NRES = 4
+  integer :: inurbs, i, j, bb
+  integer :: NBOUND, NSD
+  integer :: fem_flag, use_vms
+  
+  integer :: NS_GMRES_itermax, LSC_GMRES_itermax, TEM_GMRES_itermax
+  integer :: NS_GMRES_itermin, LSC_GMRES_itermin, TEM_GMRES_itermin
+
+  real(8) :: NS_GMRES_tol, LSC_GMRES_tol, TEM_GMRES_tol
+  real(8) :: NS_GMRES_atol, LSC_GMRES_atol, TEM_GMRES_atol
+
+  real(8) :: NS_NL_Utol, NS_NL_Ptol, NS_NL_Uatol, NS_NL_Patol
+  real(8) :: LSC_NL_atol, LSC_NL_rtol, TEM_NL_atol, TEM_NL_rtol
+
+  character(len=30) :: fname(2), fnum(3)
+
+  ! Time stepping
+  call iread("Nstep", config%time_integral%Nstep)
+  call iread("ifq", config%time_integral%ifq)
+  call rread("Delt", config%time_integral%Delt)
+  call rread("rhoinf", config%time_integral%rhoinf)
+  ! Physics
+  call rread("DENS_AIR", config%property%rhoa)
+  call rread("DENS_WATER", config%property%rhow)
+  call rread("VISC_AIR", config%property%mua)
+  call rread("VISC_WATER", config%property%muw)
+  call rread("CP_AIR", config%property%cpa)
+  call rread("CP_WATER", config%property%cpw)
+  call rread("HK_AIR", config%property%kappaa)
+  call rread("HK_WATER", config%property%kappaw)
+  call rread("DENS_SOLID", config%property%rhos)
+  call rread("CP_SOLID", config%property%cps)
+  call rread("HK_SOLID", config%property%kappas)
+  call rread("T_SAT", config%property%Ts)
+  call rread("LATENT_HEAT", config%property%lh)
+  call rread("C_COND",config%property% c_cond)
+  call rread("C_EVAP", config%property%c_evap)
+  call rread("HTC_A", config%property%htca)
+  call rread("HTC_w", config%property%htcw)
+  call rread("TRM", config%property%Trm)
+
+
+  call iread("NSD", NSD)
+  allocate(config%property%gravvec(NSD))
+  config%property%gravvec(:) = (/0.0d0, 0.0d0, -9.81d0/)
+
+  config%iga = .false.
+  call iread("fem_flag", fem_flag)
+  config%fem_flag = fem_flag /= 0
+  config%use_hessian = .false.
+  config%calc_cfl = .true.
+
+  call iread("USE_VMS", USE_VMS)
+  config%vms%use_vms = USE_VMS /= 0
+  config%vms%use_taubar = .false.
+  config%vms%use_sliding_velocity = .false.
+
+  ! Navier-stokes solver
+  call rread("NS_kdc_w", config%vms%NS_kdc_w)
+  call rread("NS_kdc_a", config%vms%NS_kdc_a)
+  call rread("LSC_kdc", config%vms%LSC_kdc)
+  call rread("TEM_kdc", config%vms%TEM_kdc)
+  call rread("C_DMDOT", config%vms%C_DMDOT)
+
+  allocate(config%ksp%max_iter(NRES))
+  allocate(config%ksp%min_iter(NRES))
+  allocate(config%ksp%atol(NRES))
+  allocate(config%ksp%rtol(NRES))
+
+  call rread("NS_GMRES_rtol", NS_GMRES_tol)
+  call rread("NS_GMRES_atol", NS_GMRES_atol)
+  call iread("NS_GMRES_itermax", NS_GMRES_itermax)
+  call iread("NS_GMRES_itermin", NS_GMRES_itermin)
+
+  call rread("LSC_GMRES_atol", LSC_GMRES_atol)
+  call rread("LSC_GMRES_rtol", LSC_GMRES_tol)
+  call iread("LSC_GMRES_itermax", LSC_GMRES_itermax)
+  call iread("LSC_GMRES_itermin", LSC_GMRES_itermin)
+
+  call rread("TEM_GMRES_atol", TEM_GMRES_atol)
+  call rread("TEM_GMRES_rtol", TEM_GMRES_tol)
+  call iread("TEM_GMRES_itermax", TEM_GMRES_itermax)
+  call iread("TEM_GMRES_itermin", TEM_GMRES_itermin)
+
+  config%ksp%max_iter(:) = (/NS_GMRES_itermax, NS_GMRES_itermax, LSC_GMRES_itermax, TEM_GMRES_itermax/)
+  config%ksp%min_iter(:) = (/NS_GMRES_itermin, NS_GMRES_itermin, LSC_GMRES_itermin, TEM_GMRES_itermin/)
+  config%ksp%atol(:) = (/NS_GMRES_atol, NS_GMRES_atol, LSC_GMRES_atol, TEM_GMRES_atol/)
+  config%ksp%rtol(:) = (/NS_GMRES_tol, NS_GMRES_tol, LSC_GMRES_tol, TEM_GMRES_tol/)
+
+
+
+  call rread("NS_NL_Urtol", NS_NL_Utol)
+  call rread("NS_NL_Prtol", NS_NL_Ptol)
+  call rread("NS_NL_Uatol", NS_NL_Uatol)
+  call rread("NS_NL_Patol", NS_NL_Patol)
+  call iread("NS_NL_itermax", config%newton_raphson%max_iter)
+
+  call rread("LSC_NL_atol", LSC_NL_atol)
+  call rread("LSC_NL_rtol", LSC_NL_rtol)
+
+
+  call rread("TEM_NL_atol", TEM_NL_atol)
+  call rread("TEM_NL_rtol", TEM_NL_rtol)
+
+  allocate(config%newton_raphson%atol(NRES))
+  allocate(config%newton_raphson%rtol(NRES))
+
+  config%newton_raphson%min_iter = 1
+  config%newton_raphson%atol(:) = (/NS_NL_Uatol, NS_NL_Patol, LSC_NL_atol, TEM_NL_atol/)
+  config%newton_raphson%rtol(:) = (/NS_NL_Utol, NS_NL_Ptol, LSC_NL_rtol, TEM_NL_rtol/)
+
+
+end subroutine getConfig
+!======================================================================
+!
+!======================================================================
+
+subroutine getBC(bc)
+  use class_def
+  implicit none
+
+  type(DirichletBCData), intent(inout) :: bc
+  integer :: NBOUND, NSD
+  integer :: bb, aa, i, j
+  character(len=30) :: fname(2), fnum(3)
+
+  NBOUND = bc%NBOUND
+  NSD = bc%NSD
+
+  ! allocate (bc%BCugType(NBOUND, NSD), &
+  !           bc%BCugValu(NBOUND, NSD))
+  bc%BCugType = 0
+  do bb = 1, NBOUND
+    i = bb
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCugType'//trim(adjustl(fnum(1)))
+    call iread3(fname(1), bc%BCugType(i, 1:3))
+  end do
+
+
+  bc%BCugValu = 0.0d0
+  do bb = 1, NBOUND
+    ! i = bound(bb)%FACE_ID
+    i = bb
+    do j = 1, NSD
+      if (bc%BCugType(i, j) == 1) then
+        write (fnum(1), '(I4)') i
+        write (fnum(2), '(I4)') j
+        fname(1) = 'BCugValu('//trim(adjustl(fnum(1)))//',' &
+                   //trim(adjustl(fnum(2)))//')'
+        call rread(fname(1), bc%BCugValu(i, j))
+      end if
+    end do
+  end do
+
+  ! allocate (bc%BCphigType(NBOUND), bc%BCphigValu(NBOUND))
+  ! allocate (bc%BCTgType(NBOUND), bc%BCTgValu(NBOUND))
+  bc%BCphigType(:) = 0
+  bc%BCTgType(:) = 0
+  do bb = 1, NBOUND
+    i = bb
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCphigType'//trim(adjustl(fnum(1)))
+    call iread(fname(1), bc%BCphigType(i))
+  end do
+
+  do bb = 1, NBOUND
+    i = bb
+    if (bc%BCphigType(i) /= 1) cycle
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCphigValu'//trim(adjustl(fnum(1)))
+    call rread(fname(1), bc%BCphigValu(i))
+  end do
+
+  do bb = 1, NBOUND
+    i = bb
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCTgType'//trim(adjustl(fnum(1)))
+    call iread(fname(1), bc%BCTgType(i))
+  end do
+
+  do bb = 1, NBOUND
+    i = bb
+    if (bc%BCTgType(i) /= 1) cycle
+    write (fnum(1), '(I4)') i
+    fname(1) = 'BCTgValu'//trim(adjustl(fnum(1)))
+    call rread(fname(1), bc%BCTgValu(i))
+  end do
+
+end subroutine getBC
 
 !======================================================================
 !

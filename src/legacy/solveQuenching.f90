@@ -86,7 +86,7 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
     mat%LHSTem = 0.0d0
   endif
 
-  if (config%mpi%ismaster) then
+  if (ismaster) then
     call CPU_TIME(t1)
   endif
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF) > 0) then
@@ -120,12 +120,12 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
     endif
   end if
 
-  if (config%mpi%ismaster) then
+  if (ismaster) then
     call CPU_TIME(t2)
     write (*, *) "Total time assemble:", t2 - t1, "seconds"
   end if
 
-  if (config%mpi%numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
+  if (numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
       call commu(vec%RHSGp, mesh%NNODE, 1, 'in ')
       call commu(vec%RHSGu, mesh%NNODE, mesh%NSD, 'in ')
@@ -154,11 +154,11 @@ subroutine IntElmAss_NSVOF_Quenching_STAB(&
   ! use aAdjKeep
   ! use commonvars
   use commonpars
-  ! use mpi
+  use mpi
   use class_def
   use configuration
   implicit none
-  include 'mpif.h'
+  ! include 'mpif.h'
 
   type(ConfigType), intent(in) :: config
   type(MeshData), intent(in) :: mesh
@@ -238,7 +238,7 @@ subroutine IntElmAss_NSVOF_Quenching_STAB(&
   real(8) :: c_dmdot
 
   real(8) :: DetJ, DetJw
-  integer :: mpi_err
+  ! integer :: mpi_err
 
   NNODE = mesh%NNODE
   NSD = mesh%NSD
@@ -639,13 +639,13 @@ subroutine IntElmAss_NSVOF_Quenching_STAB(&
   ! write(*,*) "DEBUG, myid=", myid, config%calc_cfl
   if (config%calc_cfl) then
     ! Find largest CFL-number and output to screen
-    if (config%mpi%numnodes > 1) then
+    if (numnodes > 1) then
       call MPI_ALLReduce(cfl, gcfl, 1, MPI_DOUBLE_PRECISION, &
                          MPI_MAX, MPI_COMM_WORLD, mpi_err)
     else
       gcfl = cfl
     end if
-    if (config%mpi%ismaster) then
+    if (ismaster) then
       write (*, '(40("-"))')
       write (*, *) "    CFL = ", gcfl
     end if

@@ -4,13 +4,14 @@
 subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec, mat)
 
   ! use aAdjKeep
-  ! use mpi
+  use mpi
   ! use commonvars
   use commonpars
   use class_def
   use configuration
   implicit none
-  include 'mpif.h'
+  ! include 'mpif.h'
+
 
   type(ConfigType), intent(in) :: config
   integer, intent(in) :: istep
@@ -23,7 +24,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   type(LHSData), intent(inout) :: mat
 
 
-  integer :: mpi_err
+  ! integer :: mpi_err
   integer :: inewt, i, NL_max
   ! real(8) :: momres0, conres0, convres0, meshres0, lsres0
   real(8) :: residual0(4), residual(4)
@@ -103,7 +104,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
     !                    ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
     !                    inewt)
 
-    if (config%mpi%ismaster) then
+    if (ismaster) then
       call CPU_TIME(t1)
     end if
     sol(:, 1:5) = 0d0
@@ -116,7 +117,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                         sol(:, 5), mat%lhsLS, &
                         mat%lhsLSu, mat%lhsUls, mat%lhsPls, vec%rhsGls)
 
-    if (config%mpi%ismaster) then
+    if (ismaster) then
       call CPU_TIME(t2)
       write (*, *) "Total time solve NSVOF GMRES:", t2 - t1, "seconds"
     end if
@@ -171,7 +172,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                           inewt)
 
       !write(*,*) "Residual T = ", residual0(4), residual(4)
-      if (config%mpi%ismaster) then
+      if (ismaster) then
         call CPU_TIME(t1)
       end if
 
@@ -179,7 +180,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
       call SparseGMRES_tem(mat%LHStem, config%ksp%rtol(4), sp%indptr, sp%indices, &
                            vec%rhsgtem, sol(:, 6), config%ksp%max_iter(4), config%ksp%min_iter(4), &
                            mesh%NNODE, mesh%maxNSHL, sp%nnz, mesh%NSD)
-      if (config%mpi%ismaster) then
+      if (ismaster) then
         call CPU_TIME(t2)
         write (*, *) "Total time solve TEM GMRES:", t2 - t1, "seconds"
       end if
@@ -207,10 +208,10 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                         ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                         inewt)
 
-    if(config%mpi%ismaster) write (*, *) "Convergence:", converged
+    if(ismaster) write (*, *) "Convergence:", converged
     if (size(converged) == sum(converged)) exit
 
-    if (config%mpi%numnodes > 1) call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
+    if (numnodes > 1) call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
   end do
 
 end subroutine solmultiphasethermofluid_stag

@@ -671,6 +671,8 @@ module configuration
     real(8) :: cpa, cpw, cps
     real(8) :: kappaa, kappaw, kappas
     real(8) :: Ts, lh, c_cond, c_evap
+    real(8) :: htca, htcw, Trm
+    real(8), allocatable :: gravvec(:)
   end type PropertyType
 
   type BCConfigType
@@ -698,11 +700,11 @@ module configuration
     logical :: calc_cfl
     type(TimeIntegralConfigType) :: time_integral
     type(PropertyType) :: property
-    type(BCConfigType) :: bc
+    ! type(BCConfigType) :: bc
     type(VMSConfigType) :: vms
     type(KSPConfigType) :: ksp
     type(NewtonRaphsonConfigType) :: newton_raphson
-    type(MPIConfigType) :: mpi
+    ! type(MPIConfigType) :: mpi
   end type ConfigType
 
   contains
@@ -744,20 +746,20 @@ module configuration
     config%property%c_cond = c_cond
     config%property%c_evap = c_evap
 
-    config%bc%NBOUND = NBOUND
-    config%bc%NSD = NSD
-    allocate (config%bc%BCugType(config%bc%NBOUND, config%bc%NSD), &
-              config%bc%BCugValu(config%bc%NBOUND, config%bc%NSD), &
-              config%bc%BCphigType(config%bc%NBOUND), &
-              config%bc%BCphigValu(config%bc%NBOUND), &
-              config%bc%BCTgType(config%bc%NBOUND), &
-              config%bc%BCTgValu(config%bc%NBOUND))
-    config%bc%BCugType = BCugType
-    config%bc%BCugValu = BCugValu
-    config%bc%BCphigType = BCphigType
-    config%bc%BCphigValu = BCphigValu
-    config%bc%BCTgType = BCTgType
-    config%bc%BCTgValu = BCTgValu
+    ! config%bc%NBOUND = NBOUND
+    ! config%bc%NSD = NSD
+    ! allocate (config%bc%BCugType(config%bc%NBOUND, config%bc%NSD), &
+    !           config%bc%BCugValu(config%bc%NBOUND, config%bc%NSD), &
+    !           config%bc%BCphigType(config%bc%NBOUND), &
+    !           config%bc%BCphigValu(config%bc%NBOUND), &
+    !           config%bc%BCTgType(config%bc%NBOUND), &
+    !           config%bc%BCTgValu(config%bc%NBOUND))
+    ! config%bc%BCugType = BCugType
+    ! config%bc%BCugValu = BCugValu
+    ! config%bc%BCphigType = BCphigType
+    ! config%bc%BCphigValu = BCphigValu
+    ! config%bc%BCTgType = BCTgType
+    ! config%bc%BCTgValu = BCTgValu
 
     config%vms%use_vms = USE_VMS /= 0
     config%vms%use_taubar = .false.
@@ -788,9 +790,9 @@ module configuration
     config%newton_raphson%atol(:) = (/NS_NL_Uatol, NS_NL_Patol, LSC_NL_atol, LSC_NL_atol/)
     config%newton_raphson%rtol(:) = (/NS_NL_Utol, NS_NL_Ptol, LSC_NL_tol, LSC_NL_tol/)
 
-    call MPI_Comm_size(MPI_COMM_WORLD, config%mpi%numnodes, mpi_err)
-    call MPI_Comm_rank(MPI_COMM_WORLD, config%mpi%myid, mpi_err)
-    config%mpi%ismaster = config%mpi%myid == 0
+    ! call MPI_Comm_size(MPI_COMM_WORLD, config%mpi%numnodes, mpi_err)
+    ! call MPI_Comm_rank(MPI_COMM_WORLD, config%mpi%myid, mpi_err)
+    ! config%mpi%ismaster = config%mpi%myid == 0
   end subroutine init_config
 
   subroutine finalize_config(config)
@@ -800,13 +802,14 @@ module configuration
     implicit none
     type(ConfigType), intent(inout) :: config
 
-    deallocate(config%bc%BCugType)
-    deallocate(config%bc%BCugValu)
-    deallocate(config%bc%BCphigType)
-    deallocate(config%bc%BCphigValu)
-    deallocate(config%bc%BCTgType)
-    deallocate(config%bc%BCTgValu)
+    ! deallocate(config%bc%BCugType)
+    ! deallocate(config%bc%BCugValu)
+    ! deallocate(config%bc%BCphigType)
+    ! deallocate(config%bc%BCphigValu)
+    ! deallocate(config%bc%BCTgType)
+    ! deallocate(config%bc%BCTgValu)
 
+    deallocate(config%property%gravvec)
     deallocate(config%ksp%max_iter)
     deallocate(config%ksp%min_iter)
     deallocate(config%ksp%atol)
