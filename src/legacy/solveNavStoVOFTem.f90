@@ -208,14 +208,14 @@ subroutine assembleNavStoVOFTem(assemble_tensor_flag, assemble_field_flag)
 
   if (numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-      call commu(RHSGp, 1, 'in ')
-      call commu(RHSGu, NSD, 'in ')
+      call commu(RHSGp, NNODE, 1, 'in ')
+      call commu(RHSGu, NNODE, NSD, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_VOF) > 0) then
-      call commu(RHSGls, 1, 'in ')
+      call commu(RHSGls, NNODE, 1, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
-      call commu(RHSGTem, 1, 'in ')
+      call commu(RHSGTem, NNODE, 1, 'in ')
     endif
   end if
 

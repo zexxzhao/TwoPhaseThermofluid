@@ -167,7 +167,7 @@ subroutine setBCs_NSVOF(config, mesh, bc, sol)
 
   type(ConfigType), intent(in) :: config
   type(MeshData), intent(in) :: mesh
-  type(DirichletBCData), intent(out) :: bc
+  type(DirichletBCData), intent(inout) :: bc
   type(FieldData), intent(inout) :: sol
   integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
 
@@ -223,15 +223,6 @@ subroutine setBCs_NSVOF(config, mesh, bc, sol)
                        + (gami - 1.0d0)*sol%acgold(k, d))/gami
 
         end do
-
-      else if (bc%BCugType(mesh%bound(b)%FACE_ID, d) == 3) then
-        do j = 1, mesh%bound(b)%NNODE
-          k = mesh%bound(b)%BNODES(j)
-          bc%IBC(k, d) = 1
-          sol%ug(k, d) = sol%ugm(k, d)
-          sol%acg(k, d) = ((sol%ug(k, d) - sol%ugold(k, d))*Dtgl &
-                       + (gami - 1.0d0)*sol%acgold(k, d))/gami
-        end do
       end if
     end do
 
@@ -261,7 +252,7 @@ subroutine setBCs_Tem(config, mesh, bc, sol)
 
   type(ConfigType), intent(in) :: config
   type(MeshData), intent(in) :: mesh
-  type(DirichletBCData), intent(out) :: bc
+  type(DirichletBCData), intent(inout) :: bc
   type(FieldData), intent(inout) :: sol
   integer :: b, i, j, k, n, d, dir, ptmp, iface, global_index
 

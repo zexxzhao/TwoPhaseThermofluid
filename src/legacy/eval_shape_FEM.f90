@@ -64,27 +64,30 @@ end subroutine eval_shape_fem
 !======================================================================
 !
 !======================================================================
-subroutine eval_faceshape_tet(nshl, bgp, igp, for, xl, dl, shlu, &
-                              shgradgu, dxidx, lnor)
-  use aAdjKeep
-  use commonvars
+subroutine eval_faceshape_tet(nsd, nshl, bgp, igp, for, xl, dl, shlu, &
+                              shgradgu, dxidx, lnor, DetJb)
+  ! use aAdjKeep
+  ! use commonvars
   use mpi
 
   implicit none
 
-  integer, intent(in) :: nshl
+  integer, intent(in) :: nsd, nshl
   real(8), intent(in) :: bgp(2), igp(NSD)
 
+  real(8), intent(out) :: DetJb
   real(8) :: dl(NSHL, NSD), xl(NSHL, NSD)
   real(8) :: shlu(NSHL), shgradgu(NSHL, NSD), dxidx(NSD, NSD), lnor(NSD)
   integer :: for
 
+  integer, parameter :: NSHLbmax = 3
   real(8) :: bshlu(NSHLbmax), bshgradlu(NSHLbmax, 2)
   real(8) :: bxdl(NSHLbmax, NSD)
   real(8) :: dlxdxi(NSD, 2)
   real(8) :: diff(NSD)
   real(8) :: Gij(NSD, NSD), Ginv(NSD, NSD)
   integer :: i, dd
+  real(8) :: detj
 
   if (for == 1) then
     bxdl(1, :) = xl(2, :) + dl(2, :)
@@ -138,8 +141,8 @@ subroutine eval_faceshape_tet(nshl, bgp, igp, for, xl, dl, shlu, &
 !      igp(i) =  sum(dxidx(i,:)*diff)
 !   end do
 
-  call eval_SHAPE_fem(nshl, igp, xl, dl, shlu, shgradgu, dxidx, &
-                      Gij, Ginv)
+  call eval_SHAPE_fem(nsd, nshl, igp, xl, dl, shlu, shgradgu, dxidx, &
+                      Gij, Ginv, DetJ)
 
 end subroutine eval_faceshape_tet
 
@@ -318,27 +321,31 @@ end subroutine artri
 !======================================================================
 !
 !======================================================================
-subroutine eval_faceshape_pri(nshl, bgp, igp, for, xl, dl, shlu, shgradgu, &
-                              dxidx, lnor)
-  use aAdjKeep
-  use commonvars
+subroutine eval_faceshape_pri(nsd, nshl, bgp, igp, for, xl, dl, shlu, shgradgu, &
+                              dxidx, lnor, detjb)
+  ! use aAdjKeep
+  ! use commonvars
   use mpi
 
   implicit none
 
-  integer, intent(in) :: nshl
+  integer, intent(in) :: nsd, nshl
   real(8), intent(in) :: bgp(2), igp(NSD)
+
+  real(8), intent(out) :: detjb
 
   real(8) :: dl(NSHL, NSD), xl(NSHL, NSD)
   real(8) :: shlu(NSHL), shgradgu(NSHL, NSD), dxidx(NSD, NSD), lnor(NSD)
   integer :: for
 
+  integer, parameter :: NSHLbmax = 4
   real(8) :: bshlu(NSHLbmax), bshgradlu(NSHLbmax, 2)
   real(8) :: bxdl(NSHLbmax, NSD)
   real(8) :: dlxdxi(NSD, 2)
   real(8) :: diff(NSD)
   real(8) :: Gij(NSD, NSD), Ginv(NSD, NSD)
   integer :: i, j, dd
+  real(8) :: detj
 
 !!!   igp = 0d0
   if (for == 1) then
@@ -395,7 +402,7 @@ subroutine eval_faceshape_pri(nshl, bgp, igp, for, xl, dl, shlu, shgradgu, &
 !     !! 4th constraint!!!
 !     igp(3) = max(-1d0,min(igp(3),1d0))
 !
-  call eval_SHAPE_fem(nshl, igp, xl, dl, shlu, shgradgu, dxidx, Gij, Ginv)
+  call eval_SHAPE_fem(nsd, nshl, igp, xl, dl, shlu, shgradgu, dxidx, Gij, Ginv, detj)
 !
 !     do i = 1, NSD
 !       diff(i) = sum(bxdl(:,i)*bshlu)-sum((xl(:,i) + dl(:,i))*shlu)

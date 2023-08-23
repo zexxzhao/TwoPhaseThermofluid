@@ -19,18 +19,19 @@
 ! ilwork array appear below.
 !======================================================================
 
-  subroutine commu(global, n, code)
+  subroutine commu(global, NNODE, n, code)
 
     use mpi
-    use commonvars
+    ! use commonvars
 
     implicit none
 
+    integer, parameter :: NSD = 3
     character(len=3), intent(in) :: code
-
+    integer, intent(in) :: NNODE, n
     integer :: stat(MPI_STATUS_SIZE, 2*numnodes), req(2*numnodes)
 !!!  integer stat(MPI_STATUS_SIZE), req(2*numnodes)
-    integer :: idl, jdl, itask, n, m, is, itemp, idof, kdof, j
+    integer :: idl, jdl, itask, m, is, itemp, idof, kdof, j
     integer :: lenseg
 
     real(8) :: global(NNODE, n), rtemp(maxfrontu*n, numnodes)
@@ -271,12 +272,12 @@
 ! This subroutine is responsible for interprocessor communication.
 ! it sets the slave dofs to zero vectors.
 !======================================================================
-  subroutine zeroslaves(global, n)
+  subroutine zeroslaves(global, nnode, n)
     use mpi
-    use commonvars
+    ! use commonvars
     implicit none
 
-    integer, intent(in)    :: n
+    integer, intent(in)    :: nnode, n
     real(8), intent(inout) :: global(NNODE, n)
 
     integer :: idl, jdl, itask, m, is, itemp, idof, kdof, j
@@ -327,102 +328,102 @@
 ! are processors with which it must communicate. Details of the
 ! ilwork array appear below.
 !======================================================================
-  subroutine icommu(global)
-
-    use mpi
-    use commonvars
-
-    implicit none
-
-    integer :: stat(MPI_STATUS_SIZE, 2*numnodes), req(2*numnodes)
-    integer :: idl, jdl, itask, n, m, is, itemp, idof, kdof, j
-    integer :: lenseg
-    integer, dimension(NNODE) :: global, rtemp
-
-    n = 1
-    kdof = 5
-
-    numtask = ilworku(1)
-
-    itkbeg = 1
-    m = 0
-    idl = 0
-
-    do itask = 1, numtask
-      m = m + 1
-      itag = ilworku(itkbeg + 1)
-      iacc = ilworku(itkbeg + 2)
-      iother = ilworku(itkbeg + 3)
-      numseg = ilworku(itkbeg + 4)
-
-      ! when there's no communication,
-      ! there should be no isgbeg..
-      if (iother < 0) then
-        isgbeg = 1
-        iother = MPI_PROC_NULL
-      else
-        isgbeg = ilworku(itkbeg + 5)
-      end if
-      rtemp = 0
-      if (iacc == 0) then
-
-        call MPI_ISEND(global(isgbeg), 1, &
-                       sevsegtypeu(itask, kdof), &
-                       iother, itag, MPI_COMM_WORLD, req(m), &
-                       mpi_err)
-
-      else
-
-        call MPI_IRECV(rtemp(isgbeg), 1, &
-                       sevsegtypeu(itask, kdof), &
-                       iother, itag, MPI_COMM_WORLD, req(m), &
-                       mpi_err)
-
-      end if
-
-      call MPI_WAIT(req(m), status, mpi_err)
-
-      global = global + rtemp
-
-      itkbeg = itkbeg + 4 + 2*numseg
-    end do
-
-    itkbeg = 1
-    m = 0
-    idl = 0
-
-    do itask = 1, numtask
-      m = m + 1
-      itag = ilworku(itkbeg + 1)
-      iacc = ilworku(itkbeg + 2)
-      iother = ilworku(itkbeg + 3)
-      numseg = ilworku(itkbeg + 4)
-
-      ! when there's no communication,
-      ! there should be no isgbeg..
-      if (iother < 0) then
-        isgbeg = 1
-        iother = MPI_PROC_NULL
-      else
-        isgbeg = ilworku(itkbeg + 5)
-      end if
-
-      if (iacc == 0) then
-
-        call MPI_IRECV(global(isgbeg), 1, &
-                       sevsegtypeu(itask, kdof), &
-                       iother, itag, MPI_COMM_WORLD, req(m), &
-                       mpi_err)
-      else
-        call MPI_ISEND(global(isgbeg), 1, &
-                       sevsegtypeu(itask, kdof), &
-                       iother, itag, MPI_COMM_WORLD, req(m), &
-                       mpi_err)
-      end if
-      call MPI_WAIT(req(m), status, mpi_err)
-
-      itkbeg = itkbeg + 4 + 2*numseg
-
-    end do          ! end tasks loop
-
-  end subroutine icommu
+!   subroutine icommu(global)
+! 
+!     use mpi
+!     use commonvars
+! 
+!     implicit none
+! 
+!     integer :: stat(MPI_STATUS_SIZE, 2*numnodes), req(2*numnodes)
+!     integer :: idl, jdl, itask, n, m, is, itemp, idof, kdof, j
+!     integer :: lenseg
+!     integer, dimension(NNODE) :: global, rtemp
+! 
+!     n = 1
+!     kdof = 5
+! 
+!     numtask = ilworku(1)
+! 
+!     itkbeg = 1
+!     m = 0
+!     idl = 0
+! 
+!     do itask = 1, numtask
+!       m = m + 1
+!       itag = ilworku(itkbeg + 1)
+!       iacc = ilworku(itkbeg + 2)
+!       iother = ilworku(itkbeg + 3)
+!       numseg = ilworku(itkbeg + 4)
+! 
+!       ! when there's no communication,
+!       ! there should be no isgbeg..
+!       if (iother < 0) then
+!         isgbeg = 1
+!         iother = MPI_PROC_NULL
+!       else
+!         isgbeg = ilworku(itkbeg + 5)
+!       end if
+!       rtemp = 0
+!       if (iacc == 0) then
+! 
+!         call MPI_ISEND(global(isgbeg), 1, &
+!                        sevsegtypeu(itask, kdof), &
+!                        iother, itag, MPI_COMM_WORLD, req(m), &
+!                        mpi_err)
+! 
+!       else
+! 
+!         call MPI_IRECV(rtemp(isgbeg), 1, &
+!                        sevsegtypeu(itask, kdof), &
+!                        iother, itag, MPI_COMM_WORLD, req(m), &
+!                        mpi_err)
+! 
+!       end if
+! 
+!       call MPI_WAIT(req(m), status, mpi_err)
+! 
+!       global = global + rtemp
+! 
+!       itkbeg = itkbeg + 4 + 2*numseg
+!     end do
+! 
+!     itkbeg = 1
+!     m = 0
+!     idl = 0
+! 
+!     do itask = 1, numtask
+!       m = m + 1
+!       itag = ilworku(itkbeg + 1)
+!       iacc = ilworku(itkbeg + 2)
+!       iother = ilworku(itkbeg + 3)
+!       numseg = ilworku(itkbeg + 4)
+! 
+!       ! when there's no communication,
+!       ! there should be no isgbeg..
+!       if (iother < 0) then
+!         isgbeg = 1
+!         iother = MPI_PROC_NULL
+!       else
+!         isgbeg = ilworku(itkbeg + 5)
+!       end if
+! 
+!       if (iacc == 0) then
+! 
+!         call MPI_IRECV(global(isgbeg), 1, &
+!                        sevsegtypeu(itask, kdof), &
+!                        iother, itag, MPI_COMM_WORLD, req(m), &
+!                        mpi_err)
+!       else
+!         call MPI_ISEND(global(isgbeg), 1, &
+!                        sevsegtypeu(itask, kdof), &
+!                        iother, itag, MPI_COMM_WORLD, req(m), &
+!                        mpi_err)
+!       end if
+!       call MPI_WAIT(req(m), status, mpi_err)
+! 
+!       itkbeg = itkbeg + 4 + 2*numseg
+! 
+!     end do          ! end tasks loop
+! 
+!   end subroutine icommu

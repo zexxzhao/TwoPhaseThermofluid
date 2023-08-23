@@ -1,19 +1,26 @@
 !======================================================================
 !
 !======================================================================
-subroutine ctypes
+subroutine ctypes(mesh)
 
   use mpi
-  use commonvars
+  use class_def
+  ! use commonvars
 
   implicit none
+
+  type(MeshData), intent(in) :: mesh
 
   integer :: sizeofdouble, is, itask, workf, kdof
   integer :: isbegin(maxseg), lenseg(maxseg), ioffset(maxseg)
   character(len=30) :: fname
   character(len=10) :: cname
+  integer :: NSD, NNODE
 
+  NNODE = mesh%NNODE
+  NSD = mesh%NSD
   !-- READ LOCAL WORK FOR U AND P --------------------
+
 
   workf = 17
   fname = trim('lwork'//cname(myid + 1))//'.dat'

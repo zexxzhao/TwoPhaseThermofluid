@@ -45,22 +45,22 @@ end subroutine eval_shape
 !======================================================================
 ! subroutine to evaluate shape or basis functions for surface
 !======================================================================
-subroutine eval_faceshape(nshl, iel, gp, mgp, faceor, xl, dl, wl, shlu, &
-                          shgradgu, dxidx, Gij, Ginv, nor)
-  use aAdjKeep
-  use commonvars
+subroutine eval_faceshape(nsd, nshl, iel, gp, mgp, faceor, xl, dl, wl, shlu, &
+                          shgradgu, dxidx, Gij, Ginv, nor, DetJb)
+  ! use aAdjKeep
+  ! use commonvars
   implicit none
 
-  integer, intent(in) :: nshl
+  integer, intent(in) :: nsd, nshl
 
   integer, intent(in)  :: iel
   real(8), intent(in)  :: gp(2), mgp(3), xl(NSHL, NSD), dl(NSHL, NSD), wl(NSHL)
   real(8), intent(out) :: shlu(NSHL), shgradgu(NSHL, NSD), &
                           dxidx(NSD, NSD), nor(NSD), Gij(NSD, NSD), &
-                          Ginv(NSD, NSD)
+                          Ginv(NSD, NSD), DetJb
   integer :: pn, ni, nj, nk, faceor
 
-  if (iga) then
+  if (.false.) then
     ! pn = EPID(iel)
     ! ni = EIJK(iel, 1)
     ! nj = EIJK(iel, 2)
@@ -71,12 +71,12 @@ subroutine eval_faceshape(nshl, iel, gp, mgp, faceor, xl, dl, wl, shlu, &
 
   else
     if (nshl == 4) then
-      call eval_faceshape_tet(nshl, gp, mgp, faceor, xl, dl, shlu, shgradgu, &
-                              dxidx, nor)
+      call eval_faceshape_tet(nsd, nshl, gp, mgp, faceor, xl, dl, shlu, shgradgu, &
+                              dxidx, nor, DetJb)
 
     else if (nshl == 6) then
-      call eval_faceshape_pri(nshl, gp, mgp, faceor, xl, dl, shlu, shgradgu, &
-                              dxidx, nor)
+      call eval_faceshape_pri(nsd, nshl, gp, mgp, faceor, xl, dl, shlu, shgradgu, &
+                              dxidx, nor, DetJb)
     end if
   end if
 

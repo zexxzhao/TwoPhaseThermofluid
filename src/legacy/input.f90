@@ -14,7 +14,7 @@ subroutine input(id, mesh)
   character(len=30) :: fname, iname
   character(len=10) :: cname
 
-  integer :: mfid, i, j, k, itmp1, itmp2, itmp3, nshl, counter
+  integer :: mfid, i, j, k, itmp1, itmp2, itmp3, counter
   integer :: NSD, NNODE, NSHLmax, NELEM, NBOUND, NPATCH
 
   counter = 1
@@ -142,8 +142,8 @@ subroutine input(id, mesh)
   ! allocate (D_Flag(NNODE))
   ! D_Flag = 0
 
-  ! allocate (ELMNGAUSS(NELEM))
-  ! ELMNGAUSS = ELMNSHL
+  allocate (mesh%ELMNGAUSS(NELEM))
+  mesh%ELMNGAUSS(:) = mesh%ELMNSHL(:)
   do i = 1, NBOUND
     allocate (mesh%bound(i)%NGAUSSB(mesh%bound(i)%NFACE))
     mesh%bound(i)%NGAUSSB = mesh%bound(i)%NSHLB

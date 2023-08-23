@@ -16,7 +16,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   integer, intent(in) :: istep
   type(MeshData), intent(in) :: mesh
   type(SparsityPattern), intent(in) :: sp
-  type(DirichletBCData), intent(out) :: bc
+  type(DirichletBCData), intent(inout) :: bc
 
   type(FieldData), intent(inout) :: field
   type(RHSData), intent(inout) :: vec
@@ -56,9 +56,9 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   residual0(:) = 0d0
   converged(:) = 0
 
-  bc%IBC(:, :) = 0
-  call setBCs_NSVOF(config, mesh, bc, field)
-  call setBCs_Tem(config, mesh, bc, field)
+  !bc%IBC(:, :) = 0
+  !call setBCs_NSVOF(config, mesh, bc, field)
+  !call setBCs_Tem(config, mesh, bc, field)
 
   !call assembleNavStoVOFTem(ASSEMBLE_TENSOR_VEC, &
   !                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
@@ -107,7 +107,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
       call CPU_TIME(t1)
     end if
     sol(:, 1:5) = 0d0
-    call SparseGMRES_up(sp%indptr, sp%index, &
+    call SparseGMRES_up(sp%indptr, sp%indices, &
                         vec%rhsGu, vec%rhsGp, sol(:, 1:3), sol(:, 4), &
                         mat%lhsK11, mat%lhsG, mat%lhsD1, mat%lhsM, sp%nnz, &
                         config%newton_raphson%rtol(1), config%ksp%max_iter(1), &
@@ -160,7 +160,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
       call assembleQuenching(ASSEMBLE_TENSOR_MAT + ASSEMBLE_TENSOR_VEC, &
                              ASSEMBLE_FIELD_TEM, &
                              config, mesh, sp, bc, field, vec, mat)
-      call calculate_residual(residual0, &
+      call calculate_residual(residual, &
                               vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &
                               mesh%NNODE, mesh%NSD)
 
@@ -176,7 +176,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
       end if
 
       sol(:, 6) = 0d0
-      call SparseGMRES_tem(mat%LHStem, config%ksp%rtol(4), sp%indptr, sp%index, &
+      call SparseGMRES_tem(mat%LHStem, config%ksp%rtol(4), sp%indptr, sp%indices, &
                            vec%rhsgtem, sol(:, 6), config%ksp%max_iter(4), config%ksp%min_iter(4), &
                            mesh%NNODE, mesh%maxNSHL, sp%nnz, mesh%NSD)
       if (config%mpi%ismaster) then
@@ -197,7 +197,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                            config, mesh, sp, bc, field, vec, mat)
 
-    call calculate_residual(residual0, &
+    call calculate_residual(residual, &
                           vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &
                           mesh%NNODE, mesh%NSD)
 

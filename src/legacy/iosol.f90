@@ -128,7 +128,7 @@ subroutine readSol(Rstep, mesh, sol, time)
 
   type(MeshData), intent(in) :: mesh
   integer, intent(inout) :: Rstep
-  type(FieldData), intent(out) :: sol
+  type(FieldData), intent(inout) :: sol
   real(8), intent(out) :: time
 
   integer :: solf, i, j, n, ierr
@@ -293,7 +293,6 @@ subroutine generateIC(mesh, sol)
     end do
   enddo
 
-  ! call commu(ugold, 3, "out")
 
   !call getinflow(0,0)
   !call setBCs_CFD_init1(0)

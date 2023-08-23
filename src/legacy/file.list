@@ -14,7 +14,7 @@ F90SRCFILES =\
   e3int.f90\
   eval_shape.f90\
   eval_shape_FEM.f90\
-  FaceAssembly_weak.f90\
+  FaceAssembly.f90\
   FillSparseMat.f90\
   genGP_GW.f90\
   genSparStruc.f90\

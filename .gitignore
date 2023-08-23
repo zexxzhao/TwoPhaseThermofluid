@@ -1,4 +1,5 @@
 # Configuration
+.vscode/
 make.config
 
 # Prerequisites

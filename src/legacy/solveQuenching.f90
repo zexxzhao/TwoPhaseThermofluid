@@ -5,14 +5,14 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
                              config, mesh, sp, bc, field, &
                              vec, mat)
   ! use aAdjKeep
-  ! use mpi
+  use mpi
   ! use commonvars
   use commonpars
   use class_def
   use configuration
 
   implicit none
-  include 'mpif.h'
+  ! include 'mpif.h'
 
   integer, intent(in) :: assemble_tensor_flag ! assembe Jacobian mat or vec
   integer, intent(in) :: assemble_field_flag ! assemble NS + LS/VOF + Tem
@@ -127,14 +127,14 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
 
   if (config%mpi%numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-      call commu(vec%RHSGp, 1, 'in ')
-      call commu(vec%RHSGu, mesh%NSD, 'in ')
+      call commu(vec%RHSGp, mesh%NNODE, 1, 'in ')
+      call commu(vec%RHSGu, mesh%NNODE, mesh%NSD, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_VOF) > 0) then
-      call commu(vec%RHSGls, 1, 'in ')
+      call commu(vec%RHSGls, mesh%NNODE, 1, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
-      call commu(vec%RHSGTem, 1, 'in ')
+      call commu(vec%RHSGTem, mesh%NNODE, 1, 'in ')
     endif
   end if
 
@@ -592,14 +592,20 @@ subroutine IntElmAss_NSVOF_Quenching_STAB(&
     end do
 
     ! Apply Dirichlet BCs
-    call BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, &
-                  xMebe, Rhsu, Rhsp, &
-                  xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
+    call apply_bc(&
+      mesh%nsd, nshl, mesh%ien(iel, :), bc, &
+      xKebe11, xGebe, xDebe1, xMebe, &
+      Rhsu, Rhsp, &
+      xLSebe, xLSUebe, xULSebe, xPLSebe, &
+      Rhsphi)
+    ! call BCLhs_3D(nshl, iel, xKebe11, xGebe, xDebe1, &
+    !               xMebe, Rhsu, Rhsp, &
+    !               xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
     !    call MPI_barrier(MPI_COMM_WORLD, mpi_err)
     !if(ismaster) write(*,*) "Evaluate BC", NSHL
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
       call FillSparseMat_3D(mesh%NNODE, mesh%NSD, &
-                            sp%nnz, sp%index, sp%indptr, &
+                            sp%nnz, sp%indices, sp%indptr, &
                             nshl, mesh%ien(iel, :), &
                             xKebe11, xGebe, xDebe1, xMebe, &
                             xLSebe, xLSUebe, xULSebe, xPLSebe, &
@@ -977,10 +983,12 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
     end do
 
     ! Apply Dirichlet BCs
-    call BCLHS_tem(nshl, iel, xTebe, RHSTem)
+    call BCLHS_tem(nshl, mesh%ien(iel, :), bc, xTebe, RHSTem)
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
       ! Assemble global LHS Matrix
-      call FillSparseMat_tem(nshl, iel, xTebe)
+      call FillSparseMat_tem(mesh%NNODE, mesh%NSD, &
+                             sp%nnz, sp%indices, sp%indptr, &
+                             nshl, mesh%ien(iel, :), xTebe, mat%LHStem)
     end if
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       ! Assemble load RHS vector

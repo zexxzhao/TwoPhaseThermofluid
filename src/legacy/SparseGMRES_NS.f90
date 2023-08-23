@@ -69,15 +69,15 @@ subroutine SparseGMRES_up(col, row, &
 
   ! communicate the block-diagonal ! LGGL
   if (numnodes .gt. 1) then
-    call commu(lhsKBdiagu, NSD*NSD, 'in ')
-    call commu(lhsMdiag, 1, 'in ')
-    call commu(lhsLSdiag, 1, 'in ')
+    call commu(lhsKBdiagu, NNODZu, NSD*NSD, 'in ')
+    call commu(lhsMdiag, NNODZu, 1, 'in ')
+    call commu(lhsLSdiag, NNODZu, 1, 'in ')
 
 !!!    call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
-    call commu(lhsKBdiagu, NSD*NSD, 'out')
-    call commu(lhsMdiag, 1, 'out')
-    call commu(lhsLSdiag, 1, 'out ')
+    call commu(lhsKBdiagu, NNODZu, NSD*NSD, 'out')
+    call commu(lhsMdiag, NNODZu, 1, 'out')
+    call commu(lhsLSdiag, NNODZu, 1, 'out ')
   end if
 
   ! invert block-diagonal: momentum
@@ -208,6 +208,7 @@ subroutine SparseGMRES_up(col, row, &
   uBrgp(:, 1) = uBrgp(:, 1)/unorm
   uBrgls(:, 1) = uBrgls(:, 1)/unorm
 
+  ! write(*,*) "commu==", NNODZu, NSD, 'out' 
   ! loop through GMRES iterations
   do iK = 1, Kspaceu
 
@@ -221,9 +222,9 @@ subroutine SparseGMRES_up(col, row, &
     !----------------------------------------------------------------
     ! Periodicity (Slave = Master) - GL
     if (numnodes > 1) then
-      call commu(temp1u, NSD, 'out')
-      call commu(temp1p, 1, 'out')
-      call commu(temp1ls, 1, 'out')
+      call commu(temp1u, NNODZu, NSD, 'out')
+      call commu(temp1p, NNODZu, 1, 'out')
+      call commu(temp1ls, NNODZu, 1, 'out')
     end if
 
     ! Product
@@ -235,9 +236,9 @@ subroutine SparseGMRES_up(col, row, &
                          temp1ls, uBrgls(:, iKs + 1))
 
     if (numnodes > 1) then
-      call commu(uBrgu(:, :, iKs + 1), NSD, 'in ')
-      call commu(uBrgp(:, iKs + 1), 1, 'in ')
-      call commu(uBrgls(:, iKs + 1), 1, 'in ')
+      call commu(uBrgu(:, :, iKs + 1), NNODZu, NSD, 'in ')
+      call commu(uBrgp(:, iKs + 1), NNODZu, 1, 'in ')
+      call commu(uBrgls(:, iKs + 1), NNODZu, 1, 'in ')
     end if
 
     !----------------------------------------------------------------------
@@ -378,9 +379,9 @@ subroutine SparseGMRES_up(col, row, &
 
   ! communicate solution - GL
   if (numnodes > 1) then
-    call commu(solu, NSD, 'out')
-    call commu(solp, 1, 'out')
-    call commu(solls, 1, 'out')
+    call commu(solu, NNODZu, NSD, 'out')
+    call commu(solp, NNODZu, 1, 'out')
+    call commu(solls, NNODZu, 1, 'out')
   end if
 
   !---------------------------------------------------------------

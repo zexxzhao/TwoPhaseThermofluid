@@ -45,8 +45,8 @@ subroutine SparseGMRES_tem(lhsM, Utol, col, row, &
    enddo
 
    if (numnodes .gt. 1) then
-         call commu(lhsMdiag,1,'in ')
-         call commu(lhsMdiag,1,'out')      
+         call commu(lhsMdiag,NNODZu, 1,'in ')
+         call commu(lhsMdiag,NNODZu, 1,'out')      
    endif
    
    do i = 1, NNODZu
@@ -110,7 +110,7 @@ subroutine SparseGMRES_tem(lhsM, Utol, col, row, &
       temp1 = uBrg1(:,iKs)
 !--------------------------------------------------------------------c             
       ! Periodicity (Slave = Master) - GL
-      if (numnodes .gt. 1) call commu(temp1,1,'out')
+      if (numnodes .gt. 1) call commu(temp1,NNODZu, 1,'out')
                   
 !         do i = 1, NNODZu
 !           if ((IBC(i,4)==3).or.(IBC(i,5)==3).or.(IBC(i,6)==3)) then
@@ -133,7 +133,7 @@ subroutine SparseGMRES_tem(lhsM, Utol, col, row, &
 !           end if          
 !         end do
                   
-      if (numnodes .gt. 1) call commu(uBrg1(:,iKs+1),1,'in ')         
+      if (numnodes .gt. 1) call commu(uBrg1(:,iKs+1),NNODZu, 1,'in ')         
 !-------------------------------------------------------------------------c
                                
       uBrg1(:,iKs+1) = lhsMdiag*uBrg1(:,iKs+1) 
@@ -233,7 +233,7 @@ subroutine SparseGMRES_tem(lhsM, Utol, col, row, &
    enddo
 
    if (numnodes .gt. 1) then      
-         call commu(sol,1,'out')
+         call commu(sol,NNODZu, 1,'out')
    endif
    if (ismaster) write (*, 8500) iKs, ercheck*unorm_ref
 

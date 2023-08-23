@@ -6,7 +6,7 @@ subroutine allocField(mesh, field)
   implicit none
 
   type(MeshData), intent(in) :: mesh
-  type(FieldData), intent(out) :: field
+  type(FieldData), intent(inout) :: field
 
   integer :: NNODE, NSD
   NNODE = mesh%NNODE
@@ -61,7 +61,7 @@ subroutine allocRHS(mesh, rhs)
   implicit none
 
   type(MeshData), intent(in) :: mesh
-  type(RHSData), intent(out) :: rhs
+  type(RHSData), intent(inout) :: rhs
 
   integer :: NNODE, NSD
   NNODE = mesh%NNODE
@@ -99,7 +99,7 @@ subroutine allocLHS(sp, mesh, lhs)
   type(SparsityPattern), intent(in) :: sp
   type(MeshData), intent(in) :: mesh
 
-  type(LHSData), intent(out) :: lhs
+  type(LHSData), intent(inout) :: lhs
 
   integer :: nnz, NNODE, NSD
   nnz = sp%nnz
@@ -149,7 +149,7 @@ subroutine allocDirichletBC(mesh, bc)
   implicit none
 
   type(MeshData), intent(in) :: mesh
-  type(DirichletBCData), intent(out) :: bc
+  type(DirichletBCData), intent(inout) :: bc
 
   integer :: NNODE, NSD, NBOUND
   NNODE = mesh%NNODE

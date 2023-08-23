@@ -48,7 +48,7 @@ module class_def
   type SparsityPattern
     integer :: NNODE
     integer :: nnz ! number of non-zero entries
-    integer, allocatable :: index(:) ! size(index) = nnz
+    integer, allocatable :: indices(:) ! size(index) = nnz
     integer, allocatable :: indptr(:) ! size(indptr) = NNODE+1
   end type SparsityPattern
 

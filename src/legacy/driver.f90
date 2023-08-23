@@ -3,9 +3,9 @@
 !======================================================================
 program NURBScode
 
-  use aAdjKeep
+  ! use aAdjKeep
   use mpi
-  use commonvars
+  ! use commonvars
   use class_def
   use configuration
 
@@ -18,6 +18,9 @@ program NURBScode
   real(8), allocatable :: dshalpha(:, :)
   real(8), allocatable :: NRmat(:, :, :), NRdot(:, :, :), NRddt(:, :, :), &
                           NRmatOld(:, :, :), NRdotOld(:, :, :), NRddtOld(:, :, :)
+
+  real(8) :: time, delt
+  real(8) :: gami, alfi, almi, beti, rhoinf
 
   character(len=30) :: fname, iname, cname
   type(ConfigType) :: config
@@ -40,21 +43,33 @@ program NURBScode
 !!!  solshell = myid.eq.0
 
   ! flag for non-matching computation
-  nonmatch = .false.
+  ! nonmatch = .false.
   if (ismaster) write (*, *) "Get run parameters"
   call getparam()
+  call init_config(config)
+
+  Delt = config%time_integral%delt
+  rhoinf = config%time_integral%rhoinf
+
+  almi = (3d0 - rhoinf) / (1d0 + rhoinf) * 0.5d0
+  alfi = 1.0d0 / (1d0 + rhoinf)
+
+  gami = 0.5d0 + almi - alfi
+  beti = 0.25d0 * (1d0 + almi - alfi) * (1d0 + almi - alfi)
+
   ! Read mesh and MPI-communication Data
   if (ismaster) write (*, *) "Read mesh and communication data"
   ! call input(myid + 1)
   call input(myid + 1, mesh)
-  write(*,*) myid, mesh%NSD, mesh%NSHLBmax, mesh%NNODE, mesh%NELEM, mesh%NBOUND, size(mesh%IEN) / mesh%NELEM
-  if (numnodes > 1) call ctypes()
+  ! write(*,*) myid, mesh%NSD, mesh%NSHLBmax, mesh%NNODE, mesh%NELEM, mesh%NBOUND, size(mesh%IEN) / mesh%NELEM
+  if (numnodes > 1) call ctypes(mesh)
 
   ! Generate Sparse Structures
   if (ismaster) write (*, *) "Generating sparse structure"
-  call genSparsityPattern(&
-    mesh%NNODE, mesh%maxNSHL, mesh%NELEM, mesh%ELMNSHL, mesh%IEN, &
-    sp%index, sp%indptr, sp%nnz)
+  ! call genSparsityPattern(&
+  !   mesh%NNODE, mesh%maxNSHL, mesh%NELEM, mesh%ELMNSHL, mesh%IEN, &
+  !   sp%indices, sp%indptr, sp%nnz)
+  call genSparsityPattern(mesh, sp)
 
 
   ! Allocate Matrices and Vectors
@@ -63,26 +78,26 @@ program NURBScode
   call allocField(mesh, solution)
   call allocRHS(mesh, vec)
   call allocLHS(sp, mesh, mat)
-
+  call allocDirichletBC(mesh, bc)
   ! Read in restart files
   call readStep(Rstep)
   ! Get initial condition
   if (Rstep == 0) then
-    call generateIC()
-    call writeSol(Rstep)
+    call generateIC(mesh, solution)
+    call writeSol(Rstep, mesh, solution, time)
   else
-    call readSol(Rstep)
+    call readSol(Rstep, mesh, solution, time)
   end if
-  call init_config(config)
 
-  call setBCs_NSVOF(bc)
-  call setBCs_Tem(bc)
+  bc%IBC(:, :) = 0
+  call setBCs_NSVOF(config, mesh, bc, solution)
+  call setBCs_Tem(config, mesh, bc, solution)
 
   !------------------------------------------
   ! Loop over time steps
   !------------------------------------------
   avgstep = 0
-  do istep = Rstep + 1, Nstep
+  do istep = Rstep + 1, config%time_integral%Nstep
 
     avgstep = avgstep + 1
 
@@ -100,7 +115,7 @@ program NURBScode
 
     solution%ug(:, :) = solution%ugold(:, :)
     solution%acg(:, :) = ((gami - 1.0d0)/gami)*solution%acgold(:, :) 
-    pg = pgold
+    solution%pg(:) = solution%pgold(:)
 
     solution%phig(:) = solution%phigold(:)
     solution%rphig(:) = (gami - 1.0d0)/gami*solution%rphigold(:)
@@ -127,8 +142,8 @@ program NURBScode
     solution%Tgold = solution%Tg
 
 
-    if (mod(istep, ifq) == 0) then
-      call writeSol(istep)
+    if (mod(istep, config%time_integral%ifq) == 0) then
+      call writeSol(istep, mesh, solution, time)
     end if
 
   end do
@@ -142,6 +157,7 @@ program NURBScode
   call freeField(solution)
   call freeRHS(vec)
   call freeLHS(mat)
+  call freeDirichletBC(bc)
   ! Finalize MPI
   call MPI_FINALIZE(mpi_err)
 

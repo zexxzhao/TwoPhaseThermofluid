@@ -2,42 +2,50 @@
 !
 !======================================================================
 subroutine genSparsityPattern( &
-  NNODE, maxNSHL, NELEM, &
-  ELMNSHL, IEN, &
-  row, col, icnt)
+  mesh, sp)
+!   NNODE, maxNSHL, NELEM, &
+!   ELMNSHL, IEN, &
+!   row, col, icnt)
 
   !use aAdjKeep
   !use commonvars
+  use class_def
   use mpi
   implicit none
 
-  integer, intent(in) :: NNODE, maxNSHL, NELEM
-  integer, intent(in) :: ELMNSHL(NELEM), IEN(NELEM, maxNSHL)
+  ! integer, intent(in) :: NNODE, maxNSHL, NELEM
+  ! integer, intent(in) :: ELMNSHL(NELEM), IEN(NELEM, maxNSHL)
+  type(MeshData), intent(in) :: mesh
+  type(SparsityPattern), intent(inout) :: sp
 
-  integer, allocatable, intent(out) :: row(:), col(:)
-  integer, intent(out) :: icnt
 
-  integer :: tmpr(NNODE)
-  integer :: adjcnt(NNODE), mloc(1)
+  ! integer, allocatable, intent(inout) :: row(:), col(:)
+  ! integer, intent(inout) :: icnt
+
+  integer :: NNODE, icnt
+  integer :: tmpr(mesh%NNODE)
+  integer :: adjcnt(mesh%NNODE), mloc(1)
   integer :: i, j, k, imin, ibig, ncol
-  integer :: row_fill_list(NNODE, 27*maxNSHL)
+  integer :: row_fill_list(mesh%NNODE, 27*mesh%maxNSHL)
 
+  NNODE = mesh%NNODE
   ! compute sparse matrix data structures
   row_fill_list = 0
   adjcnt = 0
   ! call Asad(row_fill_list, adjcnt)
-  call Asadj_C(NNODE, maxNSHL, NELEM, ELMNSHL, IEN, &
+  call Asadj_C(mesh%NNODE, mesh%maxNSHL, mesh%NELEM, mesh%ELMNSHL, mesh%IEN, &
                row_fill_list, adjcnt)
 
   ! allocate
   icnt = sum(adjcnt)
+  ! icnt = sp%nnz
 
-  write(*,*) myid, "icnt = ", icnt
-  allocate (col(NNODE + 1), row(icnt))
+  write(*,*) myid, "icnt = ", mesh%NNODE, icnt! , allocated(col), allocated(row)
+  allocate (sp%indptr(mesh%NNODE + 1), sp%indices(icnt))
   ! build the colm array
-  col(1) = 1
+  sp%indptr(1) = 1
   do i = 1, NNODE
-    col(i + 1) = col(i) + adjcnt(i)
+    sp%indptr(i + 1) = sp%indptr(i) + adjcnt(i)
   end do
 
   ! sort the rowp into increasing order
@@ -50,10 +58,11 @@ subroutine genSparsityPattern( &
       icnt = icnt + 1
       imin = minval(tmpr(1:ncol))
       mloc = minloc(tmpr(1:ncol))
-      row(icnt) = imin
+      sp%indices(icnt) = imin
       tmpr(mloc(1)) = ibig
     end do
   end do
+  sp%nnz = icnt
 
 end subroutine genSparsityPattern
 
