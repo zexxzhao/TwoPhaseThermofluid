@@ -207,13 +207,14 @@ end subroutine e3DC_scalar
 !======================================================================
 ! Stabilization parameter (tauB) for weak BC
 !======================================================================
-subroutine e3bSTAB_weak(tauB, tauNor, ui, nor, dxidx, rhoi, mui)
+subroutine e3bSTAB_weak(tauB, tauNor, NSD, ui, nor, dxidx, rhoi, mui)
 
-  use aAdjKeep
-  use commonvars
+  ! use aAdjKeep
+  ! use commonvars
   use mpi
   implicit none
 
+  integer, intent(in)  :: NSD
   real(8), intent(in)  :: ui(NSD), nor(NSD), dxidx(NSD, NSD)
   real(8), intent(in)  :: rhoi, mui
 

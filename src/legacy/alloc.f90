@@ -156,6 +156,8 @@ subroutine allocDirichletBC(mesh, bc)
   NSD = mesh%NSD
   NBOUND = mesh%NBOUND
 
+  bc%NBOUND = NBOUND
+  bc%NSD = NSD
   allocate (bc%BCugType(NBOUND, NSD))
   allocate (bc%BCugValu(NBOUND, NSD))
 

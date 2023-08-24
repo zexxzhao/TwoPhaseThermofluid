@@ -66,7 +66,6 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
   call assembleQuenching(ASSEMBLE_TENSOR_VEC, &
                          ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                          config, mesh, sp, bc, field, vec, mat)
-
   ! write(*,*) "myid=", myid, "GET RHS0"
   call calculate_residual(residual0, &
                           vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &

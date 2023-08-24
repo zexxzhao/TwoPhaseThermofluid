@@ -276,7 +276,7 @@ subroutine generateIC(mesh, sol)
   sol%phig(:) = 0d0
   sol%ugold(:, 1) = 0d0
   sol%ugold(:, 2) = 0d0
-  sol%ugold(:, 3) = 1d0
+  sol%ugold(:, 3) = 0d0
   sol%Tgold(:) = 75d0 + 273d0
   do i = 1, mesh%NNODE
     if(mesh%NODEID(i) == 101) then
@@ -463,12 +463,12 @@ subroutine writeSol(istep, mesh, sol, time)
 
   if (numnodes > 1) call MPI_BARRIER(MPI_COMM_WORLD, mpi_err)
 
-  ! if (ismaster) then
-  !   solf = 88
-  !   open (solf, file='step.dat', status='replace')
-  !   write (solf, *) istep, x_inflow
-  !   close (solf)
-  ! end if
+  if (ismaster) then
+    solf = 88
+    open (solf, file='step.dat', status='replace')
+    write (solf, *) istep, 0d0 
+    close (solf)
+  end if
 
 end subroutine writeSol
 

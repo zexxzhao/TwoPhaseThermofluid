@@ -187,7 +187,7 @@ subroutine setBCs_NSVOF(config, mesh, bc, sol)
   ! IBC(:, 4) - pressure
   ! IBC(:, 5) - VOF
   ! IBC(:, 6) - Tem
-  bc%IBC = 0
+  ! bc%IBC = 0
   ogam = 1.0d0/gami
   mgam = gami - 1.0d0
   Dtgl = 1.d0 / Delt

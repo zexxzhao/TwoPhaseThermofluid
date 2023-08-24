@@ -40,7 +40,7 @@ subroutine genSparsityPattern( &
   icnt = sum(adjcnt)
   ! icnt = sp%nnz
 
-  write(*,*) myid, "icnt = ", mesh%NNODE, icnt! , allocated(col), allocated(row)
+  ! write(*,*) myid, "icnt = ", mesh%NNODE, icnt! , allocated(col), allocated(row)
   allocate (sp%indptr(mesh%NNODE + 1), sp%indices(icnt))
   ! build the colm array
   sp%indptr(1) = 1

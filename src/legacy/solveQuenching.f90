@@ -106,6 +106,12 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
       acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
       assemble_tensor_flag, &
       vec, mat)
+    call FaceAssembly_NS_outflow(&
+      config, mesh, sp, bc, &
+      dgAlpha, ugAlpha, ugmAlpha, acgAlpha, &
+      acgmAlpha, pgAlpha, phigAlpha, rphigAlpha, &
+      assemble_tensor_flag, &
+      vec, mat)
   end if
   if (iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
     if(config%vms%use_vms) then
@@ -668,11 +674,11 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
   !use commonvars
   use class_def
   use commonpars
-  ! use mpi
+  use mpi
   use configuration
 
   implicit none
-  include 'mpif.h'
+  ! include 'mpif.h'
 
   type(ConfigType), intent(in) :: config
   type(MeshData), intent(in) :: mesh
@@ -918,6 +924,7 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
       ! call e3STAB_3D_NSVOF(NSD, Gij, Delt, uadvi, rhoi, mui, tauM, tauP, tauC, tauLS)
       ! uprime(:) = -tauM * rLi(:)
   
+      Se = ((cpa - cpw) * (Ti - Ts) - Lh) * mdot 
       call e3int_restem(NSD, rTi, Ti, dTdxi, dTdxixj, uadvi, Se, rhocpi, hki, res_tem1)
       call e3STAB_3D_TEM(NSD, Gij, uadvi, Delt, rhoi, cpi, hki, tau_tem)
 
@@ -933,8 +940,7 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
       ! enddo
       shconv(:) = matmul(shgradgu(:, :), uadvi(:))
       ! tmp1 = rhocpi * vdot + (rhow*cpw-rhoa*cpa) * sum(uadvi_full(:) * dphidxi(:))
-      Se = ((cpw - cpa) * (Ti - Ts) - Lh) * mdot 
-      dSedTi = (cpw - cpa) * mdot + ((cpw - cpa) * (Ti - Ts) - lh)* dmdTi
+      dSedTi = (cpa - cpw) * mdot + ((cpa - cpw) * (Ti - Ts) - lh)* dmdTi
       ! drdTi(:) = rhocpi * (fact1 * shlu(:) + fact2 * shconv(:)) - fact2 * dSedTi * shlu(:)
       ! shconv_full(:) = shconv(:)
       tmp(:)  = shlu(:) + tau_tem * rhocpi * shconv(:)

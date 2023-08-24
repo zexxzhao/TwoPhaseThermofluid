@@ -45,8 +45,9 @@ program NURBScode
   ! flag for non-matching computation
   ! nonmatch = .false.
   if (ismaster) write (*, *) "Get run parameters"
-  call getparam()
-  call init_config(config)
+  ! call getparam()
+  ! call init_config(config)
+  call getConfig(config)
 
   Delt = config%time_integral%delt
   rhoinf = config%time_integral%rhoinf
@@ -79,6 +80,7 @@ program NURBScode
   call allocRHS(mesh, vec)
   call allocLHS(sp, mesh, mat)
   call allocDirichletBC(mesh, bc)
+  call getBC(bc)
   ! Read in restart files
   call readStep(Rstep)
   ! Get initial condition

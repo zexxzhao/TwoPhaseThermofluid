@@ -403,9 +403,9 @@ module aAdjKeep
   ! Spars Struc
   ! integer, allocatable :: row(:), col(:)
 
-  integer :: InNNODE1, InCELL
-  integer, allocatable :: ien_inlet(:, :)
-  real(8), allocatable :: xg_inlet(:, :)
+  ! integer :: InNNODE1, InCELL
+  ! integer, allocatable :: ien_inlet(:, :)
+  ! real(8), allocatable :: xg_inlet(:, :)
 
   ! The right hand side load vector G and left hand stiffness matrix K
   real(8), allocatable :: RHSGU(:, :), RHSGM(:, :), RHSGP(:), &

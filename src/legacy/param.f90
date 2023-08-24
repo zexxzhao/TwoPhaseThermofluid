@@ -1,103 +1,103 @@
-subroutine readinlet()
-  use aAdjKeep
-  use commonvars
-  use commonpars
-  use mpi
-  integer :: inode, iel
-  open (11, file='bmesh.1.dat', status='old')
-  read (11, *)
-  read (11, *) InNNODE1, InCELL
-  if (ismaster) write (*, *) InNNODE1, InCELL
-  allocate (xg_inlet(InNNODE1, 3))
-  allocate (ien_inlet(InCELL, 3))
-  do inode = 1, InNNODE1
-    read (11, *) xg_inlet(inode, :)
-  end do
-  do iel = 1, InCELL
-    read (11, *) ien_inlet(iel, :)
-  end do
-  close (11)
+! subroutine readinlet()
+!   use aAdjKeep
+!   use commonvars
+!   use commonpars
+!   use mpi
+!   integer :: inode, iel
+!   open (11, file='bmesh.1.dat', status='old')
+!   read (11, *)
+!   read (11, *) InNNODE1, InCELL
+!   if (ismaster) write (*, *) InNNODE1, InCELL
+!   allocate (xg_inlet(InNNODE1, 3))
+!   allocate (ien_inlet(InCELL, 3))
+!   do inode = 1, InNNODE1
+!     read (11, *) xg_inlet(inode, :)
+!   end do
+!   do iel = 1, InCELL
+!     read (11, *) ien_inlet(iel, :)
+!   end do
+!   close (11)
+! 
+!   allocate (inflow_velocity(InNNODE1, 3), inflow_x(InNNODE1), inflow_y(InNNODE1), inflow_z(InNNODE1), &
+!             inflow_bnodes(InNNODE1), inflow_velocity_check(InNNODE1, 3), inflow_pressure(InNNODE1), inflow_rho(InNNODE1))
+! end subroutine readinlet
 
-  allocate (inflow_velocity(InNNODE1, 3), inflow_x(InNNODE1), inflow_y(InNNODE1), inflow_z(InNNODE1), &
-            inflow_bnodes(InNNODE1), inflow_velocity_check(InNNODE1, 3), inflow_pressure(InNNODE1), inflow_rho(InNNODE1))
-end subroutine readinlet
-
-subroutine calarea(xa, xb, xc, area)
-  real(8), intent(in) :: xa(3), xb(3), xc(3)
-  real(8), intent(out) :: area
-  real(8) :: A(2, 2)
-  A(1, 1) = xb(2) - xa(2)
-  A(1, 2) = xb(3) - xa(3)
-  A(2, 1) = xc(2) - xa(2)
-  A(2, 2) = xc(3) - xa(3)
-  area = 0.5d0*abs(A(1, 1)*A(2, 2) - A(1, 2)*A(2, 1))
-end subroutine calarea
+! subroutine calarea(xa, xb, xc, area)
+!   real(8), intent(in) :: xa(3), xb(3), xc(3)
+!   real(8), intent(out) :: area
+!   real(8) :: A(2, 2)
+!   A(1, 1) = xb(2) - xa(2)
+!   A(1, 2) = xb(3) - xa(3)
+!   A(2, 1) = xc(2) - xa(2)
+!   A(2, 2) = xc(3) - xa(3)
+!   area = 0.5d0*abs(A(1, 1)*A(2, 2) - A(1, 2)*A(2, 1))
+! end subroutine calarea
 !======================================================================
 ! subroutine to get the inflow boundary conditions by Jinhui
 !======================================================================
-subroutine getinflow_domain(xt, utmp, ptmp, rhotmp)
-
-  use aAdjKeep
-  use commonvars
-  use commonpars
-  use mpi
-  real(8), intent(in) :: xt(3)
-  real(8), intent(out) :: utmp(3), ptmp, rhotmp
-  integer :: num_plane
-  real(8) :: areaa, areab, areac, areasum
-  integer :: inode, iel, iel_found, i
-  real(8) :: xa(3), xb(3), xc(3)
-  real(8) :: r, s
-  do iel = 1, InCELL
-    xa(:) = xg_inlet(ien_inlet(iel, 1), :)
-    xb(:) = xg_inlet(ien_inlet(iel, 2), :)
-    xc(:) = xg_inlet(ien_inlet(iel, 3), :)
-    areaa = 0d0
-    areab = 0d0
-    areac = 0d0
-    areasum = 0d0
-    call calarea(xa, xb, xc, areasum)
-    call calarea(xt, xa, xb, areac)
-    call calarea(xt, xa, xc, areab)
-    call calarea(xt, xb, xc, areaa)
-    iel_found = -1
-    ! write(*,*)  areaa,  areab,  areac, areasum
-    if (abs(areaa + areab + areac - areasum) < 1d-7) then
-      iel_found = iel
-      r = areaa/areasum
-      s = areab/areasum
-      exit
-    end if
-  end do
-  if (iel > InCELL) then
-    write (*, *) "did not find the elem:", myid, xt(:)
-  end if
-  if (ismaster) then
-    write (*, *) iel_found, abs(areaa + areab + areac - areasum)
-    write (*, *) r, s
-  end if
-  open (100000, file='inflow.1.dat', status='old')
-  do i = 1, InNNODE1
-    read (100000, *) inflow_x(i), inflow_y(i), inflow_z(i), &
-      inflow_velocity(i, 1), inflow_velocity(i, 2), inflow_velocity(i, 3), &
-      inflow_pressure(i), inflow_rho(i)
-  end do
-
-  utmp(:) = inflow_velocity(ien_inlet(iel_found, 1), :)*r &
-            + inflow_velocity(ien_inlet(iel_found, 2), :)*s &
-            + inflow_velocity(ien_inlet(iel_found, 3), :)*(1 - r - s)
-
-  ptmp = inflow_pressure(ien_inlet(iel_found, 1))*r &
-         + inflow_pressure(ien_inlet(iel_found, 2))*s &
-         + inflow_pressure(ien_inlet(iel_found, 3))*(1 - r - s)
-
-  rhotmp = inflow_rho(ien_inlet(iel_found, 1))*r &
-           + inflow_rho(ien_inlet(iel_found, 2))*s &
-           + inflow_rho(ien_inlet(iel_found, 3))*(1 - r - s)
-
-  close (100000)
-
-end subroutine getinflow_domain
+! subroutine getinflow_domain(xt, utmp, ptmp, rhotmp)
+! 
+!   use aAdjKeep
+!   use commonvars
+!   use commonpars
+!   use mpi
+!   real(8), intent(in) :: xt(3)
+!   real(8), intent(out) :: utmp(3), ptmp, rhotmp
+!   integer :: num_plane
+!   real(8) :: areaa, areab, areac, areasum
+!   integer :: inode, iel, iel_found, i
+!   real(8) :: xa(3), xb(3), xc(3)
+!   real(8) :: r, s
+!   do iel = 1, InCELL
+!     xa(:) = xg_inlet(ien_inlet(iel, 1), :)
+!     xb(:) = xg_inlet(ien_inlet(iel, 2), :)
+!     xc(:) = xg_inlet(ien_inlet(iel, 3), :)
+!     areaa = 0d0
+!     areab = 0d0
+!     areac = 0d0
+!     areasum = 0d0
+!     call calarea(xa, xb, xc, areasum)
+!     call calarea(xt, xa, xb, areac)
+!     call calarea(xt, xa, xc, areab)
+!     call calarea(xt, xb, xc, areaa)
+!     iel_found = -1
+!     ! write(*,*)  areaa,  areab,  areac, areasum
+!     if (abs(areaa + areab + areac - areasum) < 1d-7) then
+!       iel_found = iel
+!       r = areaa/areasum
+!       s = areab/areasum
+!       exit
+!     end if
+!   end do
+!   if (iel > InCELL) then
+!     write (*, *) "did not find the elem:", myid, xt(:)
+!   end if
+!   if (ismaster) then
+!     write (*, *) iel_found, abs(areaa + areab + areac - areasum)
+!     write (*, *) r, s
+!   end if
+!   open (100000, file='inflow.1.dat', status='old')
+!   do i = 1, InNNODE1
+!     read (100000, *) inflow_x(i), inflow_y(i), inflow_z(i), &
+!       inflow_velocity(i, 1), inflow_velocity(i, 2), inflow_velocity(i, 3), &
+!       inflow_pressure(i), inflow_rho(i)
+!   end do
+! 
+!   utmp(:) = inflow_velocity(ien_inlet(iel_found, 1), :)*r &
+!             + inflow_velocity(ien_inlet(iel_found, 2), :)*s &
+!             + inflow_velocity(ien_inlet(iel_found, 3), :)*(1 - r - s)
+! 
+!   ptmp = inflow_pressure(ien_inlet(iel_found, 1))*r &
+!          + inflow_pressure(ien_inlet(iel_found, 2))*s &
+!          + inflow_pressure(ien_inlet(iel_found, 3))*(1 - r - s)
+! 
+!   rhotmp = inflow_rho(ien_inlet(iel_found, 1))*r &
+!            + inflow_rho(ien_inlet(iel_found, 2))*s &
+!            + inflow_rho(ien_inlet(iel_found, 3))*(1 - r - s)
+! 
+!   close (100000)
+! 
+! end subroutine getinflow_domain
 
 !======================================================================
 ! subroutine to get the inflow boundary conditions by Jinhui
@@ -517,7 +517,7 @@ subroutine getConfig(config)
   call rread("C_COND",config%property% c_cond)
   call rread("C_EVAP", config%property%c_evap)
   call rread("HTC_A", config%property%htca)
-  call rread("HTC_w", config%property%htcw)
+  call rread("HTC_W", config%property%htcw)
   call rread("TRM", config%property%Trm)
 
 

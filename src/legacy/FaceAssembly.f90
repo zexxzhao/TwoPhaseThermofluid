@@ -225,7 +225,7 @@ subroutine FaceAssembly_NS_weak( &
         DetJgw = gw(igauss) * DetJb
         
         if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-          call e3bSTAB_weak(tauB, tauNor, ui - umi, nor, dxidx, rhoi, mui)
+          call e3bSTAB_weak(tauB, tauNor, NSD, ui - umi, nor, dxidx, rhoi, mui)
 
           ! call e3bRHS_weak( &
           !   nshl, nor, tauB, tauNor, gw(igauss), &
@@ -305,7 +305,7 @@ subroutine FaceAssembly_NS_weak( &
         ! call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
         !                      xLSebe, xLSUebe, xULSebe, xPLSebe)
         call FillSparseMat_3D( &
-          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, mesh%ien(iel, :), &
+          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, NSHL, mesh%ien(iel, :), &
           xKebe11, xGebe, xDebe1, xMebe, xLSebe, xLSUebe, xULSebe, xPLSebe, &
           mat%LHSK11, mat%LHSG, mat%LHSD1, mat%LHSM, &
           mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
@@ -495,6 +495,7 @@ subroutine FaceAssembly_NS_weak_CF( &
         pl(i) = pgAlpha(j)
         phil(i) = phigAlpha(j)
         rphil(i) = rphigAlpha(j)
+        wl(i) = 0d0
         ! wl(i) = wg(j)
         ! phi_bgl(i) = phi_bg(j)
       end do
@@ -566,7 +567,7 @@ subroutine FaceAssembly_NS_weak_CF( &
         DetJgw = gw(igauss) * DetJb
         
         if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-          call e3bSTAB_weak(tauB, tauNor, ui - umi, nor, dxidx, rhoi, mui)
+          call e3bSTAB_weak(tauB, tauNor, NSD, ui - umi, nor, dxidx, rhoi, mui)
 
           ! call e3bRHS_weak( &
           !   nshl, nor, tauB, tauNor, gw(igauss), &
@@ -605,7 +606,6 @@ subroutine FaceAssembly_NS_weak_CF( &
 
             enddo
           enddo
-
           do bb = 1, NSHL
             do aa = 1, NSHL
               do ii = 1, NSD
@@ -641,14 +641,14 @@ subroutine FaceAssembly_NS_weak_CF( &
 
       end do
       call apply_bc(&
-        mesh%NSD, mesh%maxNSHL, mesh%ien(iel, :), bc, &
+        mesh%NSD, mesh%ELMNSHL(iel), mesh%ien(iel, :), bc, &
         xKebe11, xGebe, xDebe1, xMebe, Rhsu, Rhsp, &
         xLSebe, xLSUebe, xULSebe, xPLSebe, Rhsphi)
       if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
         ! call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
         !                      xLSebe, xLSUebe, xULSebe, xPLSebe)
         call FillSparseMat_3D( &
-          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, mesh%ien(iel, :), &
+          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, NSHL, mesh%ien(iel, :), &
           xKebe11, xGebe, xDebe1, xMebe, xLSebe, xLSUebe, xULSebe, xPLSebe, &
           mat%LHSK11, mat%LHSG, mat%LHSD1, mat%LHSM, &
           mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
@@ -908,7 +908,7 @@ subroutine FaceAssembly_NS_outflow( &
         DetJgw = gw(igauss) * DetJb
         
         if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-          call e3bSTAB_weak(tauB, tauNor, ui - umi, nor, dxidx, rhoi, mui)
+          ! call e3bSTAB_weak(tauB, tauNor, ui - umi, nor, dxidx, rhoi, mui)
 
           ! call e3bRHS_weak( &
           !   nshl, nor, tauB, tauNor, gw(igauss), &
@@ -944,7 +944,7 @@ subroutine FaceAssembly_NS_outflow( &
         ! call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
         !                      xLSebe, xLSUebe, xULSebe, xPLSebe)
         call FillSparseMat_3D( &
-          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, mesh%ien(iel, :), &
+          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, NSHL, mesh%ien(iel, :), &
           xKebe11, xGebe, xDebe1, xMebe, xLSebe, xLSUebe, xULSebe, xPLSebe, &
           mat%LHSK11, mat%LHSG, mat%LHSD1, mat%LHSM, &
           mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
@@ -1243,7 +1243,7 @@ subroutine FaceAssembly_Tem_HTC( &
         ! call FillSparseMat_3D(nshl, iel, xKebe11, xGebe, xDebe1, xMebe, &
         !                      xLSebe, xLSUebe, xULSebe, xPLSebe)
         call FillSparseMat_3D( &
-          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, mesh%ien(iel, :), &
+          mesh%NNODE, mesh%NSD, sp%nnz, sp%indices, sp%indptr, NSHL, mesh%ien(iel, :), &
           xKebe11, xGebe, xDebe1, xMebe, xLSebe, xLSUebe, xULSebe, xPLSebe, &
           mat%LHSK11, mat%LHSG, mat%LHSD1, mat%LHSM, &
           mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
