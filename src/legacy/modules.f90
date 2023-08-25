@@ -70,10 +70,12 @@ module class_def
   end type FieldData
 
   type RHSData
-    real(8), allocatable :: RHSGU(:, :)
-    real(8), allocatable :: RHSGP(:)
-    real(8), allocatable :: RHSGLS(:)
-    real(8), allocatable :: RHSGTEM(:)
+    ! real(8), allocatable :: RHSGU(:, :)
+    ! real(8), allocatable :: RHSGP(:)
+    ! real(8), allocatable :: RHSGLS(:)
+    ! real(8), allocatable :: RHSGTEM(:)
+    integer :: N, NSD, NVAR
+    real(8), allocatable :: x(:, :)
   end type RHSData
 
   type LHSData
@@ -589,6 +591,7 @@ module commonpars
   real(8), parameter :: pi = 3.14159265358979323846264338328d0
   real(8), parameter :: gravvec(3) = (/0.d0, 0.d0, -9.81d0/)
 
+  integer, parameter :: NRES = 4
   ! Assemble field
   integer, parameter :: ASSEMBLE_FIELD_NONE = 0
   integer, parameter :: ASSEMBLE_FIELD_NS = 1

@@ -2,7 +2,6 @@
 !
 !======================================================================
 subroutine SparseGMRES_up(col, row, &
-                          ! IBC, IPER, D_FLAG, P_FLAG, &
                           rhsGu, rhsGp, solu, solp, &
                           lhsK11, lhsG, lhsD1, lhsM, &
                           icntu, Utol, Kspaceu, Kspaceu_mn, &
@@ -394,3 +393,8 @@ subroutine SparseGMRES_up(col, row, &
             2x, f10.6, "(%)")
 
 end subroutine SparseGMRES_up
+
+
+!======================================================================
+!
+!======================================================================

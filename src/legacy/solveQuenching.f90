@@ -26,6 +26,8 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
   type(RHSData), intent(inout) :: vec
   type(LHSData), intent(inout) :: mat
 
+  integer :: NSD
+
 
   real(8) :: dgAlpha(mesh%NNODE, mesh%NSD), &
              ugAlpha(mesh%NNODE, mesh%NSD), ugmAlpha(mesh%NNODE, mesh%NSD), &
@@ -45,6 +47,7 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
   gami = 0.5d0 + almi - alfi
   beti = 0.25d0 * (1d0 + almi - alfi) * (1d0 + almi - alfi)
  
+  NSD = mesh%NSD
   !---------------------------------
   ! Alpha stage
   !---------------------------------
@@ -66,10 +69,11 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
   !---------------------------------
 
   if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-    vec%RHSGu = 0.0d0
-    vec%RHSGp = 0.0d0
-    vec%RHSGls = 0.0d0
-    vec%RHSGtem = 0.0d0
+    ! vec%RHSGu = 0.0d0
+    ! vec%RHSGp = 0.0d0
+    ! vec%RHSGls = 0.0d0
+    ! vec%RHSGtem = 0.0d0
+    vec%x(:, :) = 0d0
   end if
 
   if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_MAT) > 0) then
@@ -133,14 +137,18 @@ subroutine assembleQuenching(assemble_tensor_flag, assemble_field_flag, &
 
   if (numnodes > 1 .and. iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_NS) > 0) then
-      call commu(vec%RHSGp, mesh%NNODE, 1, 'in ')
-      call commu(vec%RHSGu, mesh%NNODE, mesh%NSD, 'in ')
+      ! call commu(vec%RHSGp, mesh%NNODE, 1, 'in ')
+      ! call commu(vec%RHSGu, mesh%NNODE, mesh%NSD, 'in ')
+      call commu(vec%x(:, 1:NSD), mesh%NNODE, mesh%NSD, 'in ')
+      call commu(vec%x(:, 1+NSD), mesh%NNODE, 1, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_VOF) > 0) then
-      call commu(vec%RHSGls, mesh%NNODE, 1, 'in ')
+      ! call commu(vec%RHSGls, mesh%NNODE, 1, 'in ')
+      call commu(vec%x(:, NSD+2), mesh%NNODE, 1, 'in ')
     endif
     if(iand(assemble_field_flag, ASSEMBLE_FIELD_TEM) > 0) then
-      call commu(vec%RHSGTem, mesh%NNODE, 1, 'in ')
+      call commu(vec%x(:, NSD+3), mesh%NNODE, 1, 'in ')
+      ! call commu(vec%RHSGTem, mesh%NNODE, 1, 'in ')
     endif
   end if
 
@@ -619,7 +627,7 @@ subroutine IntElmAss_NSVOF_Quenching_STAB(&
                             mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
     end if
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-      call LocalToGlobalNSVOF_3D(vec%RHSGu, vec%RHSGp, vec%RHSGls, &
+      call LocalToGlobalNSVOF_3D(vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), &
                                  mesh%NNODE, mesh%NSD, mesh%ELMNSHL(iel), mesh%maxNSHL, &
                                  mesh%IEN(iel, :), rhsu, rhsp, rhsphi)
         ! call MPI_barrier(MPI_COMM_WORLD, mpi_err)
@@ -999,7 +1007,7 @@ subroutine IntElmAss_Tem_Quenching_STAB(&
     if (iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
       ! Assemble load RHS vector
       do aa = 1, NSHL
-        vec%RHSGTEM(mesh%IEN(iel, aa)) = vec%RHSGTEM(mesh%IEN(iel, aa)) + Rhstem(aa)
+        vec%x(mesh%IEN(iel, aa), NSD+3) = vec%x(mesh%IEN(iel, aa), NSD+3) + Rhstem(aa)
       end do
     end if
   end do

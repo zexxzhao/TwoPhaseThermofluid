@@ -63,15 +63,15 @@ subroutine allocRHS(mesh, rhs)
   type(MeshData), intent(in) :: mesh
   type(RHSData), intent(inout) :: rhs
 
-  integer :: NNODE, NSD
-  NNODE = mesh%NNODE
-  NSD = mesh%NSD
-
+  rhs%N = mesh%NNODE
+  rhs%NSD = mesh%NSD
+  rhs%NVAR = mesh%NSD+3
   ! Allocate Residuals
-  allocate (rhs%RHSGU(NNODE, NSD))
-  allocate (rhs%RHSGP(NNODE))
-  allocate (rhs%RHSGLS(NNODE))
-  allocate (rhs%RHSGTEM(NNODE))
+  allocate (rhs%x(rhs%N, rhs%NVAR))
+  ! allocate (rhs%RHSGU(NNODE, NSD))
+  ! allocate (rhs%RHSGP(NNODE))
+  ! allocate (rhs%RHSGLS(NNODE))
+  ! allocate (rhs%RHSGTEM(NNODE))
 end subroutine allocRHS
 
 
@@ -84,10 +84,7 @@ subroutine freeRHS(rhs)
 
   type(RHSData), intent(inout) :: rhs
 
-  deallocate (rhs%RHSGU)
-  deallocate (rhs%RHSGP)
-  deallocate (rhs%RHSGLS)
-  deallocate (rhs%RHSGTEM)
+  deallocate (rhs%x)
 end subroutine FreeRHS
 !======================================================================
 !

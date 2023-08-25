@@ -311,7 +311,7 @@ subroutine FaceAssembly_NS_weak( &
           mat%LHSLS, mat%LHSULS, mat%LHSLSU, mat%LHSPLS)
       endif
       if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
-        call LocalToGlobalNSVOF_3D(vec%RHSGu, vec%RHSGp, vec%RHSGls, &
+        call LocalToGlobalNSVOF_3D(vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), &
                                   mesh%NNODE, mesh%NSD, mesh%ELMNSHL(iel), mesh%maxNSHL, &
                                   mesh%IEN(iel, :), rhsu, rhsp, rhsphi)
 
@@ -655,7 +655,7 @@ subroutine FaceAssembly_NS_weak_CF( &
       endif
       if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         ! call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
-        call LocalToGlobalNSVOF_3D(vec%RHSGu, vec%RHSGp, vec%RHSGls, &
+        call LocalToGlobalNSVOF_3D(vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), &
                                   mesh%NNODE, mesh%NSD, mesh%ELMNSHL(iel), mesh%maxNSHL, &
                                   mesh%IEN(iel, :), rhsu, rhsp, rhsphi)
       endif
@@ -951,7 +951,7 @@ subroutine FaceAssembly_NS_outflow( &
       endif
       if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         ! call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
-        call LocalToGlobalNSVOF_3D(vec%RHSGu, vec%RHSGp, vec%RHSGls, &
+        call LocalToGlobalNSVOF_3D(vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), &
                                   mesh%NNODE, mesh%NSD, mesh%ELMNSHL(iel), mesh%maxNSHL, &
                                   mesh%IEN(iel, :), rhsu, rhsp, rhsphi)
       endif
@@ -1250,7 +1250,7 @@ subroutine FaceAssembly_Tem_HTC( &
       endif
       if(iand(assemble_tensor_flag, ASSEMBLE_TENSOR_VEC) > 0) then
         ! call LocaltoGlobal_3D(nshl, iel, Rhsu, Rhsp)
-        call LocalToGlobalNSVOF_3D(vec%RHSGu, vec%RHSGp, vec%RHSGls, &
+        call LocalToGlobalNSVOF_3D(vec%x(:, 1:NSD), vec%x(:,NSD+1), vec%x(:,NSD+2), &
                                   mesh%NNODE, mesh%NSD, mesh%ELMNSHL(iel), mesh%maxNSHL, &
                                   mesh%IEN(iel, :), rhsu, rhsp, rhsphi)
       endif

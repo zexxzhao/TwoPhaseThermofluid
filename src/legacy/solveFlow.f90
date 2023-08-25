@@ -25,7 +25,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
 
 
   ! integer :: mpi_err
-  integer :: inewt, i, NL_max
+  integer :: inewt, i, NL_max, NSD
   ! real(8) :: momres0, conres0, convres0, meshres0, lsres0
   real(8) :: residual0(4), residual(4)
   integer :: converged(4)
@@ -44,6 +44,8 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
 
   gami = 0.5d0 + almi - alfi
   beti = 0.25d0 * (1d0 + almi - alfi) * (1d0 + almi - alfi)
+
+  NSD = mesh%NSD
   
   ! utol = (/NS_NL_UTOL, NS_NL_PTOL, LSC_NL_TOL, TEM_NL_TOL/)
   utol(:) = config%newton_raphson%rtol(:)
@@ -68,7 +70,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                          config, mesh, sp, bc, field, vec, mat)
   ! write(*,*) "myid=", myid, "GET RHS0"
   call calculate_residual(residual0, &
-                          vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &
+                          vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), vec%x(:, NSD+3), &
                           mesh%NNODE, mesh%NSD)
   residual(:) = residual0(:)
   call check_convergence(converged, residual, residual0, utol, &
@@ -102,19 +104,18 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
     !call print_residual(residual, residual0, utol, &
     !                    ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF, &
     !                    inewt)
-
     if (ismaster) then
       call CPU_TIME(t1)
     end if
     sol(:, 1:5) = 0d0
     call SparseGMRES_up(sp%indptr, sp%indices, &
-                        vec%rhsGu, vec%rhsGp, sol(:, 1:3), sol(:, 4), &
+                        vec%x(:, 1:NSD), vec%x(:, NSD+1), sol(:, 1:3), sol(:, 4), &
                         mat%lhsK11, mat%lhsG, mat%lhsD1, mat%lhsM, sp%nnz, &
                         config%newton_raphson%rtol(1), config%ksp%max_iter(1), &
                         config%ksp%min_iter(1), &
                         mesh%NNODE, mesh%maxNSHL, mesh%NSD, &
                         sol(:, 5), mat%lhsLS, &
-                        mat%lhsLSu, mat%lhsUls, mat%lhsPls, vec%rhsGls)
+                        mat%lhsLSu, mat%lhsUls, mat%lhsPls, vec%x(:, NSD+2))
 
     if (ismaster) then
       call CPU_TIME(t2)
@@ -161,7 +162,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
                              ASSEMBLE_FIELD_TEM, &
                              config, mesh, sp, bc, field, vec, mat)
       call calculate_residual(residual, &
-                              vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &
+                              vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), vec%x(:, NSD+3), &
                               mesh%NNODE, mesh%NSD)
 
       call check_convergence(converged, residual, residual0, utol, &
@@ -177,7 +178,7 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
 
       sol(:, 6) = 0d0
       call SparseGMRES_tem(mat%LHStem, config%ksp%rtol(4), sp%indptr, sp%indices, &
-                           vec%rhsgtem, sol(:, 6), config%ksp%max_iter(4), config%ksp%min_iter(4), &
+                           vec%x(:, NSD+3), sol(:, 6), config%ksp%max_iter(4), config%ksp%min_iter(4), &
                            mesh%NNODE, mesh%maxNSHL, sp%nnz, mesh%NSD)
       if (ismaster) then
         call CPU_TIME(t2)
@@ -196,10 +197,9 @@ subroutine solmultiphasethermofluid_stag(istep, config, mesh, sp, bc, field, vec
     call assembleQuenching(ASSEMBLE_TENSOR_VEC, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM, &
                            config, mesh, sp, bc, field, vec, mat)
-
     call calculate_residual(residual, &
-                          vec%RHSGu, vec%RHSGp, vec%RHSGls, vec%RHSGtem, &
-                          mesh%NNODE, mesh%NSD)
+                            vec%x(:, 1:NSD), vec%x(:, NSD+1), vec%x(:, NSD+2), vec%x(:, NSD+3), &
+                            mesh%NNODE, mesh%NSD)
 
     call check_convergence(converged, residual, residual0, utol, &
                            ASSEMBLE_FIELD_NS + ASSEMBLE_FIELD_VOF + ASSEMBLE_FIELD_TEM)
