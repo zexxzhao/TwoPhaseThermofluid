@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../sys/defines.h"
+#include <sys_dir/defines.h>
 
 void init(int *argv, char ***argc);
 void finalize();

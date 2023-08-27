@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../sys/defines.h"
+#include <sys_dir/defines.h>
 #include <stdio.h>
+
 
 struct _p_FEMCFileState {
     FILE *fp;

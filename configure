@@ -4,6 +4,7 @@
 
 CC='mpicc'
 FC='mpif90'
+PREFIX=${PWD}/install/
 
 
 CONFIGFILE=make.config
@@ -11,9 +12,12 @@ if [ -f ${CONFIGFILE} ]; then
     bash -c "rm ${CONFIGFILE}"
 fi
 
-echo "##########################" > ${CONFIGFILE}
-echo "# System definitions" >> ${CONFIGFILE}
-echo "##########################" >> ${CONFIGFILE}
+echo "PREFIX:=${PREFIX}">> ${CONFIGFILE}
+##echo "DIRECTORY:=${PREFIX}">> ${CONFIGFILE}
+
+echo "BIN_INSTALL:=${PREFIX}/bin">> ${CONFIGFILE}
+echo "LIB_INSTALL:=${PREFIX}/lib">> ${CONFIGFILE}
+echo "INC_INSTALL:=${PREFIX}/include">> ${CONFIGFILE}
 
 echo >> ${CONFIGFILE}
 
@@ -43,34 +47,25 @@ echo  "LIBS=" >> ${CONFIGFILE}
 echo  "INC=" >> ${CONFIGFILE}
 
 #########################
+# Linker
+#########################
+
+echo >> ${CONFIGFILE}
+echo "AR:=ar" >> ${CONFIGFILE}
+echo "ARFLAGS:=rcs" >> ${CONFIGFILE}
+echo "STATIC_LIB_SUFFIX:=.a" >> ${CONFIGFILE}
+echo "SHARED_LIB_SUFFIX:=.so" >> ${CONFIGFILE}
+
+echo "EXE_SUFFIX:=.exe" >> ${CONFIGFILE}
+
+#########################
 # CONFIGURE MPI FLAGS 
 #########################
 
 echo >> ${CONFIGFILE}
 MPI_FLAGS=$(${FC} -show | sed 's/[^ ]* //')
 echo "MPI_FLAGS=${MPI_FLAGS}" >> ${CONFIGFILE}
-# GOT_ERR=$(${CC} -showme:link 2> /dev/null | wc -l)
-# if [ $GOT_ERR != 0 ]; then
-# 	MPI_COMPILE_FLAGS=$(${FC} -showme:compile)
-# 	MPI_LINK_FLAGS=$(${FC} -showme:link)
-# else
-# 	MPI_COMPILE_FLAGS=$(${FC} -compile_info | sed 's/[^ ]* //')
-# 	MPI_LINK_FLAGS=$(${FC} -link_info | sed 's/[^ ]* //')
-# fi
 
-
-# echo "MPI_COMPILE_FLAGS=${MPI_COMPILE_FLAGS}" >> ${CONFIGFILE}
-# echo "MPI_LINK_FLAGS=${MPI_LINK_FLAGS}" >> ${CONFIGFILE}
-
-echo >> ${CONFIGFILE}
-echo >> ${CONFIGFILE}
-echo "##########################" >> ${CONFIGFILE}
-echo "# PATH" >> ${CONFIGFILE}
-echo "##########################" >> ${CONFIGFILE}
-
-
-echo "DIRECTORY:=${PWD}">> ${CONFIGFILE}
-echo "DEST:=${PWD}/bin">> ${CONFIGFILE}
 echo >> ${CONFIGFILE}
 
 

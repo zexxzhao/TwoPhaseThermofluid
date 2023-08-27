@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../sys/defines.h"
+#include <sys_dir/defines.h>
 
 typedef struct {
     FEMBoolType use_tauber;

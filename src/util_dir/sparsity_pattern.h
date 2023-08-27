@@ -1,13 +1,15 @@
 #pragma once
 
-#include "../sys/defines.h"
+#include <sys_dir/defines.h>
 
 struct SparsityPattern {
     IndexType nnode;
     IndexType nnz;
     IndexType *indices;
-    IndexType *offsets;
+    IndexType *offset;
 };
+
+typedef struct SparsityPattern SparsityPattern;
 
 void init_sparsity_pattern(SparsityPattern *pSparsityPattern,
                            IndexType nnode, 

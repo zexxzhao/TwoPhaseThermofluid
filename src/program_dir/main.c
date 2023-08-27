@@ -1,5 +1,6 @@
 
-#include "config.h"
+#include <util_dir/config.h>
+#include <util_dir/utility.h>
 
 int main(int argc, char **argv) {
     init(&argc, &argv);
@@ -7,7 +8,7 @@ int main(int argc, char **argv) {
     // ConfigType *config = Config_new("config.dat");
     // Config_print(config, stdout);
     // Config_free(config);
-    getparam_();
+    // getparam_();
     
     finalize();
     return 0;

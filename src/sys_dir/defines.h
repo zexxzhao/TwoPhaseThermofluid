@@ -38,11 +38,10 @@ typedef enum {
 
 typedef enum {
     FEM_SUCCESS = 0,
-    FEM_RUNTIME_ERROR = 1,
-    FEM_OUT_OF_BOUNDS = 2,
-    FEM_INVALID_INPUT = 4,
-    FEM_INVALID_STATE = 8,
-    FEM_INVALID_OPERATION = 16
+    FEM_RT_ERROR = 1,
+    FEM_MEM_ERROR = 2,
+    FEM_FILE_ERROR = 3,
+    FEM_INVALID_INPUT = 4
 } FEMErrorCode;
 
 
@@ -61,3 +60,21 @@ typedef enum {
 #ifdef MPI_VERSION
 #define HAVE_MPI
 #endif
+
+typedef enum {
+    FEM_LOG_LEVEL_NONE = 100,
+    FEM_LOG_LEVEL_ERROR = 200,
+    FEM_LOG_LEVEL_WARNING = 300,
+    FEM_LOG_LEVEL_INFO = 400,
+    FEM_LOG_LEVEL_DEBUG = 500
+} FEMLogLevelType;
+
+#define FEM_LOG_LEVEL_DEFAULT FEM_LOG_LEVEL_INFO
+
+
+#define FEM_LOG(LOG_LEVEL, ...) do {\
+    if (LOG_LEVEL <= FEM_LOG_LEVEL_DEFAULT) {\
+        fprintf(stderr, __VA_ARGS__);\
+    }\
+} while (0)
+

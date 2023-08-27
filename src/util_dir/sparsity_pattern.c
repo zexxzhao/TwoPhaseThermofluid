@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "sparse_pattern.h"
+#include "sparsity_pattern.h"
 
 static int compare_index(const void *a, const void *b) {
     IndexType x = *(IndexType *)a;

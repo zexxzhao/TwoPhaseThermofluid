@@ -2,15 +2,23 @@
 # System definitions
 ##################################
 include ../make.config
-OBJ=${DIRECTORY}/genmesh/obj
+OBJ=obj
+DEST=${BIN_INSTALL}
 
 ####FFLAGS =$(DFFLAGS)  
 
 #=========================================
 all: doc tet2mesh patch2mesh patch2net partmesh restart2vtk restart2tec genmesh gmsh_mesh geomData average2tec
 
+install:
+	echo "Do nothing"
+
 clean:
-	/bin/rm -rf *.mod *.o obj $(DEST)/genmesh $(DEST)/tet2mesh $(DEST)/patch2mesh $(DEST)/partmesh $(DEST)/restart2vtk $(DEST)/restart2tec $(DEST)/geomData $(DEST)/average2tec
+	/bin/rm -rf *.mod *.o obj $(DEST)/genmesh $(DEST)/tet2mesh $(DEST)/patch2net \
+		$(DEST)/patch2mesh $(DEST)/partmesh $(DEST)/restart2vtk $(DEST)/restart2tec \
+		$(DEST)/gmsh_mesh $(DEST)/geomData $(DEST)/average2tec
+
+distclean: clean
 
 obj:
 	mkdir   obj 

@@ -110,7 +110,7 @@ ConfigType* Config_new(const char *config_file) {
 
     if (config == NULL) {
         fprintf(stderr, "Error: could not allocate memory for config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     FEMErrorCode err;
     FEM_CHECK_ERROR(find_config_value_bool(fp, "iga", &config->iga));
@@ -125,7 +125,7 @@ ConfigType* Config_new(const char *config_file) {
     config->vms = (VMSConfigType *)malloc(sizeof(VMSConfigType));
     if (config->vms == NULL) {
         fprintf(stderr, "Error: could not allocate memory for vms config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     FEM_CHECK_ERROR(find_config_value_bool(fp, "use_tauber", &config->vms->use_tauber));
     FEM_CHECK_ERROR(find_config_value_bool(fp, "use_sliding_velocity", &config->vms->use_sliding_velocity));
@@ -137,7 +137,7 @@ ConfigType* Config_new(const char *config_file) {
     config->ksp = (KSPConfigType *)malloc(sizeof(KSPConfigType));
     if (config->ksp == NULL) {
         fprintf(stderr, "Error: could not allocate memory for ksp config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     config->ksp->NRES = nRES;
     config->ksp->max_iter = (FEMIndexType *)malloc(nRES * sizeof(FEMIndexType));
@@ -146,7 +146,7 @@ ConfigType* Config_new(const char *config_file) {
     config->ksp->atol = (FEMScalarType *)malloc(nRES * sizeof(FEMScalarType));
     if (config->ksp->max_iter == NULL || config->ksp->min_iter == NULL || config->ksp->rtol == NULL || config->ksp->atol == NULL) {
         fprintf(stderr, "Error: could not allocate memory for ksp config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     for (int i = 0; i < nRES; i++) {
         char key[32];
@@ -163,7 +163,7 @@ ConfigType* Config_new(const char *config_file) {
     config->newton_raphson = (NewtonRaphsonConfigType *)malloc(sizeof(NewtonRaphsonConfigType));
     if (config->newton_raphson == NULL) {
         fprintf(stderr, "Error: could not allocate memory for newton_raphson config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     config->newton_raphson->NRES = nRES;
     config->newton_raphson->max_iter = (FEMIndexType *)malloc(1 * sizeof(FEMIndexType));
@@ -173,7 +173,7 @@ ConfigType* Config_new(const char *config_file) {
 
     if (config->newton_raphson->max_iter == NULL || config->newton_raphson->min_iter == NULL || config->newton_raphson->rtol == NULL || config->newton_raphson->atol == NULL) {
         fprintf(stderr, "Error: could not allocate memory for newton_raphson config\n");
-        exit(FEM_RUNTIME_ERROR);
+        exit(FEM_RT_ERROR);
     }
     FEM_CHECK_ERROR(find_config_value_int(fp, "newton_raphson_max_iter", &config->newton_raphson->max_iter[0]));
     FEM_CHECK_ERROR(find_config_value_int(fp, "newton_raphson_min_iter", &config->newton_raphson->min_iter[0]));
