@@ -36,7 +36,7 @@ fi
 
 echo >> ${CONFIGFILE}
 echo "CC=${CC}">> ${CONFIGFILE}
-echo "CFLAGS:=-O2 -g -fPIC " >> ${CONFIGFILE}
+echo "CFLAGS:=-O2 -g -fPIC -DHAVE_MPI " >> ${CONFIGFILE}
 
 #########################
 # CONFIGURE INC & LIB 

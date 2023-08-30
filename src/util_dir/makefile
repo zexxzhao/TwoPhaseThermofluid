@@ -7,12 +7,14 @@ include ../../make.config
 HEADERS:=cfile_state.h\
 	config.h\
 	sparsity_pattern.h\
-	utility.h
+	utility.h\
+	mesh.h
 
 FILE:=cfile_state.c\
 	config.c\
 	sparsity_pattern.c\
-	utility.c
+	utility.c\
+	mesh.c
 
 OBJFILES:=${FILE:%.c=%.o}
 

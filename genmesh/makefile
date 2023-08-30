@@ -21,10 +21,10 @@ clean:
 distclean: clean
 
 obj:
-	mkdir   obj 
+	mkdir -p obj 
 
 $(DEST):	
-	mkdir   $(DEST)
+	mkdir  -p $(DEST)
 	
 info:
 	@echo "Host  :" $(host) 
